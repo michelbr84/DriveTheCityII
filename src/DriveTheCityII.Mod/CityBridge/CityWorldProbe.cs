@@ -931,6 +931,92 @@ namespace DriveTheCityII.CityBridge
             }
         }
 
+        /// <summary>Diagnostics: car lanes within 8 m of a point (owner, master/slave, nearest point, width).</summary>
+        public string DescribeLanesAt(float x, float z)
+        {
+            if (!m_Ready)
+            {
+                return "not ready";
+            }
+            var p = new float3(x, 0f, z);
+            CollectNet(new Bounds3(new float3(x - 8f, -10000f, z - 8f), new float3(x + 8f, 10000f, z + 8f)));
+            var sb = new System.Text.StringBuilder();
+            foreach (Entity owner in m_Items)
+            {
+                if (!m_SubLanes.TryGetBuffer(owner, out DynamicBuffer<Game.Net.SubLane> lanes))
+                {
+                    continue;
+                }
+                for (int l = 0; l < lanes.Length; l++)
+                {
+                    Entity lane = lanes[l].m_SubLane;
+                    if (!m_CarLane.HasComponent(lane) || !m_Curve.TryGetComponent(lane, out Curve c))
+                    {
+                        continue;
+                    }
+                    float d = MathUtils.Distance(c.m_Bezier.xz, p.xz, out float t);
+                    if (d > 8f)
+                    {
+                        continue;
+                    }
+                    float3 q = MathUtils.Position(c.m_Bezier, t);
+                    float width = 0f;
+                    if (m_PrefabRef.TryGetComponent(lane, out PrefabRef lp) && m_NetLaneData.TryGetComponent(lp.m_Prefab, out NetLaneData nld))
+                    {
+                        width = nld.m_Width;
+                    }
+                    sb.Append(owner.Index).Append('/').Append(lane.Index)
+                      .Append(m_MasterLane.HasComponent(lane) ? " M" : m_ConnectionLane.HasComponent(lane) ? " C" : " S")
+                      .Append(" at (").Append(q.x.ToString("0.0")).Append(',').Append(q.y.ToString("0.0")).Append(',').Append(q.z.ToString("0.0"))
+                      .Append(") d=").Append(d.ToString("0.0")).Append(" w=").Append(width.ToString("0.0")).Append(" | ");
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Diagnostics: the net pieces around a point and why each does or does not give a drivable surface.</summary>
+        public string DescribeNetsAt(float x, float z)
+        {
+            if (!m_Ready)
+            {
+                return "not ready";
+            }
+            var p = new float3(x, 0f, z);
+            CollectNet(new Bounds3(new float3(x - 0.5f, -10000f, z - 0.5f), new float3(x + 0.5f, 10000f, z + 0.5f)));
+            var sb = new System.Text.StringBuilder();
+            foreach (Entity e in m_Items)
+            {
+                sb.Append(e.Index).Append(':');
+                if (m_Composition.TryGetComponent(e, out Composition comp) && m_EdgeGeometry.TryGetComponent(e, out EdgeGeometry eg))
+                {
+                    NetCompositionData cd = m_CompositionData[comp.m_Edge];
+                    float h = math.max(CheckSegment(eg.m_Start, cd, p), CheckSegment(eg.m_End, cd, p));
+                    sb.Append("edge y").Append(eg.m_Bounds.min.y.ToString("0.0")).Append("..").Append(eg.m_Bounds.max.y.ToString("0.0"))
+                      .Append(" in=").Append(Contains(eg.m_Bounds, p)).Append(" usable=").Append(UsableSurface(cd))
+                      .Append(" state=").Append(cd.m_State).Append(" gen=").Append(cd.m_Flags.m_General)
+                      .Append(" h=").Append(h == float.MinValue ? "none" : h.ToString("0.00"));
+                    if (m_StartNodeGeometry.TryGetComponent(e, out StartNodeGeometry sg) && Contains(sg.m_Geometry.m_Bounds, p))
+                    {
+                        NetCompositionData sc = m_CompositionData[comp.m_StartNode];
+                        float hs = CheckNode(sg.m_Geometry, sc, p);
+                        sb.Append(" startNode usable=").Append(UsableSurface(sc)).Append(" h=").Append(hs == float.MinValue ? "none" : hs.ToString("0.00"));
+                    }
+                    if (m_EndNodeGeometry.TryGetComponent(e, out EndNodeGeometry ng) && Contains(ng.m_Geometry.m_Bounds, p))
+                    {
+                        NetCompositionData nc = m_CompositionData[comp.m_EndNode];
+                        float hn = CheckNode(ng.m_Geometry, nc, p);
+                        sb.Append(" endNode usable=").Append(UsableSurface(nc)).Append(" h=").Append(hn == float.MinValue ? "none" : hn.ToString("0.00"));
+                    }
+                }
+                else
+                {
+                    sb.Append("other");
+                }
+                sb.Append(" | ");
+            }
+            return sb.ToString();
+        }
+
         private void CollectNet(Bounds3 area)
         {
             m_Items.Clear();

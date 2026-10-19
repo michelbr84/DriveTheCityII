@@ -27,6 +27,38 @@ namespace DriveTheCityII.Bridge
             TestBridge.Handlers["spawncar"] = SpawnCar;
             TestBridge.Handlers["waitstate"] = WaitState;
             TestBridge.Handlers["probe"] = Probe;
+            TestBridge.Handlers["netsat"] = a => new InstantOp(true, P.Probe.DescribeNetsAt(F(a[1]), F(a[2])));
+            TestBridge.Handlers["lanesat"] = a => new InstantOp(true, P.Probe.DescribeLanesAt(F(a[1]), F(a[2])));
+            TestBridge.Handlers["probegrid"] = a =>
+            {
+                // probegrid x z half step ymin ymax: map of net surfaces between ymin and ymax around (x, z), north up.
+                // '#' a net surface in range (its source id is listed), '.' none. Diagnostics for gaps in decks.
+                float cx = F(a[1]), cz = F(a[2]), half = F(a[3]), step = F(a[4]), ymin = F(a[5]), ymax = F(a[6]);
+                var samples = new List<SurfaceSample>();
+                var rows = new List<string>();
+                var ids = new HashSet<long>();
+                for (float z = cz + half; z >= cz - half - 1e-3f; z -= step)
+                {
+                    var sb = new System.Text.StringBuilder();
+                    for (float x = cx - half; x <= cx + half + 1e-3f; x += step)
+                    {
+                        samples.Clear();
+                        P.Probe.SampleSurfaces(x, z, ymin, ymax, samples);
+                        bool hit = false;
+                        foreach (SurfaceSample s in samples)
+                        {
+                            if (s.Kind != SurfaceKind.Terrain && s.Kind != SurfaceKind.Water && s.Height >= ymin && s.Height <= ymax)
+                            {
+                                hit = true;
+                                ids.Add(s.SourceId);
+                            }
+                        }
+                        sb.Append(hit ? '#' : '.');
+                    }
+                    rows.Add(sb.ToString());
+                }
+                return new InstantOp(true, $"grid at ({cx},{cz}) +-{half} step {step} y {ymin}..{ymax} ids [{string.Join(",", ids)}] rows N->S: " + string.Join(" / ", rows));
+            };
             TestBridge.Handlers["cars"] = a => new InstantOp(true, string.Join(" | ", P.Catalog.Cars.Select(c => $"{c.Name}:{c.Category}:{c.Size.z:0.0}m")));
             TestBridge.Handlers["look"] = a =>
             {

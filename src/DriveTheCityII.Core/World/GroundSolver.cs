@@ -94,6 +94,28 @@ namespace DriveTheCityII.Core.World
                 }
             }
 
+            // Two road or deck surfaces overlapping under the wheel (a ramp rising out of the road it runs over): keep the
+            // level closest to where the wheel is. Taking the highest one let a truck on the road climb onto an
+            // overlapping ramp, follow the road's line, and fall 7 m off the ramp's edge (observed in game on 2026-10-19).
+            if (haveBest && best.Kind != SurfaceKind.Terrain)
+            {
+                float bestDiff = Math.Abs(best.Height - refY);
+                for (int i = 0; i < m_Scratch.Count; i++)
+                {
+                    SurfaceSample s = m_Scratch[i];
+                    if (s.Kind == SurfaceKind.Terrain || s.Kind == SurfaceKind.Water || !MathXFinite(s.Height) || s.Height > ceiling || s.Height < refY - stepDown)
+                    {
+                        continue;
+                    }
+                    float diff = Math.Abs(s.Height - refY);
+                    if (diff < bestDiff)
+                    {
+                        best = s;
+                        bestDiff = diff;
+                    }
+                }
+            }
+
             if (!haveBest)
             {
                 if (haveTerrain && terrain.Height > ceiling)

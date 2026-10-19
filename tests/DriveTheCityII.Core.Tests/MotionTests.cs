@@ -413,6 +413,48 @@ namespace DriveTheCityII.Core.Tests
             Assert.True(maxY < 0.6f, $"y={maxY}");
         }
 
+        private static FakeWorld RoadWithOverlappingRamp()
+        {
+            // A road, and a ramp over the same strip rising from road level at 10% (as built in game where an elevated
+            // one-lane ramp starts on the road it later crosses above).
+            var w = new FakeWorld();
+            w.AddDeck(0, 50, 4, 60, 0f, SurfaceKind.Road, 1);
+            for (int i = 0; i < 400; i++)
+            {
+                float zc = i * 0.25f + 0.125f;
+                w.AddDeck(0f, zc, 2.5f, 0.125f, Math.Max(0f, (zc - 5f) * 0.1f), SurfaceKind.Elevated, 3000 + i);
+            }
+            return w;
+        }
+
+        [Fact]
+        public void CarOnTheRoadDoesNotClimbAnOverlappingRamp()
+        {
+            var w = RoadWithOverlappingRamp();
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn(0, 1, 0f);
+            for (int i = 0; i < 450; i++)
+            {
+                c.Step(w, ref s, new VehicleInput { Throttle = 0.5f }, 1f / 50f);
+            }
+            Assert.True(s.Position.Z > 25f, $"z={s.Position.Z}");
+            Assert.True(s.Position.Y < 0.3f, $"y={s.Position.Y}");
+        }
+
+        [Fact]
+        public void CarOnTheRampKeepsClimbingIt()
+        {
+            var w = RoadWithOverlappingRamp();
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn(0, 20, 1.5f);
+            for (int i = 0; i < 350; i++)
+            {
+                c.Step(w, ref s, new VehicleInput { Throttle = 0.5f }, 1f / 50f);
+            }
+            Assert.True(s.Position.Z > 28f, $"z={s.Position.Z}");
+            Assert.True(s.Position.Y > (s.Position.Z - 5f) * 0.1f - 0.5f, $"y={s.Position.Y} z={s.Position.Z}");
+        }
+
         [Fact]
         public void TerrainWallBlocksCar()
         {
