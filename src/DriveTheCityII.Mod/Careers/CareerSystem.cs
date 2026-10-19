@@ -256,6 +256,20 @@ namespace DriveTheCityII.Careers
 
         private void OnPlayerStateChanged(TransitionRecord r)
         {
+            if (r.To == PlayerState.Recovery && Service != null)
+            {
+                // Recoveries void a running challenge; a system-triggered one (not the player's own request or the test
+                // autopilot) also extends mission timers by the time it takes (SPEC-CHALLENGE 3.3, SPEC-MISSION).
+                bool system = r.Reason == null || (!r.Reason.Contains("player request") && !r.Reason.Contains("test autopilot"));
+                try
+                {
+                    HandleResultEvents(Service.NotifyRecovery(system, 5.0, m_Clock));
+                }
+                catch (Exception ex)
+                {
+                    DtcLog.Error("Career recovery notification failed", ex);
+                }
+            }
             if (r.To == PlayerState.Building)
             {
                 m_Objects?.RemoveAll();
@@ -265,6 +279,15 @@ namespace DriveTheCityII.Careers
         }
 
         // ---------------------------------------------------------------- events
+
+        /// <summary>Handles the events a career command returned (accept, garage, company and challenge actions).</summary>
+        public void HandleResultEvents(CareerResult r)
+        {
+            if (r?.Events != null && r.Events.Count > 0)
+            {
+                HandleEvents(r.Events);
+            }
+        }
 
         private void HandleEvents(IReadOnlyList<CareerEvent> events)
         {

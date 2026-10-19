@@ -62,6 +62,7 @@ namespace DriveTheCityII.Careers
                     }
                     string vid = CareerUi.VehicleForAccept(s, offers[idx]);
                     CareerResult r = s.Accept(offers[idx].Id, vid, C.Clock);
+                    C.HandleResultEvents(r);
                     return new InstantOp(r.IsOk, $"accept {offers[idx].Title}: {r.Code} {r.Text}");
                 }
                 case "ui":
@@ -92,7 +93,7 @@ namespace DriveTheCityII.Careers
                     s.DebugSetReputation(int.Parse(a[2], CultureInfo.InvariantCulture));
                     return new InstantOp(true, $"reputation {s.GetProgress().Reputation} (profile marked test-seeded)");
                 case "cancel":
-                    return new InstantOp(true, "cancel: " + s.Cancel("bridge", C.Clock).Text);
+                    { CareerResult cr = s.Cancel("bridge", C.Clock); C.HandleResultEvents(cr); return new InstantOp(true, "cancel: " + cr.Text); }
                 case "gotoveh":
                 {
                     // Test helper: place the avatar beside a career vehicle (by id, or the newest one in the world).

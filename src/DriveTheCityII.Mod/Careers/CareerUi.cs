@@ -129,6 +129,9 @@ namespace DriveTheCityII.Careers
         {
             PlayerSystem.Instance?.Say(CareerText.Result(r));
             DtcLog.Info($"Career action result: {r?.Code} {r?.Key} {r?.Text}");
+            // Commands return their own events (for example the employer's truck or bus being provided on accept);
+            // they are handled exactly like the events from the frame update.
+            CareerSystem.Instance?.HandleResultEvents(r);
         }
     }
 
