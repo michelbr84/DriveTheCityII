@@ -6,7 +6,7 @@
 | Date | 2026-10-19 |
 | Prepared by | Claude Code agent (autonomous run under the owner brief of 2026-10-19) |
 | Game | Cities: Skylines II 1.6.2f1 (Steam), Windows 11 |
-| Final package | `DriveTheCityII-0.1.0-3b7980c-20261019T094752Z` (installed) |
+| Final package | `DriveTheCityII-0.1.0-3eaf045-20261019T100642Z` (installed) |
 
 **Summary.** A private, playable native CS2 mod exists and is installed. You can leave city building, walk, take a
 car, drive it through real traffic, take jobs, earn and spend money, and go back to building. Your career is saved
@@ -29,12 +29,12 @@ How to read the columns:
 
 | Item | Value |
 |---|---|
-| Package folder | `%LOCALAPPDATA%\DriveTheCityII\packages\DriveTheCityII-0.1.0-3b7980c-20261019T094752Z\` (`DriveTheCityII.dll`, `.pdb`, `.mjs`); `packages\LATEST.txt` points to it |
+| Package folder | `%LOCALAPPDATA%\DriveTheCityII\packages\DriveTheCityII-0.1.0-3eaf045-20261019T100642Z\` (`DriveTheCityII.dll`, `.pdb`, `.mjs`); `packages\LATEST.txt` points to it |
 | Installed to | `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\DriveTheCityII\` |
 | Ownership manifest | `%LOCALAPPDATA%\DriveTheCityII\deploy\installed.json` (file hashes); earlier installs kept under `deploy\backups\` |
 | Install / status / rollback / remove | `tools\deploy.ps1 -Install`, `-Status`, `-Rollback`, `-Uninstall` (run with `powershell -NoProfile -ExecutionPolicy Bypass -File …`) |
 | Rebuild from source | `tools\build.ps1` (private .NET SDK under `%LOCALAPPDATA%\DriveTheCityII\tools\dotnet`) |
-| Source | This folder, local Git repository (never pushed). The final code is commit `3b7980c`; later commits only change documentation. |
+| Source | This folder, local Git repository (never pushed). The final code is commit `3eaf045`; later commits only change documentation and test scripts. |
 | How to play | [START_HERE](START_HERE.md) |
 
 ## 2. Feature status
@@ -76,7 +76,7 @@ How to read the columns:
 |---|---|
 | Unit tests (`tests\DriveTheCityII.Core.Tests`) | **151 passed, 0 failed** (final package build) |
 | [RUN-0001](docs/quality/evidence/RUN-0001/REPORT.md) upstream baseline | Passed (load, takeover, drive, handback; co-load guard) |
-| [RUN-0002](docs/quality/evidence/RUN-0002/REPORT.md) M1 loop, real keys | **17/17** |
+| [RUN-0002](docs/quality/evidence/RUN-0002/REPORT.md) M1 loop, real keys | **17/17**, repeated **17/17 on the final package** |
 | [RUN-0003](docs/quality/evidence/RUN-0003/REPORT.md) careers in game | Taxi, persistence, garage, delivery, home, company: passed; freight, bus, challenges: partly |
 | [RUN-0004](docs/quality/evidence/RUN-0004/REPORT.md) presentation, mod-less load, soak | Presentation and mod-less load passed; soak: SOAK_RESULT |
 | Transition cycles | 20/20, 10/10, 3/3, 10/10, 0 failures |

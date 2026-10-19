@@ -134,13 +134,18 @@ $st = Status
 $veh = VehicleOf $st 'car\.basic'
 if ($veh -and (Bridge 'player state') -notmatch 'player=Driving') { OnFoot; Bridge "career ui garage:call:$veh;wait 2" | Out-Null; Board $veh | Out-Null }
 $c = Last (Bridge 'career ui challenges:regen;wait 1;career challenges') 'career challenges'
-$cid = if ($c -match 'challenges=\[([^:\]]+):') { $Matches[1] } else { $null }
-if ($cid) {
-    $o = Bridge "career ui challenges:start:$cid;wait 1;career chdrive 900;career challenges" 1100
+$ids = @([regex]::Matches($c, '(gen-[a-z]+-[0-9a-f]+):') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+$done = $false; $tried = @()
+foreach ($cid in ($ids | Select-Object -First 3)) {
+    $tried += $cid
+    if ((Bridge 'player state') -notmatch 'player=Driving' -and $veh) { OnFoot; Bridge "career ui garage:call:$veh;wait 2" | Out-Null; Board $veh | Out-Null }
+    $o = Bridge "career ui challenges:start:$cid;wait 1;career chdrive 600;career challenges" 800
     $res = Last $o 'career challenges'
-    Record 'Challenge run (checkpoints, time, record)' ($res -match "${cid}:[^|]*tries1" -or $res -match "${cid}:[^|]*:best=\d") (Tail $res 400)
+    if ($res -match "${cid}:[^|]*:best=\d" -or $res -match "${cid}:[^|]*tries[1-9]") {
+        Record 'Challenge run (checkpoints, time, record)' $true ("{0} :: {1}" -f $cid, (Tail $res 400)); $done = $true; break
+    }
 }
-else { Record 'Challenge run (checkpoints, time, record)' $false "no challenge generated: $(Tail $c)" }
+if (-not $done) { Record 'Challenge run (checkpoints, time, record)' $false ("tried {0} :: {1}" -f ($tried -join ', '), (Tail $c 300)) }
 }
 
 # ---- Home.

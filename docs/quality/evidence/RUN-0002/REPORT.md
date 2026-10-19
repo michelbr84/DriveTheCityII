@@ -6,7 +6,7 @@
 | Milestone | M1 ([ROADMAP](../../../../ROADMAP.md) §3.1, [PHASE-05](../../../planning/phases/PHASE-05-walk-drive-integration.md) §13) |
 | Date | 2026-10-19 |
 | Executed by | Claude Code agent (owner-authorized autonomous run of 2026-10-19); no human reviewer yet |
-| Result | **Passed: 17 of 17 steps** (second campaign run; the first run's 2 failures were measurement errors in the script, see Observations) |
+| Result | **Passed: 17 of 17 steps** (second campaign run; the first run's 2 failures were measurement errors in the script, see Observations). **Repeated on the final package `0.1.0-3eaf045`: 17 of 17** (`campaigns\m1-20261019-060703.md`: 9.1 m/s, stop, 36° turn, 0 impacts, save, quit, relaunch, reload). |
 
 ## Configuration
 

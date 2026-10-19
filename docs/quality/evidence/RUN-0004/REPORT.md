@@ -6,8 +6,8 @@
 | Phases | PHASE-11 (presentation and accessibility), PHASE-12 (validation) |
 | Date | 2026-10-19 |
 | Executed by | Claude Code agent (owner-authorized autonomous run of 2026-10-19); no human reviewer yet |
-| Builds | Presentation and mod-less checks: `0.1.0-29ec438+dirty-20261019T093908Z`. Soak: final package `0.1.0-3b7980c-20261019T094752Z`. |
-| Sessions | `20261019-053926` (presentation, mod-less), `20261019-055029` (soak) |
+| Builds | Presentation and mod-less checks: `0.1.0-29ec438+dirty-20261019T093908Z`. Soak: final package `0.1.0-3eaf045-20261019T100642Z` (a first soak on `3b7980c` was stopped after 15 minutes: the test autopilot tripped the recovery-loop protection and then idled; the autopilot was fixed and the soak restarted from zero). |
+| Sessions | `20261019-053926` (presentation, mod-less), `20261019-061251` (soak) |
 
 ## 1. Presentation (`tools\check-presentation.ps1`)
 

@@ -76,7 +76,7 @@ evidence; full records are in [WORKLOG](docs/quality/evidence/WORKLOG.md) and th
 - **Portuguese:** 174 of 222 career message keys translated (8 new unit tests; 151 in total); payout lines and job
   titles formatted in Portuguese by the mod.
 - **Validation:** presentation checks and the mod-less load check passed ([RUN-0004](docs/quality/evidence/RUN-0004/REPORT.md));
-  career coverage in [RUN-0003](docs/quality/evidence/RUN-0003/REPORT.md); final package `0.1.0-3b7980c`.
+  career coverage in [RUN-0003](docs/quality/evidence/RUN-0003/REPORT.md); final package `0.1.0-3eaf045`; M1 repeated 17/17 with real keys on it.
 
 ### Changed — 2026-10-18 — PHASE-00 audits (TASK-0001, TASK-0002) and Melty check
 
