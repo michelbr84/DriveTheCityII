@@ -53,7 +53,7 @@ namespace DriveTheCityII.Careers
                 {
                     float3 from = P.Vehicle.State.Position.ToF3();
                     float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000);
+                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, P.Vehicle.Spec.Length > 7f ? 600f : 30f);
                     if (r.Status == RouteStatusCode.Reachable)
                     {
                         MarkerBoard.Route.AddRange(r.Polyline);
@@ -150,7 +150,7 @@ namespace DriveTheCityII.Careers
             {
                 float3 from = P.Vehicle.State.Position.ToF3();
                 float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000);
+                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, P.Vehicle.Spec.Length > 7f ? 600f : 30f);
                 if (r.Status == RouteStatusCode.Reachable)
                 {
                     MarkerBoard.Route.AddRange(r.Polyline);

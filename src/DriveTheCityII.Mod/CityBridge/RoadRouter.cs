@@ -201,7 +201,7 @@ namespace DriveTheCityII.CityBridge
         /// passing within <paramref name="goalRadius"/> of <paramref name="to"/>. Unknown is returned when the search budget
         /// runs out, never a guess (REQ-CAREER-002).
         /// </summary>
-        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000)
+        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f)
         {
             EnsureBuilt(em);
             var res = new RouteResult();
@@ -238,7 +238,7 @@ namespace DriveTheCityII.CityBridge
                     float align = math.dot(tan, math.normalizesafe(heading));
                     if (align < 0f)
                     {
-                        penalty += 30f; // allow U-turn-like starts but prefer the lane we face
+                        penalty += wrongWayPenalty; // allow U-turn-like starts but prefer the lane we face (long vehicles: go round the block)
                     }
                 }
                 float cost = (1f - s.t) * n.Length / n.Speed + penalty;

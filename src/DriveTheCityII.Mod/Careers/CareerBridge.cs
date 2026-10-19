@@ -381,7 +381,7 @@ namespace DriveTheCityII.Careers
             }
             if (now < m_ReverseUntil)
             {
-                p.Input.Injected = new InputFrame { Brake = 0.8f, Steer = m_ReverseSteer };
+                p.Input.Injected = new InputFrame { Brake = v.Spec.Length > 7f ? 0.35f : 0.8f, Steer = m_ReverseSteer };
                 return false;
             }
 
@@ -402,7 +402,7 @@ namespace DriveTheCityII.Careers
                 }
                 m_ReverseUntil = now + 1.8f;
                 m_ReverseSteer = -Math.Sign(err);
-                p.Input.Injected = new InputFrame { Brake = 1f, Steer = m_ReverseSteer };
+                p.Input.Injected = new InputFrame { Brake = v.Spec.Length > 7f ? 0.35f : 1f, Steer = m_ReverseSteer };
                 return false;
             }
 
@@ -495,7 +495,7 @@ namespace DriveTheCityII.Careers
                 m_Backouts++;
                 m_ReverseUntil = now + 2f;
                 m_ReverseSteer = -Math.Sign(f.Steer);
-                f = new InputFrame { Brake = 1f, Steer = m_ReverseSteer };
+                f = new InputFrame { Brake = heavy ? 0.35f : 1f, Steer = m_ReverseSteer };
             }
             p.Input.Injected = f;
             return false;
