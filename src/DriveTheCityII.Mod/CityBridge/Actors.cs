@@ -338,6 +338,10 @@ namespace DriveTheCityII.CityBridge
                     }
                     else
                     {
+                        if (a.Kind == ActorKind.CareerVehicle)
+                        {
+                            ActorWriter.ClearLanePresence(EntityManager, e);
+                        }
                         EntityManager.AddComponent<Deleted>(e);
                     }
                     n++;
@@ -545,6 +549,41 @@ namespace DriveTheCityII.CityBridge
                 }
             }
         }
+
+        /// <summary>
+        /// Keeps a mod-controlled car registered in the lane object buffer of the lane it occupies, with a consistent
+        /// CarCurrentLane, so native traffic sees it (brakes, queues). Off-lane the registration is removed.
+        /// </summary>
+        public static void UpdateLanePresence(EntityManager em, Entity car, Entity lane, float t)
+        {
+            if (!em.Exists(car) || !em.HasComponent<CarCurrentLane>(car))
+            {
+                return;
+            }
+            CarCurrentLane cl = em.GetComponentData<CarCurrentLane>(car);
+            if (cl.m_Lane != lane)
+            {
+                if (cl.m_Lane != Entity.Null && em.Exists(cl.m_Lane) && em.HasBuffer<Game.Net.LaneObject>(cl.m_Lane))
+                {
+                    Game.Net.NetUtils.RemoveLaneObject(em.GetBuffer<Game.Net.LaneObject>(cl.m_Lane), car);
+                }
+                if (lane != Entity.Null && em.HasBuffer<Game.Net.LaneObject>(lane))
+                {
+                    Game.Net.NetUtils.AddLaneObject(em.GetBuffer<Game.Net.LaneObject>(lane), car, new float2(t, t));
+                }
+                cl.m_Lane = lane;
+                cl.m_ChangeLane = Entity.Null;
+            }
+            else if (lane != Entity.Null && em.HasBuffer<Game.Net.LaneObject>(lane))
+            {
+                Game.Net.NetUtils.UpdateLaneObject(em.GetBuffer<Game.Net.LaneObject>(lane), car, new float2(t, t));
+            }
+            cl.m_CurvePosition = new float3(t, t, t);
+            em.SetComponentData(car, cl);
+        }
+
+        /// <summary>Removes the lane registration (call before deleting or handing back a car).</summary>
+        public static void ClearLanePresence(EntityManager em, Entity car) => UpdateLanePresence(em, car, Entity.Null, 0f);
 
         public static void RefreshTripSource(EntityManager em, Entity car)
         {

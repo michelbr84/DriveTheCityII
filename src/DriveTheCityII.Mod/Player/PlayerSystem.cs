@@ -5,6 +5,7 @@ using DriveTheCityII.Core.Control;
 using DriveTheCityII.Core.Geometry;
 using DriveTheCityII.Core.Motion;
 using DriveTheCityII.Core.World;
+using DriveTheCityII.Core.Text;
 using DriveTheCityII.Diagnostics;
 using Game;
 using Game.Common;
@@ -194,7 +195,7 @@ namespace DriveTheCityII.Player
                 }
                 if (Runtime.ConflictDetected && m_Input.ToggleWasPressed())
                 {
-                    Say(Runtime.ConflictReason);
+                    Say(Loc.T("msg.conflict"));
                 }
                 return;
             }
@@ -229,10 +230,36 @@ namespace DriveTheCityII.Player
             }
         }
 
+        private Game.Tools.ToolRaycastSystem m_ToolRaycast;
+
+        /// <summary>Disables the city-builder hover/selection raycast while in character mode (as photo mode does).</summary>
+        private void SetToolHover(bool disabled)
+        {
+            m_ToolRaycast ??= World.GetExistingSystemManaged<Game.Tools.ToolRaycastSystem>();
+            if (m_ToolRaycast == null)
+            {
+                return;
+            }
+            if (disabled)
+            {
+                m_ToolRaycast.raycastFlags |= Game.Common.RaycastFlags.FreeCameraDisable;
+            }
+            else
+            {
+                m_ToolRaycast.raycastFlags &= ~Game.Common.RaycastFlags.FreeCameraDisable;
+            }
+        }
+
         private void FrameCharacterMode(float dt, bool menu, bool paused)
         {
-            m_Input.SetCursorLock(!menu);
+            SetToolHover(true);
+            bool panel = UI.HudUISystem.Instance != null && UI.HudUISystem.Instance.PanelOpen;
+            m_Input.SetCursorLock(!menu && !panel);
             InputFrame input = m_Input.Read(uiBlocking: menu);
+            if (input.CareerPanelPressed && !menu)
+            {
+                UI.HudUISystem.Instance?.TogglePanel();
+            }
             if (m_Input.Injected.HasValue == false && input.FreeCursorHeld)
             {
                 m_Input.SetCursorLock(false);
@@ -303,34 +330,34 @@ namespace DriveTheCityII.Player
             }
             if (Runtime.ConflictDetected)
             {
-                Say(Runtime.ConflictReason);
+                Say(Loc.T("msg.conflict"));
                 return false;
             }
             if (!m_Probe.IsReady)
             {
-                Say("The city is not ready yet. Try again in a moment.");
+                Say(Loc.T("msg.notReady"));
                 return false;
             }
             if (m_Catalog.HumanCount == 0)
             {
-                Say("No character model is available in this city.");
+                Say(Loc.T("msg.noCharacter"));
                 return false;
             }
             if (!m_Camera.TryGetGameplayView(out Vector3 pivot, out Vector3 rot))
             {
-                Say("Camera not available.");
+                Say(Loc.T("msg.cameraUnavailable"));
                 return false;
             }
             if (!FindSpawnPoint(new float3(pivot.x, pivot.y, pivot.z), out float3 spawn, out float yaw))
             {
-                Say("No walkable place near the camera. Move the camera over a street and try again.");
+                Say(Loc.T("msg.noWalkable"));
                 return false;
             }
 
             m_Avatar = new AvatarState();
             if (!m_Motor.TryPlace(m_Probe, ref m_Avatar, new Vec2(spawn.x, spawn.z), spawn.y + 1f))
             {
-                Say("The spawn point is blocked. Move the camera and try again.");
+                Say(Loc.T("msg.spawnBlocked"));
                 return false;
             }
             m_Avatar.Yaw = yaw;
@@ -340,7 +367,7 @@ namespace DriveTheCityII.Player
 
             if (m_Sm.Request(PlayerState.OnFoot, "player command") != TransitionResultCode.Ok)
             {
-                Say("Cannot enter character mode right now (menu or loading).");
+                Say(Loc.T("msg.cannotEnterMode"));
                 return false;
             }
 
@@ -359,10 +386,12 @@ namespace DriveTheCityII.Player
             m_Session.Push("camera", m_Camera.Release);
             m_Input.Activate();
             m_Session.Push("input", m_Input.Deactivate);
+            SetToolHover(true);
+            m_Session.Push("toolHover", () => SetToolHover(false));
             m_Session.Push("vehicles", StowAllVehicles);
             m_StuckTimer = 0f;
             m_LastProgressPos = m_Avatar.Position.ToF3();
-            Say("Character mode. WASD walk, Shift run, E use vehicle, V camera, F8 return to city building.");
+            Say(Loc.T("msg.enterMode"));
             return true;
         }
 
@@ -370,12 +399,12 @@ namespace DriveTheCityII.Player
         {
             if (m_Sm.State == PlayerState.Driving && !VehicleController.IsStationary(m_Vehicle.State, m_Vehicle.Spec))
             {
-                Say("Stop the vehicle before returning to city building.");
+                Say(Loc.T("msg.stopFirst"));
                 return;
             }
             if (m_Sm.State == PlayerState.EnteringVehicle || m_Sm.State == PlayerState.ExitingVehicle || m_Sm.State == PlayerState.Recovery)
             {
-                Say("Wait until the current action finishes.");
+                Say(Loc.T("msg.waitAction"));
                 return;
             }
             PlayerState from = m_Sm.State;
@@ -449,6 +478,7 @@ namespace DriveTheCityII.Player
                 {
                     if (em.Exists(e) && !em.HasComponent<Deleted>(e))
                     {
+                        ActorWriter.ClearLanePresence(em, e);
                         em.AddComponent<Deleted>(e);
                     }
                 });
@@ -528,7 +558,7 @@ namespace DriveTheCityII.Player
             CarPrefabInfo info = m_Catalog.FindCar(prefabOrCategory, UnityEngine.Random.Range(0, 1000));
             if (info == null)
             {
-                Say("No vehicle model of type " + prefabOrCategory + " is available.");
+                Say(Loc.T("msg.noModel", prefabOrCategory));
                 return false;
             }
             var v = new ControlledVehicle
@@ -631,7 +661,7 @@ namespace DriveTheCityII.Player
             m_Avatar.Position = new Vec3(at.x, at.y, at.z);
             m_Sm.Request(PlayerState.Recovery, "vehicle invalidated");
             m_RecoverySearches = 0;
-            Say("The vehicle disappeared. Finding a safe place for you.");
+            Say(Loc.T("msg.vehicleGone"));
         }
 
         // =====================================================================================================
@@ -684,7 +714,7 @@ namespace DriveTheCityII.Player
             if (m_StuckTimer > 6f)
             {
                 m_StuckTimer = 0f;
-                Say("You seem stuck. Press Backspace to move to a safe spot.");
+                Say(Loc.T("msg.stuck"));
             }
         }
 
@@ -717,12 +747,12 @@ namespace DriveTheCityII.Player
             }
             if (best == null)
             {
-                Say(Sandbox ? "No vehicle close enough. Walk up to a car door and press E." : "No vehicle of yours nearby. Rent one at a service point.");
+                Say(Loc.T(Sandbox ? "msg.noVehicleSandbox" : "msg.noVehicleCareer"));
                 return;
             }
             if (!VehicleController.IsStationary(best.State, best.Spec))
             {
-                Say("That vehicle is moving.");
+                Say(Loc.T("msg.vehicleMoving"));
                 return;
             }
             BeginEntering(best);
@@ -818,7 +848,7 @@ namespace DriveTheCityII.Player
         {
             if (m_Sm.Request(PlayerState.EnteringVehicle, "interact") != TransitionResultCode.Ok)
             {
-                Say("Cannot enter a vehicle now.");
+                Say(Loc.T("msg.cannotEnterVehicle"));
                 return;
             }
             m_PreEntryPos = m_Avatar.Position.ToF3();
@@ -841,7 +871,7 @@ namespace DriveTheCityII.Player
             m_TransEnd = DoorPoint(v, left: true);
             m_TransDuration = math.clamp(math.distance(m_TransStart, m_TransEnd) / 1.6f, 0.35f, 2.5f);
             m_TransTime = 0f;
-            Say("Entering the vehicle...");
+            Say(Loc.T("msg.entering"));
         }
 
         private float3 DoorPoint(ControlledVehicle v, bool left)
@@ -881,9 +911,7 @@ namespace DriveTheCityII.Player
                     m_ChaseYawOffset = 0f;
                     m_CamYaw = m_Vehicle.State.Yaw;
                     m_StuckTimer = 0f;
-                    Say(m_Vehicle.Kind == ActorKind.BorrowedNativeVehicle
-                        ? "Driving (sandbox). W/S throttle and brake/reverse, A/D steer, Space handbrake, E exit."
-                        : "Driving. W/S throttle and brake/reverse, A/D steer, Space handbrake, E exit.");
+                    Say(Loc.T(m_Vehicle.Kind == ActorKind.BorrowedNativeVehicle ? "msg.drivingSandbox" : "msg.driving"));
                 }
             }
         }
@@ -924,12 +952,12 @@ namespace DriveTheCityII.Player
             }
             if (!VehicleController.IsStationary(m_Vehicle.State, m_Vehicle.Spec))
             {
-                Say("Stop the vehicle to get out.");
+                Say(Loc.T("msg.stopToExit"));
                 return;
             }
             if (!FindExitPoint(m_Vehicle, out float3 exit))
             {
-                Say("Exit blocked on every side. Move the vehicle a little, or press Backspace to recover.");
+                Say(Loc.T("msg.exitBlocked"));
                 return;
             }
             if (m_Sm.Request(PlayerState.ExitingVehicle, "exit") != TransitionResultCode.Ok)
@@ -1042,13 +1070,13 @@ namespace DriveTheCityII.Player
                 if (v.Kind == ActorKind.BorrowedNativeVehicle)
                 {
                     ReleaseVehicle(v, 0f);
-                    Say("You left the car; it returns to city traffic.");
+                    Say(Loc.T("msg.leftBorrowed"));
                 }
                 else
                 {
                     v.State.ParkingBrake = true;
                     m_ParkedVehicles.Add(v);
-                    Say("Vehicle parked.");
+                    Say(Loc.T("msg.parked"));
                 }
                 m_CamYaw = m_Avatar.Yaw;
             }
@@ -1075,7 +1103,7 @@ namespace DriveTheCityII.Player
                     break;
                 case PlayerState.Recovery:
                     ForceBuilding("recovery timeout");
-                    Say("Could not find a safe place; returned to city building.");
+                    Say(Loc.T("msg.recoverFailed"));
                     break;
             }
         }
@@ -1156,13 +1184,13 @@ namespace DriveTheCityII.Player
             if (m_Sm.RecoveryLoopDetected)
             {
                 ForceBuilding("recovery loop");
-                Say("Repeated problems placing you safely; returned to city building.");
+                Say(Loc.T("msg.recoveryLoop"));
                 return;
             }
             if (m_Sm.Request(PlayerState.Recovery, reason) == TransitionResultCode.Ok)
             {
                 m_RecoverySearches = 0;
-                Say("Recovering: " + reason);
+                Say(Loc.T("msg.recovering", reason));
             }
         }
 
@@ -1183,7 +1211,7 @@ namespace DriveTheCityII.Player
                     m_Vehicle.State.Grounded = true;
                     m_Vehicle.State.ParkingBrake = false;
                     m_Sm.Request(PlayerState.Driving, "vehicle placed");
-                    Say("Vehicle moved to the nearest road.");
+                    Say(Loc.T("msg.vehicleToRoad"));
                     return;
                 }
             }
@@ -1198,7 +1226,7 @@ namespace DriveTheCityII.Player
                     {
                         SpawnAvatarEntity();
                     }
-                    Say("Moved to the nearest sidewalk.");
+                    Say(Loc.T("msg.toSidewalk"));
                     return;
                 }
             }
@@ -1207,7 +1235,7 @@ namespace DriveTheCityII.Player
                 // TR-12: no safe point.
                 m_Sm.Request(PlayerState.Building, "no safe point");
                 RunTeardown();
-                Say("No safe place found nearby; returned to city building.");
+                Say(Loc.T("msg.noSafePoint"));
             }
         }
 
@@ -1265,6 +1293,16 @@ namespace DriveTheCityII.Player
             }
             float3 vel = new float3(math.sin(s.Yaw), 0f, math.cos(s.Yaw)) * (frozen ? 0f : s.Speed);
             ActorWriter.WritePose(em, v.Entity, s.Position.ToF3(), VehicleRotation(s), vel, flags, TransformState.Default);
+            // Traffic presence: native cars see the player's vehicle only through lane object buffers.
+            float2 heading = new float2(math.sin(s.Yaw), math.cos(s.Yaw));
+            if (m_Probe.FindCarLaneUnder(s.Position.ToF3(), heading, out Entity lane, out float laneT))
+            {
+                ActorWriter.UpdateLanePresence(em, v.Entity, lane, laneT);
+            }
+            else
+            {
+                ActorWriter.UpdateLanePresence(em, v.Entity, Entity.Null, 0f);
+            }
             if (UTime.frameCount % 120 == 0)
             {
                 ActorWriter.RefreshTripSource(em, v.Entity);
@@ -1436,6 +1474,39 @@ namespace DriveTheCityII.Player
             m_Vehicle.State.Speed = 0f;
             m_Vehicle.State.Grounded = true;
             m_Vehicle.State.VerticalSpeed = 0f;
+        }
+
+        private float m_NearestCacheTime;
+        private float m_NearestCache = float.MaxValue;
+
+        /// <summary>Distance to the nearest vehicle the player could enter (cached 4 times a second; for prompts).</summary>
+        public float NearestEnterableDistance()
+        {
+            float now = UTime.realtimeSinceStartup;
+            if (now - m_NearestCacheTime < 0.25f)
+            {
+                return m_NearestCache;
+            }
+            m_NearestCacheTime = now;
+            float3 me = m_Avatar.Position.ToF3();
+            float best = float.MaxValue;
+            foreach (ControlledVehicle p in m_ParkedVehicles)
+            {
+                if (p.Entity != Entity.Null)
+                {
+                    best = math.min(best, DistanceToVehicle(me, p.State, p.Spec));
+                }
+            }
+            if (best > 4f && Sandbox && m_Probe.IsReady)
+            {
+                float d = 4.0f;
+                if (FindBorrowableNative(me, ref d) != null)
+                {
+                    best = d;
+                }
+            }
+            m_NearestCache = best;
+            return best;
         }
 
         public IReadOnlyList<ControlledVehicle> ParkedVehicles => m_ParkedVehicles;

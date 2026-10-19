@@ -40,6 +40,46 @@ namespace DriveTheCityII.Bridge
             TestBridge.Handlers["prefabs"] = a => new InstantOp(true, PrefabCatalog.Dump(Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager,
                 Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Game.Prefabs.PrefabSystem>(), a.Length > 1 ? a[1] : "car"));
             TestBridge.Handlers["leakcheck"] = a => new InstantOp(true, "excluded-signature cars=" + P.Probe.CountForeignExcludedCars(Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager) + " actors=" + P.ActorCount);
+            TestBridge.Handlers["hud"] = a => new InstantOp(UI.HudUISystem.Instance != null, UI.HudUISystem.Instance == null ? "no hud" : UI.HudUISystem.Instance.DebugJson());
+            TestBridge.Handlers["ui"] = a =>
+            {
+                UI.HudUISystem.Instance?.InvokeAction(a[1]);
+                return new InstantOp(UI.HudUISystem.Instance != null, "ui action " + a[1]);
+            };
+            TestBridge.Handlers["traffic"] = Traffic;
+            TestBridge.Handlers["trafficwatch"] = a => new TrafficWatchOp(a.Length > 1 ? F(a[1]) : 20f);
+            TestBridge.Handlers["trafficsetup"] = a =>
+            {
+                float r = a.Length > 1 ? F(a[1]) : 1500f;
+                if (!P.Probe.FindLaneAheadOfTraffic(P.Avatar.Position.ToF3(), r, 45f, out float3 pt, out float3 tan, out int n))
+                {
+                    return new InstantOp(false, "no lane with moving traffic found");
+                }
+                float yaw = math.atan2(tan.x, tan.z);
+                if (!P.SpawnCareerVehicle("car", pt, yaw, "TEST", out ControlledVehicle v))
+                {
+                    return new InstantOp(false, P.LastMessage);
+                }
+                Vec2 fwd = Vec2.FromYaw(yaw);
+                Vec2 side = new Vec2(pt.x, pt.z) - fwd.RightPerp * (v.Spec.Width * 0.5f + 0.9f);
+                P.TeleportAvatar(new float3(side.X, pt.y, side.Z));
+                return new InstantOp(true, $"car placed ahead of {n} moving vehicles at {pt}");
+            };
+            TestBridge.Handlers["busyroad"] = a =>
+            {
+                float r = a.Length > 1 ? F(a[1]) : 400f;
+                if (!P.Probe.FindBusiestRoadLane(P.Avatar.Position.ToF3(), r, out float3 mid, out float3 tan, out int n))
+                {
+                    return new InstantOp(false, "no busy lane");
+                }
+                if (!P.Probe.FindNearestLanePoint(mid, 30f, CityWorldProbe.LaneKind.Sidewalk, out float3 walk, out _, out _))
+                {
+                    walk = mid;
+                }
+                P.TeleportAvatar(walk);
+                P.CameraYaw = math.atan2(tan.x, tan.z);
+                return new InstantOp(true, $"busiest lane has {n} vehicles; avatar at {P.Avatar.Position}");
+            };
             TestBridge.Handlers["gotoroad"] = GotoRoad;
             TestBridge.Handlers["gotowalk"] = GotoWalk;
             TestBridge.Handlers["view"] = a =>
@@ -158,7 +198,10 @@ namespace DriveTheCityII.Bridge
         {
             string cat = a.Length > 1 ? a[1] : "car";
             float3 near = P.Avatar.Position.ToF3();
-            if (!P.Probe.FindNearestLanePoint(near, 40f, CityWorldProbe.LaneKind.Parking, out float3 lane, out float3 tan, out _) &&
+            bool roadOnly = a.Length > 2 && a[2] == "road";
+            float3 lane = default;
+            float3 tan = default;
+            if ((roadOnly || !P.Probe.FindNearestLanePoint(near, 40f, CityWorldProbe.LaneKind.Parking, out lane, out tan, out _)) &&
                 !P.Probe.FindNearestLanePoint(near, 80f, CityWorldProbe.LaneKind.Road, out lane, out tan, out _))
             {
                 return new InstantOp(false, "no road lane within 80 m");
@@ -192,6 +235,37 @@ namespace DriveTheCityII.Bridge
             return new InstantOp(true, "avatar at " + P.Avatar.Position);
         }
 
+        /// <summary>traffic: AI vehicles within 40 m of the controlled vehicle, relative to its heading.</summary>
+        private static IBridgeOp Traffic(string[] a)
+        {
+            ControlledVehicle v = P.Vehicle ?? P.ParkedVehicles.FirstOrDefault();
+            if (v == null)
+            {
+                return new InstantOp(false, "no vehicle");
+            }
+            var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+            Unity.Entities.Entity myLane = em.Exists(v.Entity) && em.HasComponent<Game.Vehicles.CarCurrentLane>(v.Entity)
+                ? em.GetComponentData<Game.Vehicles.CarCurrentLane>(v.Entity).m_Lane : Unity.Entities.Entity.Null;
+            var obs = new List<Obstacle>();
+            P.Probe.QueryObstacles(v.State.Position.XZ, 40f, obs);
+            Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
+            var parts = new List<string>();
+            int behindStopped = 0;
+            foreach (Obstacle o in obs.Where(o => o.Kind == ObstacleKind.Vehicle))
+            {
+                Vec2 d = o.Footprint.Center - v.State.Position.XZ;
+                float along = Vec2.Dot(d, fwd);
+                float side = Vec2.Dot(d, fwd.RightPerp);
+                float sp = o.Velocity.Length;
+                if (along < -2f && along > -30f && Math.Abs(side) < 2.5f && sp < 1f)
+                {
+                    behindStopped++;
+                }
+                parts.Add($"[{along:0} {side:0} {sp:0.0}]");
+            }
+            return new InstantOp(true, $"myLane={myLane} vehicles={parts.Count} behindStoppedSameLine={behindStopped} along/side/speed: {string.Join(" ", parts.Take(20))}");
+        }
+
         private static IBridgeOp Probe(string[] a)
         {
             float3 p = P.State == PlayerState.Driving && P.Vehicle != null ? P.Vehicle.State.Position.ToF3() : P.Avatar.Position.ToF3();
@@ -201,6 +275,99 @@ namespace DriveTheCityII.Bridge
             P.Probe.QueryObstacles(new Vec2(p.x, p.z), 12f, obs);
             return new InstantOp(true, $"at {p} surfaces=[{string.Join(", ", samples)}] obstacles={obs.Count} " +
                 $"({string.Join(", ", obs.GroupBy(o => o.Kind).Select(g => g.Key + ":" + g.Count()))}) queries={P.Probe.QueriesThisFrame}");
+        }
+    }
+
+    /// <summary>
+    /// Samples AI cars registered in the same lane as the player's stopped vehicle: counts those that stop behind it
+    /// and any that pass through it (ghosting). Host execution; the player's vehicle is held by its handbrake.
+    /// </summary>
+    public sealed class TrafficWatchOp : IBridgeOp
+    {
+        private readonly float m_End;
+        private float m_Next;
+        private readonly Dictionary<Unity.Entities.Entity, float> m_LastAlong = new Dictionary<Unity.Entities.Entity, float>();
+        private readonly HashSet<Unity.Entities.Entity> m_StoppedBehind = new HashSet<Unity.Entities.Entity>();
+        private readonly HashSet<Unity.Entities.Entity> m_Seen = new HashSet<Unity.Entities.Entity>();
+        private int m_Ghosts;
+        private float m_MinGap = float.MaxValue;
+        private int m_Samples;
+
+        public TrafficWatchOp(float seconds)
+        {
+            m_End = UnityEngine.Time.realtimeSinceStartup + seconds;
+        }
+
+        public bool Ok { get; private set; } = true;
+        public string Result { get; private set; } = string.Empty;
+
+        public bool Update()
+        {
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            PlayerSystem p = PlayerSystem.Instance;
+            if (p?.Vehicle == null)
+            {
+                Ok = false;
+                Result = "no controlled vehicle";
+                return true;
+            }
+            if (now >= m_Next)
+            {
+                m_Next = now + 0.5f;
+                Sample(p);
+            }
+            if (now < m_End)
+            {
+                return false;
+            }
+            Result = $"samples={m_Samples} sameLaneSeen={m_Seen.Count} stoppedBehind={m_StoppedBehind.Count} ghostPasses={m_Ghosts} minGapBehind={(m_MinGap == float.MaxValue ? -1 : m_MinGap):0.0}m";
+            Ok = m_Ghosts == 0;
+            return true;
+        }
+
+        private void Sample(PlayerSystem p)
+        {
+            var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+            ControlledVehicle v = p.Vehicle;
+            if (!em.Exists(v.Entity) || !em.HasComponent<Game.Vehicles.CarCurrentLane>(v.Entity))
+            {
+                return;
+            }
+            Unity.Entities.Entity lane = em.GetComponentData<Game.Vehicles.CarCurrentLane>(v.Entity).m_Lane;
+            if (lane == Unity.Entities.Entity.Null || !em.HasBuffer<Game.Net.LaneObject>(lane))
+            {
+                return;
+            }
+            m_Samples++;
+            Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
+            float half = v.Spec.Length * 0.5f;
+            var objs = em.GetBuffer<Game.Net.LaneObject>(lane, true);
+            for (int i = 0; i < objs.Length; i++)
+            {
+                Unity.Entities.Entity e = objs[i].m_LaneObject;
+                if (e == v.Entity || !em.Exists(e) || !em.HasComponent<Game.Objects.Transform>(e))
+                {
+                    continue;
+                }
+                m_Seen.Add(e);
+                float3 pos = em.HasComponent<Game.Rendering.InterpolatedTransform>(e) ? em.GetComponentData<Game.Rendering.InterpolatedTransform>(e).m_Position : em.GetComponentData<Game.Objects.Transform>(e).m_Position;
+                Vec2 d = new Vec2(pos.x, pos.z) - v.State.Position.XZ;
+                float along = Vec2.Dot(d, fwd);
+                float speed = em.HasComponent<Game.Objects.Moving>(e) ? math.length(em.GetComponentData<Game.Objects.Moving>(e).m_Velocity) : 0f;
+                if (along < 0f)
+                {
+                    m_MinGap = Math.Min(m_MinGap, -along - half);
+                    if (speed < 0.5f && along > -25f)
+                    {
+                        m_StoppedBehind.Add(e);
+                    }
+                }
+                if (m_LastAlong.TryGetValue(e, out float last) && last < -half && along > half)
+                {
+                    m_Ghosts++;
+                }
+                m_LastAlong[e] = along;
+            }
         }
     }
 

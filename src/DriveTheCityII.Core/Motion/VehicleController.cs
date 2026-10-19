@@ -331,19 +331,31 @@ namespace DriveTheCityII.Core.Motion
                     {
                         continue;
                     }
+                    if (o.Kind == ObstacleKind.Vehicle || o.Kind == ObstacleKind.Creature)
+                    {
+                        // Moving obstacles only block the car when it drives into them; an overlap they caused must not
+                        // shove a stationary or receding player vehicle.
+                        float into = -Vec2.Dot(Vec2.FromYaw(yaw) * s.Speed, pen.Normal);
+                        if (into <= 0.05f)
+                        {
+                            continue;
+                        }
+                    }
                     target += pen.Normal * (pen.Depth + 1e-3f);
                     box = Obb2.FromYaw(target, yaw, hw, hl);
                     any = true;
 
                     // Velocity response: remove the approaching component (with a little bounce), keep the rest
-                    // projected onto the heading because the car cannot slide sideways in this model.
+                    // projected onto the heading because the car cannot slide sideways in this model. Only the
+                    // player's own velocity is used: other vehicles can stop the car but never push it (native
+                    // traffic is kinematic and may not yield, so its velocity must not inject energy).
                     Vec2 fwd = Vec2.FromYaw(yaw);
-                    Vec2 vel = fwd * s.Speed - o.Velocity;
+                    Vec2 vel = fwd * s.Speed;
                     float approach = -Vec2.Dot(vel, pen.Normal);
                     if (approach > 0f)
                     {
                         Vec2 responded = vel + pen.Normal * (approach * (1f + spec.Restitution));
-                        float newSpeed = Vec2.Dot(responded + o.Velocity, fwd);
+                        float newSpeed = Vec2.Dot(responded, fwd);
                         if (approach > report.ImpactSpeed)
                         {
                             report.ImpactSpeed = approach;

@@ -744,6 +744,166 @@ namespace DriveTheCityII.CityBridge
             }
         }
 
+        /// <summary>
+        /// The car lane (edge or intersection lane) under a vehicle, preferring lanes aligned with its heading. Used to
+        /// register the player's vehicle in the lane object buffers AI traffic reads (refcache note 04 §5).
+        /// </summary>
+        public bool FindCarLaneUnder(float3 pos, float2 heading, out Entity laneEntity, out float curveT)
+        {
+            laneEntity = Entity.Null;
+            curveT = 0f;
+            if (!m_Ready)
+            {
+                return false;
+            }
+            CollectNet(new Bounds3(pos - new float3(4f, 6f, 4f), pos + new float3(4f, 6f, 4f)));
+            float bestScore = float.MaxValue;
+            for (int i = 0; i < m_Items.Count; i++)
+            {
+                if (!m_SubLanes.TryGetBuffer(m_Items[i], out DynamicBuffer<Game.Net.SubLane> lanes))
+                {
+                    continue;
+                }
+                for (int l = 0; l < lanes.Length; l++)
+                {
+                    Entity lane = lanes[l].m_SubLane;
+                    if (!m_CarLane.HasComponent(lane) || m_MasterLane.HasComponent(lane) || m_ConnectionLane.HasComponent(lane))
+                    {
+                        continue;
+                    }
+                    if (!m_LaneObjects.HasBuffer(lane) || !m_Curve.TryGetComponent(lane, out Curve c))
+                    {
+                        continue;
+                    }
+                    float width = 3f;
+                    if (m_PrefabRef.TryGetComponent(lane, out PrefabRef lp) && m_NetLaneData.TryGetComponent(lp.m_Prefab, out NetLaneData nld))
+                    {
+                        width = math.max(1.5f, nld.m_Width);
+                    }
+                    float d = MathUtils.Distance(c.m_Bezier.xz, pos.xz, out float t);
+                    if (d > width * 0.5f + 0.3f)
+                    {
+                        continue;
+                    }
+                    float3 lp3 = MathUtils.Position(c.m_Bezier, t);
+                    if (math.abs(lp3.y - pos.y) > 2f)
+                    {
+                        continue;
+                    }
+                    float2 tan = math.normalizesafe(MathUtils.Tangent(c.m_Bezier, t).xz);
+                    float align = math.dot(tan, math.normalizesafe(heading));
+                    float score = d + (1f - align) * 2f;
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        laneEntity = lane;
+                        curveT = t;
+                    }
+                }
+            }
+            return laneEntity != Entity.Null;
+        }
+
+        /// <summary>Test helper: the road lane with the most vehicles on it within a radius (and its midpoint).</summary>
+        public bool FindBusiestRoadLane(float3 pos, float radius, out float3 midpoint, out float3 tangent, out int count)
+        {
+            midpoint = default;
+            tangent = default;
+            count = 0;
+            if (!m_Ready)
+            {
+                return false;
+            }
+            CollectNet(new Bounds3(pos - new float3(radius, 100f, radius), pos + new float3(radius, 100f, radius)));
+            for (int i = 0; i < m_Items.Count; i++)
+            {
+                if (!m_SubLanes.TryGetBuffer(m_Items[i], out DynamicBuffer<Game.Net.SubLane> lanes))
+                {
+                    continue;
+                }
+                for (int l = 0; l < lanes.Length; l++)
+                {
+                    Entity lane = lanes[l].m_SubLane;
+                    if (!LaneMatches(lane, LaneKind.Road) || !m_LaneObjects.TryGetBuffer(lane, out DynamicBuffer<LaneObject> objs) || !m_Curve.TryGetComponent(lane, out Curve c))
+                    {
+                        continue;
+                    }
+                    if (objs.Length > count && c.m_Length > 40f)
+                    {
+                        count = objs.Length;
+                        midpoint = MathUtils.Position(c.m_Bezier, 0.5f);
+                        tangent = MathUtils.Tangent(c.m_Bezier, 0.5f);
+                    }
+                }
+            }
+            return count > 0;
+        }
+
+        /// <summary>
+        /// Test helper: a road lane with moving traffic, and a point on it about <paramref name="aheadMeters"/> ahead of
+        /// the leading moving vehicle, so that approaching traffic must react to a vehicle placed there.
+        /// </summary>
+        public bool FindLaneAheadOfTraffic(float3 pos, float radius, float aheadMeters, out float3 point, out float3 tangent, out int moving)
+        {
+            point = default;
+            tangent = default;
+            moving = 0;
+            if (!m_Ready)
+            {
+                return false;
+            }
+            CollectNet(new Bounds3(pos - new float3(radius, 100f, radius), pos + new float3(radius, 100f, radius)));
+            float bestScore = 0f;
+            for (int i = 0; i < m_Items.Count; i++)
+            {
+                if (!m_SubLanes.TryGetBuffer(m_Items[i], out DynamicBuffer<Game.Net.SubLane> lanes))
+                {
+                    continue;
+                }
+                for (int l = 0; l < lanes.Length; l++)
+                {
+                    Entity lane = lanes[l].m_SubLane;
+                    if (!LaneMatches(lane, LaneKind.Road) || !m_LaneObjects.TryGetBuffer(lane, out DynamicBuffer<LaneObject> objs) || !m_Curve.TryGetComponent(lane, out Curve c))
+                    {
+                        continue;
+                    }
+                    if (c.m_Length < aheadMeters + 30f)
+                    {
+                        continue;
+                    }
+                    int count = 0;
+                    float lead = -1f;
+                    for (int k = 0; k < objs.Length; k++)
+                    {
+                        Entity e = objs[k].m_LaneObject;
+                        if (m_Moving.TryGetComponent(e, out Moving mv) && math.length(mv.m_Velocity) > 3f)
+                        {
+                            count++;
+                            lead = math.max(lead, objs[k].m_CurvePosition.y);
+                        }
+                    }
+                    if (count == 0 || lead < 0f)
+                    {
+                        continue;
+                    }
+                    float tAhead = lead + aheadMeters / c.m_Length;
+                    if (tAhead > 0.92f)
+                    {
+                        continue;
+                    }
+                    float score = count + (1f - math.distance(MathUtils.Position(c.m_Bezier, tAhead), pos) / radius);
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        moving = count;
+                        point = MathUtils.Position(c.m_Bezier, tAhead);
+                        tangent = MathUtils.Tangent(c.m_Bezier, tAhead);
+                    }
+                }
+            }
+            return moving > 0;
+        }
+
         /// <summary>Counts cars carrying the mod's AI-exclusion signature (leak check after a reload).</summary>
         public int CountForeignExcludedCars(EntityManager em)
         {

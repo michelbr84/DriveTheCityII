@@ -41,6 +41,9 @@ namespace DriveTheCityII
             updateSystem.UpdateBefore<Player.PlayerSystem, Game.Rendering.PreRenderSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateBefore<Player.PlayerCameraSystem, Game.Rendering.CameraUpdateSystem>(SystemUpdatePhase.PreCulling);
 
+            // UI: HUD view model and action routing.
+            updateSystem.UpdateAt<UI.HudUISystem>(SystemUpdatePhase.UIUpdate);
+
             PlayerBridgeCommands.Register();
 
             GameManager.instance.onGameLoadingComplete += OnLoadingComplete;
