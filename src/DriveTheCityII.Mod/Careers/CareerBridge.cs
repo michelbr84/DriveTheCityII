@@ -379,11 +379,13 @@ namespace DriveTheCityII.Careers
             {
                 bool touching = now - m_TouchedAt < 5f;
                 float still = now - m_StillSince;
-                if (still > 120f || (touching && still > 60f))
+                // Queued behind a stopped vehicle (a jam on a highway): wait longer before giving up on the lane.
+                float limit = m_LastGap < 6f ? 300f : 120f;
+                if (still > limit || (touching && still > 60f))
                 {
                     m_StillSince = now;
                     DtcLog.Info(string.Format(CultureInfo.InvariantCulture, "autopilot: deadlock after {0:0} s without moving (touching={1}) at {2}", still, touching, v.State.Position));
-                    Recover(p, now, touching ? "deadlock against a stopped vehicle" : "no movement for 120 s");
+                    Recover(p, now, touching ? "deadlock against a stopped vehicle" : $"no movement for {limit:0} s");
                     return false;
                 }
             }
@@ -428,7 +430,7 @@ namespace DriveTheCityII.Careers
                 return false;
             }
 
-            float3 aim = AimPoint(MarkerBoard.Route, pos, speed, target, out float turnAhead);
+            float3 aim = AimPoint(MarkerBoard.Route, pos, speed, target, out float turnAhead, out float curvature);
             bool bypassing = now < m_BypassUntil;
             if (bypassing)
             {
@@ -485,9 +487,14 @@ namespace DriveTheCityII.Careers
             bool heavy = v.Spec.Length > 7f;
             // Trucks and buses: 9 m/s in general, 12 m/s on straight road. Observed in game on 2026-10-19: at 9 m/s on a
             // highway, traffic at 36-40 m/s ran into the truck from behind while changing lanes.
+            // Curves: no faster than the cargo's comfortable lateral acceleration allows for the tightest bend ahead
+            // (observed in game on 2026-10-19: at 14 m/s the steering limit could not hold a highway curve and the truck
+            // ran off onto the verge).
+            float curveCap = curvature > 1e-4f ? (float)Math.Sqrt((heavy ? 2.0f : 3.0f) / curvature) : float.MaxValue;
             bool straight = turnAhead < 0.15f && Math.Abs(err) < 0.15f;
             bool open = turnAhead < 0.06f && Math.Abs(err) < 0.06f && m_LastGap > 40f;
             float want = Mathf.Clamp(dist * 0.35f, 4f, heavy ? (open ? 16f : straight ? 12f : 9f) : 12f);
+            want = Math.Min(want, Math.Max(2.5f, curveCap));
             if (turnAhead > 0.9f)
             {
                 want = Math.Min(want, heavy ? 3.5f : 4.5f);
@@ -759,9 +766,10 @@ namespace DriveTheCityII.Careers
             p.EnterRecovery("test autopilot " + why);
         }
 
-        private static float3 AimPoint(List<float3> route, float3 pos, float speed, float3 fallback, out float turnAhead)
+        private static float3 AimPoint(List<float3> route, float3 pos, float speed, float3 fallback, out float turnAhead, out float curvature)
         {
             turnAhead = 0f;
+            curvature = 0f;
             if (route.Count < 2)
             {
                 return fallback;
@@ -789,10 +797,21 @@ namespace DriveTheCityII.Careers
             acc = 0f;
             // Far enough to slow down gently for the corner (30 m in town, more at highway speed).
             float window = Math.Max(30f, speed * speed / 4f + 10f);
+            float2 prevDir = d0;
+            float prevLen = 0f;
             for (int k = best; k < route.Count - 1 && acc < window; k++)
             {
                 float2 dk = math.normalizesafe(route[k + 1].xz - route[k].xz);
+                float len = math.distance(route[k].xz, route[k + 1].xz);
                 turnAhead = Math.Max(turnAhead, math.acos(math.clamp(math.dot(d0, dk), -1f, 1f)));
+                if (k > best && len > 0.5f && prevLen > 0.5f)
+                {
+                    // Heading change per metre between consecutive route segments (1 / radius).
+                    float bend = math.acos(math.clamp(math.dot(prevDir, dk), -1f, 1f));
+                    curvature = Math.Max(curvature, bend / Math.Max(2f, 0.5f * (len + prevLen)));
+                }
+                prevDir = dk;
+                prevLen = len;
                 acc += math.distance(route[k], route[k + 1]);
             }
             return route[j];

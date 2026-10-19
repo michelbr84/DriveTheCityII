@@ -55,6 +55,15 @@ function Attempt([string]$career, [int]$seconds) {
     if ($b -notmatch 'state Driving reached') { Note "$career could not board $svc"; Bridge 'career cancel' | Out-Null; return $false }
     if ($NoDrive) { Note "$career boarded $svc; -NoDrive: stopping here with the session running"; return $true }
     $d = Last (Bridge "career drive $seconds" ($seconds + 120)) 'career drive'
+    for ($r = 1; $r -le 2 -and $d -match 'returned to city building' -and (Status) -match 'mission=\[(Freight|Bus)/Active'; $r++) {
+        # The player was sent back to city building (a recovery found no safe spot) while the job is still on: get back
+        # in the employer's vehicle and carry on, as a player would.
+        Note "$career resume $r after return to city building"
+        Bridge 'player enter;waitstate OnFoot 20' | Out-Null
+        $b2 = Bridge "career gotoveh $svc;player interact;waitstate Driving 15"
+        if ($b2 -notmatch 'state Driving reached') { Note "$career could not re-board $svc"; break }
+        $d = Last (Bridge "career drive $seconds" ($seconds + 120)) 'career drive'
+    }
     $paid = $d -match 'mission finished' -and $d -match 'last=\[MissionSettlement:([1-9]\d*)'
     Note ("{0} attempt result: {1} :: {2}" -f $career, $(if ($paid) { 'COMPLETED AND PAID' } else { 'not completed' }), (($d -split ' :: ', 2)[-1]))
     if (-not ($d -match 'mission finished')) { Bridge 'career cancel' | Out-Null }

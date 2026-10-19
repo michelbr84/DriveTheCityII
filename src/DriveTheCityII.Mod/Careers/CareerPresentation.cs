@@ -58,10 +58,12 @@ namespace DriveTheCityII.Careers
                     float wrongWay = P.Vehicle.Spec.Length > 7f ? 120f : 30f;
                     // End the route on a lane right at the target (docks and bus stops have 8 m arrival radii); widen only
                     // if no lane is that close.
-                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay);
+                    var gk = P.Vehicle.State.GroundKind;
+                    bool onRoad = gk == Core.World.SurfaceKind.Road || gk == Core.World.SurfaceKind.Elevated || gk == Core.World.SurfaceKind.Tunnel;
+                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay, onRoad);
                     if (r.Status != RouteStatusCode.Reachable)
                     {
-                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay);
+                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay, onRoad);
                     }
                     if (r.Status == RouteStatusCode.Reachable)
                     {

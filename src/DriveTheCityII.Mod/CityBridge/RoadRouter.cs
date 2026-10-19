@@ -238,7 +238,7 @@ namespace DriveTheCityII.CityBridge
         /// passing within <paramref name="goalRadius"/> of <paramref name="to"/>. Unknown is returned when the search budget
         /// runs out, never a guess (REQ-CAREER-002).
         /// </summary>
-        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f)
+        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f, bool onRoadSurface = false)
         {
             EnsureBuilt(em);
             var res = new RouteResult();
@@ -247,7 +247,8 @@ namespace DriveTheCityII.CityBridge
             // Only lanes on the vehicle's own level can start the route when there are any: a penalty was not enough, the
             // route kept switching to the road 7 m below an elevated road whenever that saved a long detour (observed in
             // game on 2026-10-19), and the truck followed it off the deck's edge.
-            if (starts.Exists(s => math.abs(MathUtils.Position(m_Lanes[s.idx].Curve, s.t).y - from.y) <= 1.2f))
+            // Off the road (on a verge or in a lot) the vehicle can still drive up onto an embankment, so all levels stay.
+            if (onRoadSurface && starts.Exists(s => math.abs(MathUtils.Position(m_Lanes[s.idx].Curve, s.t).y - from.y) <= 1.2f))
             {
                 starts.RemoveAll(s => math.abs(MathUtils.Position(m_Lanes[s.idx].Curve, s.t).y - from.y) > 1.2f);
             }
