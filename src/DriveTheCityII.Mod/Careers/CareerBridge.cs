@@ -208,6 +208,11 @@ namespace DriveTheCityII.Careers
         private float m_MoveCheckAt;
         private float m_LastRecoverAt = -999f;
         private float m_YieldFor;
+        private bool m_KTurn;
+        private bool m_KForward;
+        private float m_KDir;
+        private float m_KPhaseSince;
+        private int m_KPhases;
         private float m_LastGap = float.MaxValue;
         private float m_LastConflict = float.MaxValue;
         private float m_WaitingSince = -1f;
@@ -354,7 +359,7 @@ namespace DriveTheCityII.Careers
             {
                 m_WaitingSince = -1f;
             }
-            bool watchdogPaused = holding || (waitingInTraffic && now - m_WaitingSince < 120f);
+            bool watchdogPaused = holding || m_KTurn || (waitingInTraffic && now - m_WaitingSince < 120f);
             if (m_MoveCheckAt <= 0f || watchdogPaused)
             {
                 m_MoveAnchor = pos;
@@ -413,21 +418,27 @@ namespace DriveTheCityII.Careers
                 return false;
             }
 
-            // Route starts behind the car: three-point turn (reverse on the opposite lock), as on a narrow street.
-            if (Math.Abs(err) > 1.9f && speed < 2.5f)
+            // Route starts behind the vehicle: turn round with a K-turn that checks the space before every move.
+            if (!m_KTurn && Math.Abs(err) > 1.9f && speed < 2.5f)
             {
+                m_KTurn = true;
+                m_KDir = Math.Sign(err);
+                m_KForward = FootprintClearAhead(p, v, pos, 1.2f, m_KDir);
+                m_KPhaseSince = now;
+                m_KPhases = 0;
                 m_Turns++;
-                m_TurnsThisLeg++;
-                if (m_TurnsThisLeg > 10)
+            }
+            if (m_KTurn)
+            {
+                if (Math.Abs(err) < 0.6f)
                 {
-                    Recover(p, now, "three-point turn did not converge");
-                    m_TurnsThisLeg = 0;
+                    m_KTurn = false;
+                }
+                else
+                {
+                    KTurn(p, v, pos, speed, now);
                     return false;
                 }
-                m_ReverseUntil = now + 1.8f;
-                m_ReverseSteer = -Math.Sign(err);
-                p.Input.Injected = Reverse(v, m_ReverseSteer);
-                return false;
             }
 
             bool heavy = v.Spec.Length > 7f;
@@ -523,6 +534,60 @@ namespace DriveTheCityII.Careers
             }
             p.Input.Injected = f;
             return false;
+        }
+
+        /// <summary>
+        /// One step of a K-turn: creep forward on full lock towards the turn, then reverse on the opposite lock, switching
+        /// direction before the footprint 1.2 m ahead (or behind) would touch anything. Gives up to recovery after 16 phases.
+        /// </summary>
+        private void KTurn(PlayerSystem p, ControlledVehicle v, float3 pos, float speed, float now)
+        {
+            bool heavy = v.Spec.Length > 7f;
+            bool switchPhase;
+            if (m_KForward)
+            {
+                switchPhase = now - m_KPhaseSince > 6f || !FootprintClearAhead(p, v, pos, 1.2f, m_KDir);
+            }
+            else
+            {
+                switchPhase = now - m_KPhaseSince > 5f || !FootprintClearAhead(p, v, pos, -1.2f, -m_KDir);
+            }
+            if (switchPhase && now - m_KPhaseSince > 0.6f)
+            {
+                m_KForward = !m_KForward;
+                m_KPhaseSince = now;
+                m_KPhases++;
+                if (m_KPhases > 16)
+                {
+                    m_KTurn = false;
+                    Recover(p, now, "turn-round did not succeed");
+                    return;
+                }
+            }
+            if (m_KForward)
+            {
+                bool wrongGear = v.State.Gear == Core.Motion.Gear.Reverse && speed < -0.1f;
+                p.Input.Injected = wrongGear
+                    ? new InputFrame { Throttle = 0f, Brake = 0f, Handbrake = false, Steer = m_KDir }
+                    : new InputFrame { Throttle = speed < 1.2f ? (heavy ? 0.9f : 0.6f) : 0f, Steer = m_KDir };
+                if (wrongGear)
+                {
+                    // Stop the reverse roll first (throttle acts as the brake in reverse).
+                    p.Input.Injected = new InputFrame { Throttle = 0.6f, Steer = m_KDir };
+                }
+            }
+            else
+            {
+                p.Input.Injected = Reverse(v, -m_KDir);
+            }
+        }
+
+        /// <summary>True when the vehicle's footprint moved by <paramref name="along"/> metres (and slightly turned) is clear.</summary>
+        private static bool FootprintClearAhead(PlayerSystem p, ControlledVehicle v, float3 pos, float along, float turnSign)
+        {
+            float yaw = v.State.Yaw;
+            float3 dir = new float3(math.sin(yaw), 0f, math.cos(yaw));
+            return p.IsFootprintClear(v.Spec, pos + dir * along, yaw + turnSign * 0.12f);
         }
 
         /// <summary>
