@@ -76,6 +76,26 @@ namespace DriveTheCityII.Bridge
                 return new InstantOp(r.Status == RouteStatusCode.Reachable,
                     $"to '{target.Name}' ({target.Kind}, id={target.Id}) straight={math.distance(from, target.RoadAccess):0}m status={r.Status} dist={r.DistanceMeters:0}m time={r.TimeSeconds:0}s expansions={r.Expansions} points={r.Polyline.Count} ms={ms}");
             };
+            TestBridge.Handlers["camto"] = a =>
+            {
+                // camto x z zoom [yawDeg]: moves the city-building camera (test setup for baselines).
+                var cus = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Game.Rendering.CameraUpdateSystem>();
+                if (cus?.gamePlayController == null)
+                {
+                    return new InstantOp(false, "no gameplay camera");
+                }
+                float x = F(a[1]), z = F(a[2]);
+                var terrain = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Game.Simulation.TerrainSystem>();
+                var hd = terrain.GetHeightData();
+                float y = Game.Simulation.TerrainUtils.SampleHeight(ref hd, new float3(x, 0f, z));
+                cus.gamePlayController.pivot = new UnityEngine.Vector3(x, y, z);
+                cus.gamePlayController.zoom = a.Length > 3 ? F(a[3]) : 40f;
+                if (a.Length > 4)
+                {
+                    cus.gamePlayController.rotation = new UnityEngine.Vector3(35f, F(a[4]), 0f);
+                }
+                return new InstantOp(true, $"camera pivot {x},{y},{z}");
+            };
             TestBridge.Handlers["traffic"] = Traffic;
             TestBridge.Handlers["trafficwatch"] = a => new TrafficWatchOp(a.Length > 1 ? F(a[1]) : 20f);
             TestBridge.Handlers["trafficsetup"] = a =>

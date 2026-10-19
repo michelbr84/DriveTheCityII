@@ -7,14 +7,29 @@
 | Scope | Demonstrated state of the whole project |
 | Responsible role | Coordinator (maintainer); every completed task updates it |
 | Related documents | [ROADMAP](../ROADMAP.md), [BACKLOG](planning/BACKLOG.md), [TRACEABILITY](planning/TRACEABILITY.md), [RISKS_AND_OPEN_QUESTIONS](planning/RISKS_AND_OPEN_QUESTIONS.md), [HANDOFF_TO_PHASE_00](agents/HANDOFF_TO_PHASE_00.md) |
-| Last updated | 2026-10-18 (after TASK-0001 and TASK-0002) |
+| Last updated | 2026-10-19 (implementation run in progress) |
 
-> **Overall state: PRE-DEVELOPMENT, PHASE-00 IN PROGRESS.**
+> **Overall state: IMPLEMENTATION IN PROGRESS (owner brief of 2026-10-19 grants execution authority).**
 >
-> - The read-only audits TASK-0001 and TASK-0002 were executed on 2026-10-18 and are **In review**.
-> - The runtime baseline (TASK-0003) has **not** started and needs the owner's authorization.
-> - No mod code exists. Nothing has been built, launched, or tested in the game. **PHASE-00 is not completed**, and no
->   milestone has been reached.
+> - A native CS2 mod exists, builds against 1.6.2f1, and runs in a disposable lab city. Character mode (walk, run,
+>   enter, drive, brake, reverse, exit, return to city building) works in game, verified with simulated input and,
+>   for the core controls, with real keyboard input.
+> - Career, progression, company, challenges, and full UI are **not finished**; see section 0 for the live state.
+> - Nothing is published or uploaded; the deliverable is a private local package.
+
+## 0. Current execution state (keep this section current)
+
+| Item | State |
+|---|---|
+| Working build | Git `main` (local only). Last committed: see `git log -1`. Packages: `%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt` |
+| Install / rollback | `tools\deploy.ps1 -Install` / `-Rollback` / `-Uninstall` / `-Status` (ownership manifest in `%LOCALAPPDATA%\DriveTheCityII\deploy`) |
+| Test sessions | `tools	est-session.ps1 -Start` / `-Stop`; bridge `toolsridge.ps1`; real keys `toolsealinput.ps1`; work log [WORKLOG](quality/evidence/WORKLOG.md) |
+| Lab city | `DTC2-LAB-Bench-S1` (lab copy of the game's built-in benchmark city); further lab saves `-S2`, `-S3` |
+| Verified in game | Mod load; lab city create/save/load; walk/run; career car spawn, enter, drive, brake, reverse, exit; return to Building with camera/input/tools restored and 0 mod entities; save while driving (mod actors excluded from the save, no leak after reload); AI traffic queues behind the player (0 pass-throughs); HUD and panel; route finding and markers; persistence envelope round trip; co-load guard; real keys F8, W, S, Space, E |
+| Defects found and fixed | Direct exe launch without Steam ids (fatal); `Deleted` during save crashed the game; owner-less taxi crashed `TransportPathfindSetup`; traffic pushing the player's car |
+| In progress | Career logic (parallel agent, `src/DriveTheCityII.Core/Career`), then in-game career integration (jobs, rental, fuel, missions) |
+| Not started | Company/challenges UI integration, bus/delivery/freight in-game validation, localization review, accessibility polish, soak test, final package docs |
+| Blockers | None currently; Melty offers no native CS2 route (not needed) |
 
 This file records only what has been demonstrated, with evidence. Intentions belong in the [ROADMAP](../ROADMAP.md)
 and the task files.

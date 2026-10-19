@@ -1,0 +1,22 @@
+[2026-10-19 03:16:28,997] [INFO]  Loaded BetaTestDrivingMod, Version=0.3.54.0, Culture=neutral, PublicKeyToken=null in 45.083ms
+[2026-10-19 03:16:29,078] [INFO]  Loaded DriveTheCityII, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null in 80.5478ms
+[2026-10-19 03:16:29,085] [INFO]  Registered UI Module {"m_ModuleId":null,"m_Author":null,"m_ModuleVersion":null,"m_UIModuleDependencies":null} from BetaTestDrivingMod (UIModuleAsset:3fb9c09f2177b40cd999785b12b72358 $146 [assetdb://user/Mods/BetaTestDrivingMod
+[2026-10-19 03:17:34,132] [INFO]  Disposed BetaTestDrivingMod, Version=0.3.54.0, Culture=neutral, PublicKeyToken=null in 1.0928ms
+[2026-10-19 03:17:34,134] [INFO]  Disposed DriveTheCityII, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null in 1.2493ms
+[2026-10-19 03:16:28,984] [INFO]  BetaTestDrivingMod 0.3.54-stable loading
+[2026-10-19 03:16:28,985] [INFO]  Current mod asset at %USERPROFILE%/AppData/LocalLow/Colossal Order/Cities Skylines II/Mods/BetaTestDrivingMod/BetaTestDrivingMod.dll
+[2026-10-19 03:16:28,996] [INFO]  Beta Test Driving Mod systems registered: direct physical vehicle control, camera smoothing, single-writer traffic presence, frame-buffered input, safe road attach defaults, PreCulling chase camera, and simplified public COUI 
+[2026-10-19 03:17:13,987] [INFO]  Direct Drive possessed Entity(960763:1) 'Car09' by nearest car. Physical movement is now direct-controlled.
+[2026-10-19 03:17:13,992] [INFO]  Direct Drive CarCurrentLane writes remain disabled in crashguard build; nearest road lane Entity(454289:1) is used for height assist and lane-object traffic presence.
+[2026-10-19 03:17:13,996] [INFO]  Direct Drive stable traffic presence restored without writing CarCurrentLane back to the possessed vehicle.
+[2026-10-19 03:17:14,014] [INFO]  Direct Drive chase camera keeping a live game camera controller while applying the custom chase pose.
+[2026-10-19 03:17:14,014] [INFO]  Direct Drive chase camera attached to Entity(960763:1) after CameraUpdateSystem.
+[2026-10-19 03:17:14,017] [INFO]  Direct Drive chase camera first custom pose applied.
+[2026-10-19 03:17:15,526] [INFO]  Direct Drive collision using fixed crashguard hitboxes; prefab mesh/geometry bounds are skipped during live driving.
+[2026-10-19 03:17:16,045] [INFO]  Direct Drive vehicle collision resolved against Entity(410096:1); using fixed crashguard hitboxes.
+[2026-10-19 03:17:16,914] [INFO]  Direct Drive vehicle collision resolved against Entity(410096:1); using fixed crashguard hitboxes.
+[2026-10-19 03:17:17,689] [INFO]  Direct Drive vehicle collision resolved against Entity(410096:1); using fixed crashguard hitboxes.
+[2026-10-19 03:17:18,472] [INFO]  Direct Drive vehicle collision resolved against Entity(410096:1); using fixed crashguard hitboxes.
+[2026-10-19 03:17:28,320] [INFO]  Direct Drive released Entity(960763:1) 'Car09': Released by toggle
+[2026-10-19 03:17:28,323] [INFO]  Direct Drive release handoff rebuilt vanilla path from current lane for Entity(960763:1).
+[2026-10-19 03:17:34,131] [INFO]  BetaTestDrivingMod disposing

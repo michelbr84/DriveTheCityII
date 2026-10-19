@@ -3,18 +3,22 @@
 | Field | Value |
 |---|---|
 | ID | TASK-0003 |
-| Task status | Planned |
+| Task status | In review |
 | Task type | Research (runtime validation) |
 | Phase | [PHASE-00](../phases/PHASE-00-audit-and-windows.md) — WP-00-03, using the isolated setup from WP-00-06 |
 | Responsible role | Implementer (build and procedure); QA (evidence record); project owner (authorizes each operation; may operate the game); Reviewer (checks the evidence against the PHASE-00 gate) |
 | Depends on | [TASK-0001](TASK-0001-windows-environment-audit.md) Done; [TASK-0002](TASK-0002-base-mod-source-audit.md) Done; owner-approved isolated test setup (OPEN-035); explicit owner authorization (next row) |
 | Authorization required | Explicit, recorded owner authorization for **each** of: installing toolchain components (including accepting any third-party license terms, which only the owner can do); obtaining the pinned source in an authorized location (OPEN-601); building; installing the build into the isolated mod set; launching the game; enabling mods; creating and using the lab city; probing debugging tools. Each authorization is recorded in the status history with its date and scope. |
 | Created | 2026-10-18 |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
-> **Why Planned:** it depends on two unfinished tasks and on authorizations that have not been given. It becomes Ready
-> when TASK-0001 and TASK-0002 are Done, the isolated setup is approved, the authorization is recorded, and the
-> rollback plan below has been reviewed against the actual environment.
+> **Update 2026-10-19:** the owner's brief of 2026-10-19 authorized autonomous execution (installs from official
+> sources, building, local deployment, test sessions with a disposable city). The baseline ran as
+> [RUN-0001](../../quality/evidence/RUN-0001/REPORT.md). The isolated setup actually used: a lab copy of the game's
+> built-in benchmark city, test sessions that back up and restore `UserState.coc` and `continue_game.json`, and
+> autosave disabled for the session only (`tools	est-session.ps1`). Reload with the mod disabled was not exercised.
+>
+> *Original note (2026-10-18):* it depended on TASK-0001/0002 and on authorizations that had not been given.
 
 ## 1. Objective
 
@@ -186,3 +190,4 @@ re-implementation of vehicle control), what was restored, which questions remain
 | Date | Event |
 |---|---|
 | 2026-10-18 | Created by the documentation bootstrap (TASK-0000); not started. |
+| 2026-10-19 | Authorized by the owner brief of 2026-10-19 (execution authority). Executed as RUN-0001: two clean builds, load, co-load guard, takeover, drive, handback on 1.6.2f1 with real input; baseline removed. Moved to **In review** (no independent reviewer). |
