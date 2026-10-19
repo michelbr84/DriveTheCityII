@@ -389,9 +389,10 @@ namespace DriveTheCityII.Careers
             }
             bool ignoreStopped = now < m_IgnoreStoppedUntil;
             float gap = VehicleAheadGap(p, v, pos, ignoreStopped, out bool stoppedAhead);
-            if (gap < 25f)
+            if (gap < 40f)
             {
-                want = Math.Min(want, Math.Max(0f, (gap - 6f) * 0.6f));
+                // Speed that still allows stopping 3 m behind the vehicle ahead at a gentle 2.5 m/s².
+                want = Math.Min(want, (float)Math.Sqrt(2.0 * 2.5 * Math.Max(0f, gap - 3f)));
                 // Waiting behind a vehicle that does not move (parked or itself waiting): after 4 s, go around it.
                 m_BlockedFor = stoppedAhead && Math.Abs(speed) < 0.5f ? m_BlockedFor + dt : 0f;
                 if (m_BlockedFor > 4f)
@@ -499,8 +500,9 @@ namespace DriveTheCityII.Careers
             Vec2 right = fwd.RightPerp;
             var me = new Vec2(pos.x, pos.z);
             m_Obstacles.Clear();
-            p.Probe.QueryObstacles(me + fwd * 12f, 13f, m_Obstacles);
+            p.Probe.QueryObstacles(me + fwd * 20f, 21f, m_Obstacles);
             float gap = float.MaxValue;
+            float ownHalf = v.Spec.Length * 0.5f;
             foreach (Obstacle o in m_Obstacles)
             {
                 if (o.Kind != ObstacleKind.Vehicle)
@@ -514,9 +516,11 @@ namespace DriveTheCityII.Careers
                 {
                     continue;
                 }
-                if (along > 1f && along < 25f && Math.Abs(Vec2.Dot(rel, right)) < 1.8f && along < gap)
+                // Bumper-to-bumper clearance (long trucks and buses: center distances alone would overlap the car ahead).
+                float clearance = along - ownHalf - o.Footprint.HalfLength;
+                if (along > 1f && clearance < 40f && Math.Abs(Vec2.Dot(rel, right)) < 1.8f && clearance < gap)
                 {
-                    gap = along;
+                    gap = Math.Max(0f, clearance);
                     nearestStopped = stopped;
                 }
             }
