@@ -6,7 +6,7 @@
   Requires the mod installed. Starts its own test session, loads -City, and stops the session at the end.
   Results: %LOCALAPPDATA%\DriveTheCityII\test\campaigns\freight-bus-<stamp>.md
 #>
-param([string]$City = 'DTC2-LAB-CAREERS-H', [int]$FreightAttempts = 4, [int]$BusAttempts = 3, [switch]$SkipFreight, [switch]$SkipBus)
+param([string]$City = 'DTC2-LAB-CAREERS-H', [int]$FreightAttempts = 4, [int]$BusAttempts = 3, [switch]$SkipFreight, [switch]$SkipBus, [switch]$NoDrive)
 
 . (Join-Path $PSScriptRoot 'env.ps1')
 $stamp = Get-Date -Format yyyyMMdd-HHmmss
@@ -53,6 +53,7 @@ function Attempt([string]$career, [int]$seconds) {
     OnFoot
     $b = Bridge "career gotoveh $svc;player interact;waitstate Driving 15"
     if ($b -notmatch 'state Driving reached') { Note "$career could not board $svc"; Bridge 'career cancel' | Out-Null; return $false }
+    if ($NoDrive) { Note "$career boarded $svc; -NoDrive: stopping here with the session running"; return $true }
     $d = Last (Bridge "career drive $seconds" ($seconds + 120)) 'career drive'
     $paid = $d -match 'mission finished' -and $d -match 'last=\[MissionSettlement:([1-9]\d*)'
     Note ("{0} attempt result: {1} :: {2}" -f $career, $(if ($paid) { 'COMPLETED AND PAID' } else { 'not completed' }), (($d -split ' :: ', 2)[-1]))
@@ -72,13 +73,13 @@ try {
     if (-not $SkipBus) {
         for ($i = 1; $i -le $BusAttempts -and -not $busOk; $i++) { Note "bus attempt $i"; $busOk = Attempt 'Bus' 3000 }
     }
-    $s = Bridge "save $City-R;wait 2"
+    if (-not $NoDrive) { $s = Bridge "save $City-R;wait 2" }
     Note "freight completed: $freightOk; bus completed: $busOk"
 }
 catch { Note "ABORTED: $($_.Exception.Message)" }
 finally {
     $file = Join-Path $DtcTestRoot "campaigns\freight-bus-$stamp.md"
     Set-Content -Encoding UTF8 $file ("# Freight and bus attempts $stamp`n`nDriving: TEST AUTOPILOT (simulated input).`n`n``````text`n" + ($lines -join "`n") + "`n```````n")
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'test-session.ps1') -Stop | Out-Host
+    if (-not $NoDrive) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'test-session.ps1') -Stop | Out-Host }
     Write-Host "Report: $file"
 }

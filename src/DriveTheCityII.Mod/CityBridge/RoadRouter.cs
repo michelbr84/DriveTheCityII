@@ -270,8 +270,9 @@ namespace DriveTheCityII.CityBridge
                 LaneNode n = m_Lanes[s.idx];
                 float penalty = s.d * 0.5f;
                 // A lane on another level (the overpass above, the road below) is not where the vehicle is. Observed in
-                // game on 2026-10-19: at the foot of a ramp the route started on the bridge 7 m above the truck.
-                if (math.abs(MathUtils.Position(n.Curve, s.t).y - from.y) > 2.5f)
+                // game on 2026-10-19: at the foot of a ramp the route started on the bridge 7 m above the truck, and on a
+                // ramp 1.5-2.5 m up it started on the road below, which then ran under an elevated road.
+                if (math.abs(MathUtils.Position(n.Curve, s.t).y - from.y) > 1.2f)
                 {
                     penalty += 300f;
                 }

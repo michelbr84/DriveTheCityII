@@ -965,12 +965,15 @@ namespace DriveTheCityII.CityBridge
                         width = math.max(1.5f, nld.m_Width);
                     }
                     float d = MathUtils.Distance(c.m_Bezier.xz, pos.xz, out float t);
-                    if (d > width * 0.5f + 1f || d >= best)
+                    if (d > width * 0.5f + 1f)
                     {
                         continue;
                     }
                     float3 lp3 = MathUtils.Position(c.m_Bezier, t);
-                    if (math.abs(lp3.y - pos.y) > maxDy)
+                    float dy = math.abs(lp3.y - pos.y);
+                    // Stacked lanes: the one at the vehicle's own height wins unless another is clearly the one followed.
+                    float score = d + 0.7f * dy;
+                    if (dy > maxDy || score >= best)
                     {
                         continue;
                     }
@@ -979,7 +982,7 @@ namespace DriveTheCityII.CityBridge
                     {
                         continue;
                     }
-                    best = d;
+                    best = score;
                     laneY = lp3.y;
                 }
             }

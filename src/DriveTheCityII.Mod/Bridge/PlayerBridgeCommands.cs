@@ -28,6 +28,29 @@ namespace DriveTheCityII.Bridge
             TestBridge.Handlers["waitstate"] = WaitState;
             TestBridge.Handlers["probe"] = Probe;
             TestBridge.Handlers["netsat"] = a => new InstantOp(true, P.Probe.DescribeNetsAt(F(a[1]), F(a[2])));
+            TestBridge.Handlers["tpveh"] = a =>
+            {
+                // tpveh x y z yawDeg: puts the driven vehicle at a pose, stopped (test setup).
+                ControlledVehicle v = P.Vehicle;
+                if (v == null)
+                {
+                    return new InstantOp(false, "not driving");
+                }
+                v.State.Position = new Vec3(F(a[1]), F(a[2]), F(a[3]));
+                v.State.Yaw = F(a[4]) * MathX.Deg2Rad;
+                v.State.Speed = 0f;
+                v.State.VerticalSpeed = 0f;
+                v.State.Grounded = true;
+                return new InstantOp(true, $"vehicle at {v.State.Position} yaw {a[4]}");
+            };
+            TestBridge.Handlers["routepts"] = a =>
+            {
+                // routepts n [skip]: the guidance route's points (x, y, z) from the start.
+                int n = a.Length > 1 ? (int)F(a[1]) : 20;
+                int skip = a.Length > 2 ? (int)F(a[2]) : 0;
+                var pts = MarkerBoard.Route.Skip(skip).Take(n).Select(q => string.Format(CultureInfo.InvariantCulture, "({0:0.0},{1:0.0},{2:0.0})", q.x, q.y, q.z));
+                return new InstantOp(true, $"{MarkerBoard.Route.Count} points: {string.Join(" ", pts)}");
+            };
             TestBridge.Handlers["lanesat"] = a => new InstantOp(true, P.Probe.DescribeLanesAt(F(a[1]), F(a[2])));
             TestBridge.Handlers["probegrid"] = a =>
             {
