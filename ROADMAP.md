@@ -7,11 +7,12 @@
 | Scope | v1.0 delivery sequence; expansions are listed in [EXPANSIONS](docs/product/EXPANSIONS.md) |
 | Responsible role | Coordinator (maintainer); project owner approves changes to phase order or gates |
 | Related documents | [PRD](docs/product/PRD.md), [Phase documents](docs/planning/phases/README.md), [PROJECT_STATUS](docs/PROJECT_STATUS.md), [TRACEABILITY](docs/planning/TRACEABILITY.md), [RISKS_AND_OPEN_QUESTIONS](docs/planning/RISKS_AND_OPEN_QUESTIONS.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
-> **Current position:** pre-development. PHASE-00 is in progress: the read-only audits TASK-0001 and TASK-0002 are
-> in review. No runtime work has started, and **PHASE-00 is not completed**.
-> The documentation baseline (TASK-0000) does not complete any phase or milestone.
+> **Current position (2026-10-19):** implementation under the owner brief of 2026-10-19. A private native-mod build
+> exists and is validated in a disposable lab city. **M1 is reached** with real keyboard input
+> ([RUN-0002](docs/quality/evidence/RUN-0002/REPORT.md)). Later milestones are partly implemented; their state is in the
+> table below and in [PROJECT_STATUS](docs/PROJECT_STATUS.md). Nothing is published; M5 means a private package only.
 
 ## 1. Authority
 
@@ -42,12 +43,12 @@ two differ, the owner brief of 2026-10-18 wins, and the difference is recorded a
 
 | Milestone | Phases | Expected result | Status |
 |---|---|---|---|
-| **M0 — Verified foundation** | 00–01 | Safe isolated environment, audited base, reproducible build, and a save foundation that handles invalid data. | Not reached |
-| **M1 — Playable walking/driving sandbox** | 02–05 | Building → walk → enter → drive → park → exit → back to building, with reliable control. | Not reached |
-| **M2 — Taxi-career MVP** | 06 | A complete, persistent, repeatable taxi career; the fun checkpoint. | Not reached |
-| **M3 — Content alpha** | 07–09 | Progression, garage, four careers, home and service points, a basic company. | Not reached |
-| **M4 — Refined and validated beta** | 10–12 | Dynamic city, challenges, presentation, accessibility, broad validation. | Not reached |
-| **M5 — Distributable v1.0** | 13 | Packaged, documented, license-audited release with a defined maintenance procedure. | Not reached |
+| **M0 — Verified foundation** | 00–01 | Safe isolated environment, audited base, reproducible build, and a save foundation that handles invalid data. | **Reached 2026-10-19** (agent-verified; owner review pending): isolated test sessions, RUN-0001, reproducible build/package/rollback, envelope validation and quarantine (unit-tested; in-game corrupt-save case not run) |
+| **M1 — Playable walking/driving sandbox** | 02–05 | Building → walk → enter → drive → park → exit → back to building, with reliable control. | **Reached 2026-10-19**: [RUN-0002](docs/quality/evidence/RUN-0002/REPORT.md) 17/17 with real keys, including save, quit, relaunch, reload; transition cycles 33/33 |
+| **M2 — Taxi-career MVP** | 06 | A complete, persistent, repeatable taxi career; the fun checkpoint. | **In validation**: implemented and unit-tested; in-game runs in progress (see PROJECT_STATUS). Fun checkpoint needs the owner. |
+| **M3 — Content alpha** | 07–09 | Progression, garage, four careers, home and service points, a basic company. | **Implemented, partly validated**: all rules unit-tested; in-game coverage listed in PROJECT_STATUS |
+| **M4 — Refined and validated beta** | 10–12 | Dynamic city, challenges, presentation, accessibility, broad validation. | **Partly implemented**: challenges, HUD, EN/PT-BR, scale/contrast, remappable keys; no audio; gamepad untested |
+| **M5 — Distributable v1.0** | 13 | Packaged, documented, license-audited release with a defined maintenance procedure. | **Private package only** (owner brief: no publishing). Public release not planned. |
 
 ### 3.1 Next playable milestone: M1, refined on 2026-10-18
 

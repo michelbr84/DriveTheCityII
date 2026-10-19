@@ -14,7 +14,7 @@
 ## 1. Current state
 
 > **Runtime testing started on 2026-10-19.** Defects observed in the lab sessions are listed in section 6 with their
-> evidence (session folders under `%LOCALAPPDATA%\DriveTheCityII	est\sessions\` and the
+> evidence (session folders under `%LOCALAPPDATA%\DriveTheCityII\test\sessions\` and the
 > [WORKLOG](evidence/WORKLOG.md)). Testing is still partial: an empty severity class does not mean no defects exist.
 
 ## 2. What belongs here and what does not
@@ -76,7 +76,7 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 ### ISSUE-001 — Game fails to start when launched directly without Steam app ids
 - Severity: High (test tooling only; players start through Steam)
 - Status: Verified fixed
-- Component: test tooling (`tools	est-session.ps1`)
+- Component: test tooling (`tools\test-session.ps1`)
 - First observed: session 20261019-015116 on 2026-10-19
 - Steps to reproduce: start `Cities2.exe` directly while Steam runs. Observed: fatal NullReferenceException in
   `AssetDatabase.PopulateFromDataSource` (Steam platform not initialized), UI shows an error page.

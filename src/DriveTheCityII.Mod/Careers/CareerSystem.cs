@@ -175,6 +175,7 @@ namespace DriveTheCityII.Careers
             float dt = math.clamp(UTime.unscaledDeltaTime, 0f, 0.25f);
             World.Now = UTime.realtimeSinceStartup;
             World.EstimatesThisFrame = 0;
+            World.EstimateMsThisFrame = 0;
             if (!(paused && pauseCareer))
             {
                 m_Clock += dt;

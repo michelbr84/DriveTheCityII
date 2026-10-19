@@ -27,6 +27,17 @@ namespace DriveTheCityII.Careers
         public float Now;
         public int EstimatesThisFrame;
 
+        /// <summary>Route-search time spent this frame (ms); estimates beyond the budget return Unknown and are retried later.</summary>
+        public double EstimateMsThisFrame;
+
+        private const double kEstimateBudgetMs = 40.0;
+
+        /// <summary>Diagnostics counters (reset by the caller): calls into this port and time spent.</summary>
+        public int StatQueries, StatEstimates, StatEstimateHits, StatEstimateSearches, StatDescribes;
+        public double StatQueryMs;
+        private static readonly System.Diagnostics.Stopwatch s_QueryWatch = new System.Diagnostics.Stopwatch();
+        private static readonly System.Diagnostics.Stopwatch s_Watch = new System.Diagnostics.Stopwatch();
+
         public long CityRevision => CityServices.CityRevision;
 
         private static EntityManager EM => World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -43,7 +54,24 @@ namespace DriveTheCityII.Careers
             return new PlaceInfo(p.Id, ToKind(p.Kind), p.Name, ToPoint(p.RoadAccess));
         }
 
+        /// <summary>Place info without curb refinement (cheap; the road-edge point is accurate enough for queries).</summary>
+        public static PlaceInfo ToInfoFast(CityPlace p) => new PlaceInfo(p.Id, ToKind(p.Kind), p.Name, ToPoint(p.RoadAccess));
+
         public IReadOnlyList<PlaceInfo> QueryPlaces(PlaceQuery query)
+        {
+            StatQueries++;
+            s_QueryWatch.Restart();
+            try
+            {
+                return QueryPlacesCore(query);
+            }
+            finally
+            {
+                StatQueryMs += s_QueryWatch.Elapsed.TotalMilliseconds;
+            }
+        }
+
+        private IReadOnlyList<PlaceInfo> QueryPlacesCore(PlaceQuery query)
         {
             m_Scratch.Clear();
             float3 near = ToF3(query.Near);
@@ -67,13 +95,14 @@ namespace DriveTheCityII.Careers
             int step = Math.Max(1, candidates.Count / Math.Max(1, max));
             for (int i = 0; i < candidates.Count && m_Scratch.Count < max; i += step)
             {
-                m_Scratch.Add(ToInfo(candidates[i].p));
+                m_Scratch.Add(ToInfoFast(candidates[i].p));
             }
             return m_Scratch.ToArray();
         }
 
         public PlaceInfo Describe(string placeId)
         {
+            StatDescribes++;
             if (string.IsNullOrEmpty(placeId) || !CityServices.Places.TryGet(placeId, out CityPlace p))
             {
                 return null;
@@ -88,32 +117,40 @@ namespace DriveTheCityII.Careers
 
         public RouteEstimate Estimate(MapPoint from, string placeId, VehicleClass vehicleClass)
         {
+            StatEstimates++;
             if (!CityServices.Places.TryGet(placeId, out CityPlace p))
             {
                 return RouteEstimate.Unreachable();
             }
-            CityServices.Places.RefineAccess(m_Probe, p);
             float3 f = ToF3(from);
             string key = ((int)(f.x / 40f)).ToString() + ":" + ((int)(f.z / 40f)).ToString() + ">" + placeId;
             long rev = CityServices.CityRevision;
             if (m_RouteCache.TryGetValue(key, out var hit) && hit.rev == rev && Now - hit.time < 90f)
             {
+                StatEstimateHits++;
                 return hit.est;
             }
-            if (EstimatesThisFrame >= 24)
+            if (EstimatesThisFrame >= 24 || EstimateMsThisFrame >= kEstimateBudgetMs)
             {
                 return RouteEstimate.Unknown(); // budget: never stall a frame; Career will not offer Unknown
             }
             EstimatesThisFrame++;
+            StatEstimateSearches++;
+            CityServices.Places.RefineAccess(m_Probe, p); // curb-side access, refined only for places actually searched
             RouteResult r;
+            s_Watch.Restart();
             try
             {
-                r = CityServices.Router.FindRoute(EM, f, float2.zero, p.RoadAccess, 18f, 60000);
+                r = CityServices.Router.FindRoute(EM, f, float2.zero, p.RoadAccess, 18f, 20000);
             }
             catch (Exception ex)
             {
                 DtcLog.Throttled("estimate", Now, 10f, "Route estimate failed: " + ex.Message, warn: true);
                 return RouteEstimate.Unknown();
+            }
+            finally
+            {
+                EstimateMsThisFrame += s_Watch.Elapsed.TotalMilliseconds;
             }
             RouteEstimate est = r.Status == RouteStatusCode.Reachable
                 ? RouteEstimate.Reachable(r.DistanceMeters, r.TimeSeconds)

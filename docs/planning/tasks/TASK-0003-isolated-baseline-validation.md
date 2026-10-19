@@ -16,7 +16,7 @@
 > sources, building, local deployment, test sessions with a disposable city). The baseline ran as
 > [RUN-0001](../../quality/evidence/RUN-0001/REPORT.md). The isolated setup actually used: a lab copy of the game's
 > built-in benchmark city, test sessions that back up and restore `UserState.coc` and `continue_game.json`, and
-> autosave disabled for the session only (`tools	est-session.ps1`). Reload with the mod disabled was not exercised.
+> autosave disabled for the session only (`tools\test-session.ps1`). Reload with the mod disabled was not exercised.
 >
 > *Original note (2026-10-18):* it depended on TASK-0001/0002 and on authorizations that had not been given.
 

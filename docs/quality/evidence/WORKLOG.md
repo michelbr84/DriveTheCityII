@@ -41,10 +41,20 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 02:31 | **Defect:** game process died ~1 s after spawning a taxi model. Cause (code-inspected): `TransportPathfindSetup` reads the `Owner` of every taxi without a check; mod vehicles have no owner. Fixed: mod career vehicles are role-neutral (service-role components stripped). | session 20261019-022932 |
 | 02:39 | Save while driving: actor excluded from the saved city and restored; no crash; reload clean; leak check after reload = 0 mod cars in the save. [Tested in-game] | sessions 20261019-023754, -024201 |
 | 02:44 | **Real keyboard input** verified: S reverse, Space handbrake, E exit (sidewalk side), W walk, F8 return to Building. [Tested in-game, real input] | session 20261019-024201 |
+| 02:52 | HUD (React UI module) renders in Building, on foot and driving (status card, prompts, speed, gear); Tab panel opens. [Tested in-game, screenshots] | session 20261019-025104 (`hud-*.png`) |
+| 02:56 | **Traffic presence:** player's car registered in lane object buffers. On the busiest lane, 3 then 5 AI cars stopped behind the player's stopped car; `trafficwatch` 45 s with a car ahead of moving traffic: 3 stopped behind, **0 pass-throughs**, min gap 1.7 m. [Tested in-game, simulated input] | sessions 20261019-025451, -025728, -030051 |
+| 03:10 | Place index: 54,088 lanes, 5,802 places (50 service points, 4 depots, 14 transit stops), 1 bus line. Road router: 2.3 km route in 12 ms (first) / 2 ms (cached). Route marker drawn. Lab save `DTC2-LAB-Bench-S3` written with the persistence envelope; reload restored it ("restored revision 1"). [Tested in-game] | sessions 20261019-030929, -031333 |
+| 03:17 | **TASK-0003 / RUN-0001:** upstream base mod built at the pin and run in a lab session on 1.6.2f1; Drive the City II's co-load guard kept it inactive ("Another vehicle-control mod is active"). | [RUN-0001](RUN-0001/REPORT.md), session 20261019-031603 |
+| 03:25 | **Defect (performance):** 20 transition cycles passed (20/20) but at **13 fps**; the road graph was rebuilt 2,589 times because a city-revision signal changed every frame. Fixed: rebuild only when the lane count changes or after 2 minutes. | session 20261019-032125 |
+| 03:30 | After the fix: Building 31 fps, walking 37 fps, transition cycles 10/10 and 3/3 at 30 fps, **0 failures**, actors 2 → 2 (no leak), managed heap +6 MB over 32 s. [Tested in-game, simulated input via test autopilot] | session 20261019-032643 |
+| 03:33 | First-person and hood views; Esc opens the game's pause menu while in character mode. [Tested in-game, screenshots] | session 20261019-033233 |
+| 03:46 | **M1 campaign #1 (real keys):** 13/15 steps passed, including save, quit, relaunch, reload, and continue. The 2 failures were measurement errors in the script (speed read after the key was released; the scripted right turn drove the car into a building at 7.6 m/s, and the impact was handled correctly). Script fixed; `track` bridge op added to measure while keys are held. | sessions 20261019-034508, -034704; `campaigns\m1-20261019-034508.md` |
+| 03:50 | Career core merged (93 career unit tests; **143/143 tests pass**); careers compiled into the mod; panel money actions reuse their operation ID for repeated clicks; career clock restored from the save. Commit `46e8b9d`. [Built locally, unit-tested] | `dotnet test` output |
+| 03:52 | **M1 campaign #2 (real keys, career basic rental):** walk 4.0 m; enter (E); accelerate to 9.1 m/s over 20.9 m (W); brake to a stop (S); steer 37° (D/A) with 0 impacts; handbrake, exit to the sidewalk (Space, E); walk; return to Building (F8); save; quit. Relaunch phase: see the campaign report. | sessions 20261019-035050, -035254; `campaigns\m1-*.md` |
 
 ## Known gaps at this point (next work)
 
-- AI traffic does not yet react to the player's car (car not registered in lane object buffers).
-- The game's building hover highlight still shows in character mode.
-- No HUD, career, persistence of career data, settings UI, or localization yet.
-- Base mod runtime baseline (TASK-0003) not yet run in game.
+- In-game career validation (taxi, delivery, freight, bus, garage, company, challenges, home).
+- Real-time 2-hour soak.
+- Exits rarely land on a sidewalk when the car stops mid-lane (the avatar is placed beside the car on the road).
+- Gamepad untested (no device); no audio; enter/exit is a slide, not an animation.

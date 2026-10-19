@@ -210,8 +210,8 @@ testing of the native mod. What was actually called and learned:
 
 **Conclusion:** Melty has no native or local CS2 route that applies to this project. Its test harness (`test_release`)
 works only for releases submitted to Melty, so it cannot test a private local build. Its value here was design
-guidance only; the project implemented its own auditable equivalents (`tools	est-session.ps1`, `toolsridge.ps1`,
-`toolsealinput.ps1`, and the in-mod test bridge). A connected MCP is not evidence that the game integration works;
+guidance only; the project implemented its own auditable equivalents (`tools\test-session.ps1`, `tools\bridge.ps1`,
+`tools\realinput.ps1`, and the in-mod test bridge). A connected MCP is not evidence that the game integration works;
 the in-game evidence is in [WORKLOG](../quality/evidence/WORKLOG.md) and the run records.
 
 ## 10. Open questions and risks

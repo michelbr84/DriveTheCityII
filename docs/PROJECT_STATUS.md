@@ -23,7 +23,7 @@
 |---|---|
 | Working build | Git `main` (local only). Last committed: see `git log -1`. Packages: `%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt` |
 | Install / rollback | `tools\deploy.ps1 -Install` / `-Rollback` / `-Uninstall` / `-Status` (ownership manifest in `%LOCALAPPDATA%\DriveTheCityII\deploy`) |
-| Test sessions | `tools	est-session.ps1 -Start` / `-Stop`; bridge `toolsridge.ps1`; real keys `toolsealinput.ps1`; work log [WORKLOG](quality/evidence/WORKLOG.md) |
+| Test sessions | `tools\test-session.ps1 -Start` / `-Stop`; bridge `tools\bridge.ps1`; real keys `tools\realinput.ps1`; work log [WORKLOG](quality/evidence/WORKLOG.md) |
 | Lab city | `DTC2-LAB-Bench-S1` (lab copy of the game's built-in benchmark city); further lab saves `-S2`, `-S3` |
 | Verified in game | Mod load; lab city create/save/load; walk/run; career car spawn, enter, drive, brake, reverse, exit; return to Building with camera/input/tools restored and 0 mod entities; save while driving (mod actors excluded from the save, no leak after reload); AI traffic queues behind the player (0 pass-throughs); HUD and panel; route finding and markers; persistence envelope round trip; co-load guard; real keys F8, W, S, Space, E |
 | Defects found and fixed | Direct exe launch without Steam ids (fatal); `Deleted` during save crashed the game; owner-less taxi crashed `TransportPathfindSetup`; traffic pushing the player's car |
