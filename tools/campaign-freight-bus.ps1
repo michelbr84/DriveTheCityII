@@ -80,7 +80,7 @@ try {
         for ($i = 1; $i -le $FreightAttempts -and -not $freightOk; $i++) { Note "freight attempt $i"; $freightOk = Attempt 'Freight' 3000 }
     }
     if (-not $SkipBus) {
-        for ($i = 1; $i -le $BusAttempts -and -not $busOk; $i++) { Note "bus attempt $i"; $busOk = Attempt 'Bus' 3000 }
+        for ($i = 1; $i -le $BusAttempts -and -not $busOk; $i++) { Note "bus attempt $i"; $busOk = Attempt 'Bus' 5400 }
     }
     if (-not $NoDrive) { $s = Bridge "save $City-R;wait 2" }
     Note "freight completed: $freightOk; bus completed: $busOk"

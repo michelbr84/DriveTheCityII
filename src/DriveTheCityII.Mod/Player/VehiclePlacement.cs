@@ -21,6 +21,31 @@ namespace DriveTheCityII.Player
         /// <summary>True when a vehicle footprint at a position and heading overlaps no building, static object or vehicle.</summary>
         public bool IsFootprintClear(VehicleSpec spec, float3 pos, float yaw) => IsFootprintClear(spec, pos, yaw, 0.15f, 0.3f);
 
+        /// <summary>True when a box (centre, heading, half sizes) between two heights overlaps no building, static object or vehicle.</summary>
+        public bool IsBoxClear(float3 center, float yaw, float halfWidth, float halfLength, float baseY, float height)
+        {
+            var c = new Vec2(center.x, center.z);
+            var box = new Obb2(c, Vec2.FromYaw(yaw), halfWidth, halfLength);
+            m_PlaceScratch.Clear();
+            m_Probe.QueryObstacles(c, halfLength + halfWidth + 3f, m_PlaceScratch);
+            foreach (Obstacle o in m_PlaceScratch)
+            {
+                if (o.Kind == ObstacleKind.Creature || o.Kind == ObstacleKind.Proxy)
+                {
+                    continue;
+                }
+                if (o.YMax < baseY + 0.25f || o.YMin > baseY + height)
+                {
+                    continue;
+                }
+                if (Overlap.BoxVsBox(box, o.Footprint).Overlaps)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         /// <summary>As above with explicit margins (0, 0: the bodies themselves overlap).</summary>
         public bool IsFootprintClear(VehicleSpec spec, float3 pos, float yaw, float widthMargin, float lengthMargin)
         {

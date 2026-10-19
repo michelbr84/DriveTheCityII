@@ -562,7 +562,7 @@ namespace DriveTheCityII.Careers
             {
                 m_YieldFor = 0f;
             }
-            if (!bypassing && speed > -0.1f && !FootprintClearAhead(p, v, pos, 0.8f + Math.Max(0f, speed) * 0.5f, Math.Sign(err)))
+            if (!bypassing && speed > -0.1f && !BumperZoneClear(p, v, pos, 0.8f + Math.Max(0f, speed) * 0.5f, err))
             {
                 // Something is just ahead of the bumper (a pole or bollard in a lot, a car's corner): creep, so a touch
                 // stays a light contact instead of costing cargo (observed in game on 2026-10-19: poles hit at 3.7 m/s).
@@ -683,6 +683,23 @@ namespace DriveTheCityII.Careers
             {
                 p.Input.Injected = Reverse(v, -m_KDir);
             }
+        }
+
+        /// <summary>
+        /// True when the zone just ahead of the front bumper, as wide as the vehicle and angled towards the steering need, is
+        /// clear. Only that zone: moving and turning the whole footprint made a 14 m bus's corners touch cars in the next
+        /// lane, so it crept at walking pace down an avenue and the traffic behind it jammed for blocks (observed in game on
+        /// 2026-10-19).
+        /// </summary>
+        private static bool BumperZoneClear(PlayerSystem p, ControlledVehicle v, float3 pos, float depth, float err)
+        {
+            float yaw = v.State.Yaw;
+            float3 fwd = new float3(math.sin(yaw), 0f, math.cos(yaw));
+            float zoneYaw = yaw + math.clamp(err, -0.3f, 0.3f) * 0.5f;
+            float3 front = pos + fwd * (v.Spec.Length * 0.5f);
+            float3 zoneFwd = new float3(math.sin(zoneYaw), 0f, math.cos(zoneYaw));
+            float3 center = front + zoneFwd * (depth * 0.5f);
+            return p.IsBoxClear(center, zoneYaw, v.Spec.Width * 0.5f + 0.05f, depth * 0.5f, pos.y, v.Spec.Height);
         }
 
         /// <summary>True when the vehicle's footprint moved by <paramref name="along"/> metres (and slightly turned) is clear.</summary>

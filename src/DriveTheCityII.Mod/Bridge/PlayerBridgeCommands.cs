@@ -28,6 +28,67 @@ namespace DriveTheCityII.Bridge
             TestBridge.Handlers["waitstate"] = WaitState;
             TestBridge.Handlers["probe"] = Probe;
             TestBridge.Handlers["netsat"] = a => new InstantOp(true, P.Probe.DescribeNetsAt(F(a[1]), F(a[2])));
+            TestBridge.Handlers["blockers"] = a =>
+            {
+                // blockers [radius]: which native vehicles wait for what (Game.Vehicles.Blocker), and how many blocker chains
+                // end at the player's vehicle. Diagnostics for traffic jams around the player.
+                ControlledVehicle v = P.Vehicle ?? P.ParkedVehicles.FirstOrDefault();
+                if (v == null)
+                {
+                    return new InstantOp(false, "no vehicle");
+                }
+                var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+                float radius = a.Length > 1 ? F(a[1]) : 40f;
+                var obs = new List<Obstacle>();
+                P.Probe.QueryObstacles(v.State.Position.XZ, radius, obs);
+                Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
+                var parts = new List<string>();
+                int toMe = 0, chainToMe = 0, blocked = 0;
+                foreach (Obstacle o in obs.Where(o => o.Kind == ObstacleKind.Vehicle).OrderBy(o => Vec2.Distance(o.Footprint.Center, v.State.Position.XZ)))
+                {
+                    var e = new Unity.Entities.Entity { Index = (int)(o.SourceId & 0xffffffffL), Version = (int)(o.SourceId >> 32) };
+                    if (!em.Exists(e) || !em.HasComponent<Game.Vehicles.Blocker>(e))
+                    {
+                        continue;
+                    }
+                    Game.Vehicles.Blocker b = em.GetComponentData<Game.Vehicles.Blocker>(e);
+                    if (b.m_Blocker == Unity.Entities.Entity.Null)
+                    {
+                        continue;
+                    }
+                    blocked++;
+                    if (b.m_Blocker == v.Entity)
+                    {
+                        toMe++;
+                    }
+                    // Follow the chain.
+                    Unity.Entities.Entity cur = b.m_Blocker;
+                    bool reachesMe = false;
+                    for (int hop = 0; hop < 15 && cur != Unity.Entities.Entity.Null && em.Exists(cur); hop++)
+                    {
+                        if (cur == v.Entity)
+                        {
+                            reachesMe = true;
+                            break;
+                        }
+                        cur = em.HasComponent<Game.Vehicles.Blocker>(cur) ? em.GetComponentData<Game.Vehicles.Blocker>(cur).m_Blocker : Unity.Entities.Entity.Null;
+                    }
+                    if (reachesMe)
+                    {
+                        chainToMe++;
+                    }
+                    Vec2 d = o.Footprint.Center - v.State.Position.XZ;
+                    parts.Add(string.Format(CultureInfo.InvariantCulture, "[{0:0} {1:0.0} {2:0.0} {3}{4}{5}]", Vec2.Dot(d, fwd), Vec2.Dot(d, fwd.RightPerp), o.Velocity.Length,
+                        b.m_Type, b.m_Blocker == v.Entity ? "->ME" : "->" + b.m_Blocker.Index, reachesMe ? "*" : string.Empty));
+                }
+                string mine = string.Empty;
+                if (em.Exists(v.Entity) && em.HasComponent<Game.Vehicles.CarCurrentLane>(v.Entity))
+                {
+                    var cl = em.GetComponentData<Game.Vehicles.CarCurrentLane>(v.Entity);
+                    mine = $" myEntity={v.Entity.Index} myLane={cl.m_Lane.Index} myFlags={cl.m_LaneFlags}" + (em.HasComponent<Game.Vehicles.Blocker>(v.Entity) ? " myBlocker=" + em.GetComponentData<Game.Vehicles.Blocker>(v.Entity).m_Blocker.Index : string.Empty);
+                }
+                return new InstantOp(true, $"blocked={blocked} blockedByMe={toMe} chainsEndingAtMe={chainToMe}{mine} :: {string.Join(" ", parts.Take(40))}");
+            };
             TestBridge.Handlers["tpveh"] = a =>
             {
                 // tpveh x y z yawDeg: puts the driven vehicle at a pose, stopped (test setup).
