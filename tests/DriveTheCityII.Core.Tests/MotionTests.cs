@@ -316,6 +316,32 @@ namespace DriveTheCityII.Core.Tests
         }
 
         [Fact]
+        public void CrossingCarDrivingIntoACreepingTruckScoresOnlyTheTrucksOwnSpeed()
+        {
+            var w = new FakeWorld();
+            var c = new VehicleController(new VehicleSpec { Length = 7.9f, Width = 2.6f, WheelBase = 4.7f });
+            var s = Spawn();
+            s.Speed = 0.3f;
+            // A car crossing diagonally from right to left at 14 m/s, its corner in the truck's front right corner.
+            var other = new Obstacle
+            {
+                Footprint = Obb2.FromYaw(new Vec2(2.6f, c.Spec.Length * 0.5f + 1.2f), (float)(-Math.PI * 0.75), 0.9f, 2.2f),
+                YMin = 0f,
+                YMax = 1.5f,
+                Kind = ObstacleKind.Vehicle,
+                SourceId = 8,
+                Velocity = new Vec2(-10f, -10f),
+            };
+            w.Obstacles.Add(other);
+            // The overlap pushes the truck back and to the left, so the crossing car closes fast (the old rule scored that).
+            Penetration pen = Overlap.BoxVsBox(Obb2.FromYaw(s.Position.XZ, 0f, c.Spec.Width * 0.5f, c.Spec.Length * 0.5f), other.Footprint);
+            Assert.True(pen.Overlaps);
+            Assert.True(Vec2.Dot(other.Velocity, pen.Normal) > 5f, $"normal {pen.Normal.X:0.00},{pen.Normal.Z:0.00}");
+            var r = c.Step(w, ref s, new VehicleInput { Throttle = 0.2f }, 1f / 60f);
+            Assert.True(r.ImpactSpeed < 0.5f, $"impact {r.ImpactSpeed}");
+        }
+
+        [Fact]
         public void RearContactWithSlowerCarScoresTheClosingSpeed()
         {
             var w = new FakeWorld();

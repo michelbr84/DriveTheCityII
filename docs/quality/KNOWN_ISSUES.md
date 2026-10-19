@@ -287,6 +287,25 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 - Detail: session 20261019-130106: after a recovery the truck faced away from the drop; the route avoided turning
   round at almost any cost, the job missed its hard deadline 1.6 km from the drop.
 
+### ISSUE-027 — Traffic overtaking through the player's vehicle was scored as a severe impact
+- Severity: High (heavy freight lost on highways without any driver error)
+- Status: Fixed (unit tests `CarOvertakingThroughOursIsNoContact`, `RearContactWithSlowerCarScoresTheClosingSpeed`);
+  in-game verification in progress
+- Component: Core (vehicle contacts)
+- Detail: on highways native cars at about 30 m/s drive straight through a slower player vehicle (host-game
+  behaviour: they do not always yield to it at speed). When such a car overlapped the truck's front it was treated as
+  the truck driving into it at the truck's own speed: 9.7 m/s, -40 cargo (session 20261019-145506, twice). Contacts
+  with moving vehicles now need a closing speed relative to the other vehicle's motion, and score that closing speed
+  (a slower car ahead: the difference; an oncoming one: the sum).
+
+### ISSUE-028 — The guidance route could start on the overpass above the vehicle
+- Severity: Medium
+- Status: Fixed; verification in progress
+- Component: City bridge (router)
+- Detail: start lanes were matched within 12 m of height, so at the foot of a ramp the route started on the bridge 7 m
+  above and the truck steered at a point it could not reach (session 20261019-140429). Lanes on another level are now
+  heavily penalized as start lanes; recovery also prefers spots on the vehicle's own level.
+
 ## 7. Release use
 
 - Before each phase gate, QA lists the open issues by severity in the gate evidence.

@@ -363,10 +363,12 @@ namespace DriveTheCityII.Core.Motion
                     float approach = -Vec2.Dot(vel, pen.Normal);
                     if (approach > 0f)
                     {
-                        // Against a moving vehicle the impact is the closing speed (a slower car ahead: the difference;
-                        // an oncoming one: the sum), and the car only loses what it closes at, never more than its own.
-                        float impact = closing == float.MaxValue ? approach : closing;
-                        Vec2 responded = vel + pen.Normal * (Math.Min(approach, impact) * (1f + spec.Restitution));
+                        // Against a moving vehicle the car is scored for its own share only: the closing speed, but never
+                        // more than its own approach (a slower car ahead: the difference; native traffic driving into a
+                        // stopped player vehicle: almost nothing, observed in game as cars crossing through a waiting
+                        // truck at 14 m/s).
+                        float impact = Math.Min(approach, closing);
+                        Vec2 responded = vel + pen.Normal * (impact * (1f + spec.Restitution));
                         float newSpeed = Vec2.Dot(responded, fwd);
                         if (impact > report.ImpactSpeed)
                         {
