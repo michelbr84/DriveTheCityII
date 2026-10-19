@@ -38,9 +38,6 @@
   <!-- Core logic compiled into the single mod assembly. -->
   <ItemGroup>
     <Compile Include="..\DriveTheCityII.Core\**\*.cs" LinkBase="Core" />
-    <!-- TEMPORARY while Core/Career is being written in parallel; re-enabled at integration. -->
-    <Compile Remove="..\DriveTheCityII.Core\Career\**" />
-    <Compile Remove="Careers\**" />
   </ItemGroup>
 
   <ItemGroup>

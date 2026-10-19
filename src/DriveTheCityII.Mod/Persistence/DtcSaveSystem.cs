@@ -74,6 +74,9 @@ namespace DriveTheCityII.Persistence
         public static string LastLoadNote { get; private set; } = string.Empty;
         public static int SavesWritten { get; private set; }
 
+        /// <summary>Player data from the envelope that was just loaded (null for a new career).</summary>
+        public static JsonValue LastLoadedPlayer { get; private set; }
+
         /// <summary>Returns the career snapshot to persist (null = no career data).</summary>
         public static Func<JsonValue> CareerProvider;
 
@@ -190,6 +193,7 @@ namespace DriveTheCityII.Persistence
             string text = s_PendingText;
             s_PendingText = null;
             EnvelopeLoadResult res = SaveEnvelope.Parse(text);
+            LastLoadedPlayer = res.Envelope?.Player;
             string stamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture);
             JsonValue career = null;
             string note;

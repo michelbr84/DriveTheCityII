@@ -41,6 +41,9 @@ namespace DriveTheCityII
             updateSystem.UpdateBefore<Player.PlayerSystem, Game.Rendering.PreRenderSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateBefore<Player.PlayerCameraSystem, Game.Rendering.CameraUpdateSystem>(SystemUpdatePhase.PreCulling);
 
+            // Career host: after the Player module, before rendering.
+            updateSystem.UpdateAfter<Careers.CareerSystem, Player.PlayerSystem>(SystemUpdatePhase.MainLoop);
+
             // Persistence: career envelope inside every city save (system serializer) plus sidecar backups.
             updateSystem.UpdateAt<Persistence.DtcSaveSystem>(SystemUpdatePhase.MainLoop);
 

@@ -9,7 +9,7 @@
 | Responsible role | QA (maintainer: adds rows only from evidence runs); Reviewer checks each row against its run; project owner approves the published compatibility declaration |
 | Related requirements | REQ-COMPAT-001, REQ-REL-001, REQ-REL-004, REQ-SAVE-006 |
 | Related documents | [COMPATIBILITY_POLICY](../release/COMPATIBILITY_POLICY.md), [TEST_STRATEGY](TEST_STRATEGY.md), [TEST_SCENARIOS](TEST_SCENARIOS.md), [BASE_MOD_AUDIT](../research/BASE_MOD_AUDIT.md), [TOOLCHAIN_MATRIX](../engineering/TOOLCHAIN_MATRIX.md), [POST_RELEASE_MAINTENANCE](../release/POST_RELEASE_MAINTENANCE.md), [evidence](evidence/README.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
 ## 1. Purpose
 
@@ -34,7 +34,8 @@ row here only after our own run.
 
 | Game version | Platform / store edition | DLCs | Mod version / commit | Other mods (name and version) | Tests run (scope) | Result | Evidence | Date | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | Not run | — | — | No combination has been tested. |
+| 1.6.2f1 (Steam build 25127643) | Steam, PC; edition not recorded | Not recorded | Beta Test Driving Mod 0.3.54 at `eefd6bb` | Drive the City II (inert by co-load guard) | Load, takeover, drive, handback, co-load guard (TEST-COMPAT-101/102 partial) | Passed (reload not run) | [RUN-0001](evidence/RUN-0001/REPORT.md) | 2026-10-19 | Base mod declares 1.5.\*; works for the steps run. Both mods default to F8. |
+| 1.6.2f1 (Steam build 25127643) | Steam, PC; edition not recorded | Not recorded | Drive the City II 0.1.0 development builds `dfcfea1`…`08ceb62` | None | Mod load, lab city save/load, character mode, driving, save while driving, traffic queueing, transition cycles (33 in total), performance | Passed for the scope run | [WORKLOG](evidence/WORKLOG.md), sessions under `%LOCALAPPDATA%\DriveTheCityII	est\sessions\` | 2026-10-19 | Development runs; the release-candidate run will be recorded separately. |
 
 **Column rules:**
 

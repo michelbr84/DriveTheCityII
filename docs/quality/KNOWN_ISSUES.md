@@ -9,13 +9,13 @@
 | Responsible role | QA (maintainer: records observed defects); Implementer (fixes); Reviewer (verifies fixes from evidence); project owner (approves "Won't fix" for Critical or High issues) |
 | Related requirements | All `REQ-*` in the [PRD](../product/PRD.md); the PRD §9 release criterion "no known critical defects" |
 | Related documents | [TEST_STRATEGY](TEST_STRATEGY.md), [evidence](evidence/README.md), [RISKS_AND_OPEN_QUESTIONS](../planning/RISKS_AND_OPEN_QUESTIONS.md), [BASE_MOD_AUDIT](../research/BASE_MOD_AUDIT.md), [TROUBLESHOOTING](../user/TROUBLESHOOTING.md), [POST_RELEASE_MAINTENANCE](../release/POST_RELEASE_MAINTENANCE.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
 ## 1. Current state
 
-> **No runtime-defect assessment exists.** As of 2026-10-18 nothing has been built, installed, or run, so no defect can
-> have been observed. This list has **zero entries**. The empty list does not mean the mod is free of defects; it means
-> no testing has happened yet.
+> **Runtime testing started on 2026-10-19.** Defects observed in the lab sessions are listed in section 6 with their
+> evidence (session folders under `%LOCALAPPDATA%\DriveTheCityII	est\sessions\` and the
+> [WORKLOG](evidence/WORKLOG.md)). Testing is still partial: an empty severity class does not mean no defects exist.
 
 ## 2. What belongs here and what does not
 
@@ -73,7 +73,58 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ## 6. Issues
 
-There are no entries. No defect has been observed because nothing has been run.
+### ISSUE-001 — Game fails to start when launched directly without Steam app ids
+- Severity: High (test tooling only; players start through Steam)
+- Status: Verified fixed
+- Component: test tooling (`tools	est-session.ps1`)
+- First observed: session 20261019-015116 on 2026-10-19
+- Steps to reproduce: start `Cities2.exe` directly while Steam runs. Observed: fatal NullReferenceException in
+  `AssetDatabase.PopulateFromDataSource` (Steam platform not initialized), UI shows an error page.
+- Fix: the launch helper sets `SteamAppId`/`SteamGameId` for the child process only. Verification: every later session.
+
+### ISSUE-002 — Game process ends after saving while a mod actor exists
+- Severity: Critical (crash on save)
+- Status: Verified fixed
+- Component: CityBridge (save handling)
+- First observed: session 20261019-021355 on 2026-10-19 (save while driving a mod vehicle)
+- Cause: mod actors were tagged `Deleted` inside the game's serialization step; the game destroyed them without its
+  reference cleanup, leaving stale references for native jobs.
+- Fix: actors are tagged `Temp` only during serialization (excluded from the save) and untagged right after
+  (`ActorOpsSystem.PreSerialize` / `ActorPostSerializeSystem`).
+- Verification: sessions 20261019-023754 and -024201: save while driving succeeded; reload clean; leak check 0.
+
+### ISSUE-003 — Game process ends about one second after spawning a taxi model
+- Severity: Critical (crash)
+- Status: Verified fixed
+- Component: CityBridge (vehicle spawning)
+- First observed: session 20261019-022932 on 2026-10-19
+- Cause (code-inspected): `TransportPathfindSetup` reads the `Owner` of every taxi without a check; mod vehicles have no
+  owner. A bicycle spawn earlier ended the same way.
+- Fix: career vehicles are role-neutral (service-role components stripped); bicycles and two-wheelers excluded.
+- Verification: session 20261019-023754 (taxi model survived 10 s, driven, saved) and all later sessions.
+
+### ISSUE-004 — Native traffic could push the player's stationary car
+- Severity: Medium
+- Status: Verified fixed
+- Component: Vehicles (collision response)
+- First observed: session 20261019-025728 (HUD showed 18 km/h with no input)
+- Fix: other vehicles' velocity is no longer injected; moving obstacles only block a car that drives into them.
+- Verification: session 20261019-030051 (car stayed at 0 km/h for 45 s while traffic queued behind it).
+
+### ISSUE-005 — Severe frame-rate drop in character mode
+- Severity: High (13 fps)
+- Status: Verified fixed
+- Component: CityBridge (road graph)
+- First observed: session 20261019-032125 (`cycles 20`: average frame 79 ms)
+- Cause: the road graph was rebuilt nearly every frame (2,589 rebuilds) because lanes receive transient tags.
+- Fix: rebuild on real lane-count changes (or at most every 2 minutes). Verification: session 20261019-032643
+  (driving 33 ms average vs 32 ms in plain city building).
+
+### ISSUE-006 — HUD rendered at about 2 px tall after a unit change
+- Severity: Medium
+- Status: Verified fixed
+- Component: UI
+- Cause: the game defines `1rem = 1px at 1080p`; sizes were divided by 16. Verification: session 20261019-030051.
 
 ## 7. Release use
 

@@ -162,6 +162,7 @@ namespace DriveTheCityII.Core.Text
             Add("msg.savedSafely", "Game saved. Your character and vehicles were not written into the city save.",
                 "Jogo salvo. Seu personagem e veículos não foram gravados no save da cidade.");
             Add("msg.panelClosed", "Panel closed.", "Painel fechado.");
+            LocCareer.Register();
         }
     }
 }

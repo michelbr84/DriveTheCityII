@@ -3,8 +3,9 @@
 | Field | Value |
 |---|---|
 | ID | ADR-0005 |
-| ADR status | Proposed |
+| ADR status | Accepted (2026-10-19) |
 | Date proposed | 2026-10-18 |
+| Date accepted | 2026-10-19: the project owner approved the native-CS2 architecture in the implementation brief of 2026-10-19 (no mandatory BepInEx, Melty, or Motor Town) |
 | Decision owner role | Project owner (distribution and installation policy); Coordinator with Reviewer (technical route) |
 | Related | REQ-REL-001, REQ-REL-004, REQ-COMPAT-001, REQ-SAVE-006, [ADR-0001](ADR-0001-host-game-and-runtime.md), [CS2_INTEGRATION_FINDINGS](../../research/CS2_INTEGRATION_FINDINGS.md) §3.15, [MELTY_EVALUATION](../../research/MELTY_EVALUATION.md) §9, [WINDOWS_SETUP](../../engineering/WINDOWS_SETUP.md), [PACKAGING_AND_PUBLISHING](../../release/PACKAGING_AND_PUBLISHING.md), CONF-012, CONF-014, OPEN-017, OPEN-036 |
 
@@ -64,7 +65,9 @@ owner's publishing decision in PHASE-13.
 - **Motor Town is never declared** as a required or companion game anywhere (ADR-0001, MELTY_EVALUATION §9
   representation rule).
 
-The ADR stays **Proposed** until the project owner accepts it. Technical confirmation needs the TASK-0003 evidence.
+**Accepted 2026-10-19.** The owner's implementation brief approved this route and limited distribution to a private,
+local build: nothing is published to Paradox Mods, Melty, or anywhere else. The Paradox Mods part of the decision stays
+a future option that needs a separate owner decision (PHASE-13, OPEN-017).
 
 ## Consequences
 
@@ -91,6 +94,23 @@ The ADR stays **Proposed** until the project owner accepts it. Technical confirm
 3. **Re-evaluation trigger:** Melty adds a native CS2 destination or a Paradox Mods mode, **and** the exclusivity
    question is resolved. Then options B to D are re-assessed in a new ADR.
 
+## Validation results (2026-10-19)
+
+- **Native route confirmed on 1.6.2f1** **[Run-verified]**:
+  - the pinned upstream base mod loaded from the local-mods folder in an isolated lab session
+    ([RUN-0001](../../quality/evidence/RUN-0001/REPORT.md));
+  - the project's own mod, built from this repository, loads the same way. Every in-game run of 2026-10-19 used it
+    (see [WORKLOG](../../quality/evidence/WORKLOG.md)).
+- **Toolchain deviation (reversible).** The mod is compiled with the .NET SDK directly against the game's own managed
+  assemblies (`Cities2_Data\Managed`, Mono class libraries via `FrameworkPathOverride`), **without** the Unity
+  Editor-based official toolchain.
+  - This works because the mod uses no Burst-compiled jobs and no source-generated `SystemAPI` code that would need
+    Unity's IL post-processing.
+  - If a future feature needs either, the official toolchain becomes mandatory (TOOLCHAIN_MATRIX; OPEN-406).
+- **Co-load guard** **[Run-verified]**: the mod stays inactive when the original Beta Test Driving Mod is loaded.
+- **No loader installed**, no game file modified. Deployment is a folder copy with an ownership manifest and rollback
+  (`tools\deploy.ps1`).
+
 ## Affected specifications
 
 [PACKAGING_AND_PUBLISHING](../../release/PACKAGING_AND_PUBLISHING.md) (channels),
@@ -100,7 +120,8 @@ The ADR stays **Proposed** until the project owner accepts it. Technical confirm
 
 ## Follow-ups
 
-- Owner: accept or amend this ADR. Decide whether to contact Melty about a native CS2 route (optional; not done by
-  agents).
-- TASK-0003: native-route evidence; record `CSII_LOCALMODSPATH` (OPEN-036).
+- ~~Owner: accept or amend this ADR.~~ Accepted 2026-10-19. Contacting Melty about a native CS2 route stays optional
+  and is not done by agents.
+- ~~TASK-0003: native-route evidence; record `CSII_LOCALMODSPATH` (OPEN-036).~~ Done: RUN-0001. The local-mods path is
+  `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\`.
 - PHASE-13: confirm Paradox Mods requirements (OPEN-017).

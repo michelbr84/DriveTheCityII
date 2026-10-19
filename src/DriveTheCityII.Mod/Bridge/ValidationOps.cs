@@ -294,4 +294,121 @@ namespace DriveTheCityII.Bridge
             }
         }
     }
+    /// <summary>
+    /// track [seconds]: samples the controlled vehicle every frame while real or simulated input is applied elsewhere
+    /// (for example tools\realinput.ps1 running at the same time). Reports peak speed, the first stop after moving,
+    /// distance, heading change, gear, impacts and state changes. Measurement only; it never applies input.
+    /// </summary>
+    public sealed class TrackOp : IBridgeOp
+    {
+        private readonly float m_Start;
+        private readonly float m_End;
+        private float m_Max;
+        private float m_MinAfterMax = float.MaxValue;
+        private float m_Final;
+        private float m_Dist;
+        private float m_StartYaw;
+        private float m_YawChange;
+        private float m_MaxYawAbs;
+        private float m_StopAt = -1f;
+        private float m_FirstMoveAt = -1f;
+        private float m_MaxImpact;
+        private int m_Impacts;
+        private int m_Frames;
+        private bool m_Has;
+        private float3 m_Last;
+        private string m_Gears = string.Empty;
+        private string m_States = string.Empty;
+        private PlayerState? m_LastState;
+        private Core.Motion.Gear? m_LastGear;
+        private readonly Action<Core.Motion.VehicleStepReport> m_OnImpact;
+
+        public TrackOp(float seconds)
+        {
+            m_Start = Time.realtimeSinceStartup;
+            m_End = m_Start + Mathf.Clamp(seconds, 0.1f, 120f);
+            m_OnImpact = r =>
+            {
+                if (r.ImpactSpeed > 0.5f)
+                {
+                    m_Impacts++;
+                    m_MaxImpact = Math.Max(m_MaxImpact, r.ImpactSpeed);
+                }
+            };
+            if (PlayerSystem.Instance != null)
+            {
+                PlayerSystem.Instance.VehicleImpact += m_OnImpact;
+            }
+        }
+
+        public bool Ok { get; private set; } = true;
+        public string Result { get; private set; } = string.Empty;
+
+        public bool Update()
+        {
+            PlayerSystem p = PlayerSystem.Instance;
+            float now = Time.realtimeSinceStartup;
+            if (p != null)
+            {
+                if (m_LastState != p.State)
+                {
+                    m_LastState = p.State;
+                    m_States += (m_States.Length > 0 ? ">" : string.Empty) + p.State;
+                }
+                ControlledVehicle v = p.Vehicle;
+                if (v != null)
+                {
+                    float3 pos = v.State.Position.ToF3();
+                    float spd = v.State.Speed;
+                    if (!m_Has)
+                    {
+                        m_Has = true;
+                        m_Last = pos;
+                        m_StartYaw = v.State.Yaw;
+                    }
+                    m_Dist += math.distance(pos.xz, m_Last.xz);
+                    m_Last = pos;
+                    m_Frames++;
+                    if (m_FirstMoveAt < 0f && Math.Abs(spd) > 0.5f)
+                    {
+                        m_FirstMoveAt = now - m_Start;
+                    }
+                    if (spd > m_Max)
+                    {
+                        m_Max = spd;
+                        m_MinAfterMax = spd;
+                    }
+                    else if (spd < m_MinAfterMax)
+                    {
+                        m_MinAfterMax = spd;
+                    }
+                    if (m_StopAt < 0f && m_Max > 3f && Math.Abs(spd) < 0.5f)
+                    {
+                        m_StopAt = now - m_Start;
+                    }
+                    m_YawChange = MathX.WrapAngle(v.State.Yaw - m_StartYaw) * MathX.Rad2Deg;
+                    m_MaxYawAbs = Math.Max(m_MaxYawAbs, Math.Abs(m_YawChange));
+                    m_Final = spd;
+                    if (m_LastGear != v.State.Gear)
+                    {
+                        m_LastGear = v.State.Gear;
+                        m_Gears += (m_Gears.Length > 0 ? ">" : string.Empty) + v.State.Gear;
+                    }
+                }
+            }
+            if (now < m_End)
+            {
+                return false;
+            }
+            if (p != null)
+            {
+                p.VehicleImpact -= m_OnImpact;
+            }
+            float minAfter = m_MinAfterMax == float.MaxValue ? 0f : m_MinAfterMax;
+            Result = string.Format(CultureInfo.InvariantCulture,
+                "track {0:0.0}s frames={1} states={2} gears={3} firstMoveAt={4:0.00} maxSpeed={5:0.00} minAfterMax={6:0.00} stoppedAt={7:0.00} finalSpeed={8:0.00} dist={9:0.0} yawChange={10:0} maxYawChange={13:0} impacts={11} maxImpact={12:0.0}",
+                m_End - m_Start, m_Frames, m_States, m_Gears, m_FirstMoveAt, m_Max, minAfter, m_StopAt, m_Final, m_Dist, m_YawChange, m_Impacts, m_MaxImpact, m_MaxYawAbs);
+            return true;
+        }
+    }
 }

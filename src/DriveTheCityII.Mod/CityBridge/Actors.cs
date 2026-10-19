@@ -100,9 +100,10 @@ namespace DriveTheCityII.CityBridge
                     }
                     string category = null;
                     int capacity = 0;
+                    string pname = prefabs.TryGetPrefab(em.GetComponentData<PrefabData>(c), out PrefabBase pbn) ? pbn.name : string.Empty;
                     if (em.HasComponent<PersonalCarData>(c))
                     {
-                        category = "car";
+                        category = pname.IndexOf("Van", StringComparison.OrdinalIgnoreCase) >= 0 ? "van" : "car";
                         capacity = em.GetComponentData<PersonalCarData>(c).m_PassengerCapacity;
                     }
                     else if (em.HasComponent<TaxiData>(c))
@@ -110,10 +111,19 @@ namespace DriveTheCityII.CityBridge
                         category = "taxi";
                         capacity = em.GetComponentData<TaxiData>(c).m_PassengerCapacity;
                     }
+                    else if (em.HasComponent<PostVanData>(c))
+                    {
+                        category = "van";
+                    }
                     else if (em.HasComponent<DeliveryTruckData>(c))
                     {
+                        // Rigid trucks only: semi-tractor units are articulated vehicles, out of v1.0 scope.
+                        if (pname.IndexOf("Tractor", StringComparison.OrdinalIgnoreCase) >= 0 || em.HasComponent<CarTractorData>(c))
+                        {
+                            continue;
+                        }
                         capacity = em.GetComponentData<DeliveryTruckData>(c).m_CargoCapacity;
-                        category = em.GetComponentData<CarData>(c).m_SizeClass == SizeClass.Large ? "truck" : "van";
+                        category = "truck";
                     }
                     else if (em.HasComponent<PublicTransportVehicleData>(c))
                     {

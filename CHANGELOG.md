@@ -5,13 +5,47 @@
 | ID | DOC-CHANGELOG |
 | Document status | Draft (living document) |
 | Responsible role | Coordinator (maintainer); every completed task adds its real changes |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
 This file records changes that were **actually made**. It never lists planned features as done, and no version of the
 mod has been released. Version headings will appear only when real releases exist
 ([PACKAGING_AND_PUBLISHING](docs/release/PACKAGING_AND_PUBLISHING.md)).
 
 ## [Unreleased]
+
+### Added — 2026-10-19 — Native mod implementation, in-game validation, private build (TASK-0003, TASK-0004 and later)
+
+Everything below was built and exercised on this machine (CS2 1.6.2f1). The "Validation" lines name the kind of
+evidence; full records are in [WORKLOG](docs/quality/evidence/WORKLOG.md) and the RUN reports.
+
+- **Toolchain and helpers** (user-scoped, no game files changed):
+  - private .NET SDK; build against the game's own managed assemblies ([ADR-0005](docs/architecture/decisions/ADR-0005-mod-loading-and-distribution-route.md));
+  - `tools\build.ps1` (tests, build stamp, package, `LATEST.txt`), `tools\deploy.ps1` (install, status, rollback,
+    uninstall, ownership manifest), `tools\test-session.ps1` (isolated session that restores the Continue pointer),
+    `tools\bridge.ps1` (file-based test bridge), `tools\realinput.ps1` (real keyboard input to the verified game
+    window), `tools\campaign-m1.ps1`, `tools\baseline.ps1`.
+- **Engine-free Core library with unit tests:** geometry, level-aware ground solver, on-foot motor, vehicle controller
+  (gears, reverse delay, per-wheel ground prediction, obstacle response), control state machine (TR-01..TR-13,
+  timeouts, recovery loop detection), JSON, save envelope with CRC32, sidecar revision store with quarantine, EN/PT-BR
+  text tables.
+- **Mod runtime (native IMod):**
+  - character mode: avatar spawned from a city resident prefab, walking/running with animation, enter/exit, driving,
+    recovery, return to city building with camera, tools and input restored;
+  - drivable vehicles from the city's own car prefabs with roles stripped (no AI takeover), registered in lane
+    buffers so AI traffic queues behind the player;
+  - save safety: mod entities are tagged temporary for every save and never persisted; autosave is only disabled in
+    test sessions;
+  - persistence envelope in every city save plus sidecar backups; load outcomes with quarantine;
+  - road router, place index, world markers, mission objects;
+  - HUD and Tab panel (React module), onboarding hints, HUD scale and high-contrast options;
+  - Options page: gameplay, camera, 12 remappable key bindings, accessibility, safe-disable;
+  - co-load guard against the original Beta Test Driving Mod.
+- **Validation:** in-game runs in disposable `DTC2-LAB` cities with simulated and real keyboard input: transition
+  cycles 20/20, 10/10 and 3/3 with 0 failures, save while driving without a crash, leak check 0, AI traffic queueing,
+  30-37 fps in the benchmark city. Fixed defects are listed in [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md)
+  (ISSUE-001 to ISSUE-006).
+- **Docs:** ADR-0005 Accepted; TASK-0003 In review; [START_HERE](START_HERE.md); PROJECT_STATUS §0; COMPATIBILITY_MATRIX
+  tested rows; MELTY_EVALUATION §9a.
 
 ### Changed — 2026-10-18 — PHASE-00 audits (TASK-0001, TASK-0002) and Melty check
 

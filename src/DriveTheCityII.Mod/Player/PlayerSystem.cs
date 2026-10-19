@@ -286,6 +286,19 @@ namespace DriveTheCityII.Player
             {
                 UI.HudUISystem.Instance?.TogglePanel();
             }
+            // Esc: the Shortcuts map (which owns "Pause Menu") is blocked in character mode, so Esc is handled here:
+            // close our panel first, otherwise open the game's pause menu (save, options, quit stay reachable).
+            if (!menu && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                if (panel)
+                {
+                    UI.HudUISystem.Instance?.SetPanel(false);
+                }
+                else
+                {
+                    m_Screens?.SetScreen(GameScreenUISystem.GameScreen.PauseMenu);
+                }
+            }
             if (m_Input.Injected.HasValue == false && input.FreeCursorHeld)
             {
                 m_Input.SetCursorLock(false);
@@ -418,6 +431,14 @@ namespace DriveTheCityII.Player
             m_StuckTimer = 0f;
             m_LastProgressPos = m_Avatar.Position.ToF3();
             Say(Loc.T("msg.enterMode"));
+            // Onboarding (SPEC-ONBOARDING): the first time, open the help panel; the option turns itself off.
+            Settings.DriveTheCityIISettings st = Settings.DriveTheCityIISettings.Instance;
+            if (st != null && st.ShowOnboarding && UI.HudUISystem.Instance != null)
+            {
+                UI.HudUISystem.Instance.OpenTab("help");
+                st.ShowOnboarding = false;
+                st.ApplyAndSave();
+            }
             return true;
         }
 
@@ -1160,6 +1181,17 @@ namespace DriveTheCityII.Player
                 Steer = input.Steer,
                 Handbrake = input.Handbrake,
             };
+            if (ThrottleBlocked)
+            {
+                // Immobilized (out of fuel or broken down, decided by Career): no drive in either direction, but brakes
+                // and steering always work so the player is never left uncontrolled.
+                vi.Throttle = 0f;
+                if (VehicleController.IsStationary(m_Vehicle.State, m_Vehicle.Spec) || m_Vehicle.State.Gear == Gear.Reverse)
+                {
+                    vi.Brake = 0f;
+                    vi.Handbrake = true;
+                }
+            }
             if (dt > 0f)
             {
                 m_VehCtrl.SetSpec(m_Vehicle.Spec);
@@ -1540,6 +1572,19 @@ namespace DriveTheCityII.Player
         }
 
         public IReadOnlyList<ControlledVehicle> ParkedVehicles => m_ParkedVehicles;
+
+        /// <summary>Set by Career when the vehicle in use is immobilized (fuel or breakdown).</summary>
+        public bool ThrottleBlocked { get; set; }
+
+        /// <summary>Removes a parked career vehicle from the world (returned, sold, or released by Career).</summary>
+        public void RemoveParkedVehicle(ControlledVehicle v)
+        {
+            if (v == null || !m_ParkedVehicles.Remove(v))
+            {
+                return;
+            }
+            ReleaseVehicle(v, 0f);
+        }
         public Entity AvatarEntity => m_AvatarEntity;
         public float CameraYaw { get => m_CamYaw; set => m_CamYaw = value; }
         public float CameraPitch { get => m_CamPitch; set => m_CamPitch = value; }

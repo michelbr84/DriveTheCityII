@@ -96,6 +96,7 @@ namespace DriveTheCityII.Bridge
                 }
                 return new InstantOp(true, $"camera pivot {x},{y},{z}");
             };
+            TestBridge.Handlers["track"] = a => new TrackOp(a.Length > 1 ? F(a[1]) : 3f);
             TestBridge.Handlers["cycles"] = a => new TransitionCyclesOp(a.Length > 1 ? int.Parse(a[1], CultureInfo.InvariantCulture) : 10);
             TestBridge.Handlers["perf"] = a =>
             {

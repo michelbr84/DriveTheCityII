@@ -195,6 +195,25 @@ says; none was verified in the game.
 `companion` or required game; at most it is credited as design inspiration in the description, with no assets or
 branding. A listing must not describe Drive the City II as a two-game mashup.
 
+## 9a. Engineering-aid check during the implementation run (2026-10-19)
+
+The owner's brief of 2026-10-19 asked whether Melty can genuinely help with building, launching, debugging, or local
+testing of the native mod. What was actually called and learned:
+
+| Call / action | Side effects | Result |
+|---|---|---|
+| `game_info("cities-skylines-2")` | Read-only | Unchanged since 2026-10-18: only loader BepInEx 5 v5.4.23.5 into `{game}`; 0 live CS2 mashups; no failures recorded |
+| `modding_kit` | Read-only | Kit 2026.10.18-739f3496 at `%LOCALAPPDATA%\Melty\modding-kit`; offers a Python CLI (`um`) for game automation |
+| Kit files read as data (`skills/mod-any-game`, `skills/game-automation`, technique note "driving a game from a mod-side command file") | None (read only; nothing executed) | Useful design guidance: mod-side command-file bridge, lab profile, screenshots from inside the game, foreground checks before input |
+| `consult_melty` | Would send the creator's full message and the agent's full reply to Melty's servers | **Not called**: its payload cannot be limited to a minimal sanitized question, which the brief requires |
+| `create_mod`, uploads, `submit_release`, `test_release`, `publish`, `request_game` | Remote listings, uploads, tests, contact | **Not called**: outside the private, unpublished scope |
+
+**Conclusion:** Melty has no native or local CS2 route that applies to this project. Its test harness (`test_release`)
+works only for releases submitted to Melty, so it cannot test a private local build. Its value here was design
+guidance only; the project implemented its own auditable equivalents (`tools	est-session.ps1`, `toolsridge.ps1`,
+`toolsealinput.ps1`, and the in-mod test bridge). A connected MCP is not evidence that the game integration works;
+the in-game evidence is in [WORKLOG](../quality/evidence/WORKLOG.md) and the run records.
+
 ## 10. Open questions and risks
 
 - **Central:** OPEN-016 (Melty capabilities and fit), OPEN-030 (Motor Town installation), CONF-008 (the mashup model versus a CS2-only runtime), CONF-012 (exclusivity), CONF-014 (Melty's BepInEx-only CS2 route versus the native route), RISK-010.

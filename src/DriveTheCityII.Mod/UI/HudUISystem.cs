@@ -103,6 +103,12 @@ namespace DriveTheCityII.UI
 
         public void TogglePanel() => SetPanel(!PanelOpen);
 
+        public void OpenTab(string tabId)
+        {
+            ActiveTab = tabId;
+            SetPanel(true);
+        }
+
         protected override void OnUpdate()
         {
             string locale = GameManager.instance?.localizationManager?.activeLocaleId;
@@ -149,6 +155,9 @@ namespace DriveTheCityII.UI
                 return hud;
             }
 
+            Settings.DriveTheCityIISettings st = Settings.DriveTheCityIISettings.Instance;
+            hud.Set("scale", st != null ? st.HudScale / 100.0 : 1.0);
+            hud.Set("contrast", st != null && st.HighContrastHud);
             hud.Set("modeLabel", Loc.T(ModeKey(state)));
             hud.Set("paused", (p.StateMachine.Overlays & PlayerOverlay.Paused) != 0);
             hud.Set("pausedLabel", Loc.T("hud.paused"));

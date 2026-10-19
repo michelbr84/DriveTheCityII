@@ -163,7 +163,11 @@ function Hud() {
   if (!hud.city || hud.mode === "Building") {
     return null;
   }
-  return h("div", { style: { position: "absolute", left: "0rem", top: "0rem", right: "0rem", bottom: "0rem", pointerEvents: "none" } },
+  const scale = typeof hud.scale === "number" ? hud.scale : 1;
+  palette.card = hud.contrast ? "rgba(0, 0, 0, 0.96)" : "rgba(18, 24, 33, 0.82)";
+  palette.muted = hud.contrast ? "#ffffff" : "rgba(242, 245, 248, 0.66)";
+  styles.card.background = palette.card;
+  return h("div", { style: { position: "absolute", left: "0rem", top: "0rem", width: (100 / scale) + "%", height: (100 / scale) + "%", transform: "scale(" + scale + ")", transformOrigin: "0 0", pointerEvents: "none" } },
     h(StatusCard, { hud }),
     h(ObjectiveCard, { hud }),
     h(PromptBar, { hud }),

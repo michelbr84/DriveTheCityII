@@ -81,6 +81,16 @@ namespace DriveTheCityII.Settings
         [SettingsUISection(kGeneralTab, kDisplayGroup)]
         public SpeedUnits Units { get; set; }
 
+        [SettingsUISlider(min = 75, max = 150, step = 5, unit = Unit.kPercentage)]
+        [SettingsUISection(kGeneralTab, kDisplayGroup)]
+        public int HudScale { get; set; }
+
+        [SettingsUISection(kGeneralTab, kDisplayGroup)]
+        public bool HighContrastHud { get; set; }
+
+        [SettingsUISection(kGeneralTab, kDisplayGroup)]
+        public bool ShowOnboarding { get; set; }
+
         [SettingsUISection(kGeneralTab, kSafetyGroup)]
         public bool SafeDisable { get; set; }
 
@@ -152,6 +162,9 @@ namespace DriveTheCityII.Settings
             InvertY = false;
             FieldOfView = 62;
             Units = SpeedUnits.Kmh;
+            HudScale = 100;
+            HighContrastHud = false;
+            ShowOnboarding = true;
             SafeDisable = false;
         }
 
@@ -275,6 +288,9 @@ namespace DriveTheCityII.Settings
             Opt(nameof(DriveTheCityIISettings.InvertY), "Invert vertical look", "Inverter olhar vertical", "Inverts mouse and stick up/down look.", "Inverte o olhar para cima/baixo.");
             Opt(nameof(DriveTheCityIISettings.FieldOfView), "Field of view", "Campo de visão", "Camera field of view in degrees.", "Campo de visão da câmera em graus.");
             Opt(nameof(DriveTheCityIISettings.Units), "Speed units", "Unidade de velocidade", "Speed shown in km/h or mph.", "Velocidade em km/h ou mph.");
+            Opt(nameof(DriveTheCityIISettings.HudScale), "HUD size", "Tamanho do HUD", "Scales the Drive the City II HUD and panels.", "Ajusta o tamanho do HUD e dos painéis do Drive the City II.");
+            Opt(nameof(DriveTheCityIISettings.HighContrastHud), "High-contrast HUD", "HUD de alto contraste", "Opaque dark panels and brighter text.", "Painéis escuros opacos e texto mais claro.");
+            Opt(nameof(DriveTheCityIISettings.ShowOnboarding), "Show the welcome help", "Mostrar a ajuda de boas-vindas", "Opens the help panel the next time character mode starts.", "Abre o painel de ajuda na próxima vez que o modo personagem começar.");
             Opt(nameof(DriveTheCityIISettings.SafeDisable), "Safe-disable (stop the mod for this session)", "Desativação segura (parar o mod nesta sessão)",
                 "Returns to city building, keeps your career data, and stops all Drive the City II gameplay until turned off.",
                 "Volta à construção da cidade, mantém os dados da carreira e para toda a jogabilidade do Drive the City II até ser desligado.");

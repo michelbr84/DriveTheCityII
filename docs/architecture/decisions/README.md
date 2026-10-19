@@ -23,7 +23,7 @@ reasoning. As of 2026-10-18 every ADR is **Proposed**: none has been accepted, a
 | [ADR-0002](ADR-0002-control-authority.md) | Single movement authority and an explicit player state machine | Proposed | Explicit state machine with authority grants and one camera owner | PHASE-02 evidence (OPEN-011, OPEN-014, OPEN-107, OPEN-111) |
 | [ADR-0003](ADR-0003-career-save-isolation.md) | Career isolation and revision-bound career saves | Proposed | Economic separation and revision-bound identity are owner requirements; storage mechanism pending | PHASE-01 spike (OPEN-006, OPEN-022, OPEN-101) |
 | [ADR-0004](ADR-0004-physics-strategy.md) | Physics strategy for controlled vehicles and the avatar | Proposed | Pending — PHASE-03 experiment; no option pre-selected | PHASE-03 laboratory (OPEN-007, OPEN-008, OPEN-009, OPEN-032) |
-| [ADR-0005](ADR-0005-mod-loading-and-distribution-route.md) | Mod loading and distribution route | Proposed | Native CS2 code mod with the official toolchain and the official distribution route; no BepInEx; Melty not a distribution channel | Owner acceptance; TASK-0003 evidence on game 1.6.2f1 (OPEN-017, OPEN-036) |
+| [ADR-0005](ADR-0005-mod-loading-and-distribution-route.md) | Mod loading and distribution route | Accepted (2026-10-19) | Native CS2 code mod deployed to the local-mods folder; no BepInEx; Melty not a distribution channel; private build only | Native route run-verified on 1.6.2f1 (RUN-0001 and the project's own mod); built with the .NET SDK against the game assemblies (toolchain deviation recorded in the ADR); publishing stays an owner decision (OPEN-017) |
 
 ## 3. Status values
 
