@@ -51,11 +51,12 @@ namespace DriveTheCityII.Careers
         public PlaceInfo ToInfo(CityPlace p)
         {
             CityServices.Places.RefineAccess(m_Probe, p);
-            return new PlaceInfo(p.Id, ToKind(p.Kind), p.Name, ToPoint(p.RoadAccess));
+            return ToInfoFast(p); // Career always sees the stable base access point
         }
 
         /// <summary>Place info without curb refinement (cheap; the road-edge point is accurate enough for queries).</summary>
-        public static PlaceInfo ToInfoFast(CityPlace p) => new PlaceInfo(p.Id, ToKind(p.Kind), p.Name, ToPoint(p.RoadAccess));
+        public static PlaceInfo ToInfoFast(CityPlace p) =>
+            new PlaceInfo(p.Id, ToKind(p.Kind), p.Name, ToPoint(math.lengthsq(p.BaseAccess) > 0f ? p.BaseAccess : p.RoadAccess));
 
         public IReadOnlyList<PlaceInfo> QueryPlaces(PlaceQuery query)
         {
@@ -85,7 +86,7 @@ namespace DriveTheCityII.Careers
                 {
                     continue;
                 }
-                float d2 = math.distancesq(p.RoadAccess.xz, near.xz);
+                float d2 = math.distancesq((math.lengthsq(p.BaseAccess) > 0f ? p.BaseAccess : p.RoadAccess).xz, near.xz);
                 if (d2 <= r2)
                 {
                     candidates.Add((p, d2));

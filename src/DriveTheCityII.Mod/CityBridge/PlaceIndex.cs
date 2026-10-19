@@ -45,8 +45,14 @@ namespace DriveTheCityII.CityBridge
         public Entity Entity;
         public float3 BuildingPos;
 
-        /// <summary>Where a vehicle stops: a point on the curb-side road lane in front of the place.</summary>
+        /// <summary>Where a vehicle stops: a point on the curb-side road lane in front of the place (refined lazily).</summary>
         public float3 RoadAccess;
+
+        /// <summary>
+        /// The unrefined road-edge point at the building's connection. It never changes while the building and road exist,
+        /// so Career uses it as the place's location (stored in missions and challenge signatures).
+        /// </summary>
+        public float3 BaseAccess;
 
         /// <summary>Where a person waits: the nearest sidewalk point.</summary>
         public float3 WalkAccess;
@@ -204,6 +210,7 @@ namespace DriveTheCityII.CityBridge
                     {
                         Bezier4x3 edge = em.GetComponentData<Game.Net.Curve>(b.m_RoadEdge).m_Bezier;
                         place.RoadAccess = MathUtils.Position(edge, b.m_CurvePosition);
+                        place.BaseAccess = place.RoadAccess;
                         place.WalkAccess = place.RoadAccess;
                     }
                     m_Places.Add(place);
@@ -370,6 +377,7 @@ namespace DriveTheCityII.CityBridge
                             Entity = stop,
                             BuildingPos = pos,
                             RoadAccess = pos,
+                            BaseAccess = pos,
                             WalkAccess = pos,
                             HasRoadAccess = true,
                             Name = SafeName(names, stop) ?? ("Stop " + (line.Stops.Count + 1).ToString(CultureInfo.InvariantCulture)),

@@ -122,7 +122,7 @@ function PromptBar({ hud }) {
   return h("div", { style: { position: "absolute", left: "0rem", right: "0rem", bottom: "160rem", display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" } },
     hud.message ? h("div", { style: Object.assign({}, styles.card, { marginBottom: "8rem", maxWidth: "760rem", textAlign: "center", borderColor: "rgba(76,194,255,0.5)" }) }, hud.message) : null,
     prompts.length > 0 ? h("div", { style: Object.assign({}, styles.card, { padding: "6rem 12rem", fontSize: "12.99rem", color: palette.muted }) }, prompts.join("   ·   ")) : null,
-    hud.panelHint && !hud.panelOpen ? h("div", { style: { marginTop: "4rem", fontSize: "12rem", color: palette.muted } }, hud.panelHint) : null);
+    hud.panelHint && !hud.panelOpen ? h("div", { style: Object.assign({}, styles.card, { marginTop: "4rem", padding: "3rem 10rem", fontSize: "12rem", color: palette.muted }) }, hud.panelHint) : null);
 }
 
 function Panel({ hud }) {

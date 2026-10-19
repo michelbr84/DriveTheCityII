@@ -167,9 +167,9 @@ namespace DriveTheCityII.Core.Career
                         return false;
                     }
                     reference += e.TimeSeconds;
-                    // 50 m buckets: a live city rebuilds temporary lanes constantly, and small route-length differences
-                    // must not mark a challenge route as changed (observed in game on 2026-10-19).
-                    sb.Append(Math.Round(e.DistanceMeters / 50).ToString(CultureInfo.InvariantCulture)).Append(';');
+                    // The route length is deliberately not part of the signature: a live city rebuilds temporary lanes
+                    // constantly and the router may pick a slightly different path, which must not mark the route as
+                    // changed (observed in game on 2026-10-19). Moved or removed points and unreachable legs still do.
                 }
             }
             if (def.Type == ChallengeType.Parking)
