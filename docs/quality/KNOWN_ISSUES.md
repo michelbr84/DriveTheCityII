@@ -201,7 +201,8 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-016 — Challenge runs voided as "route changed" in a live city
 - Severity: High
-- Status: Fixed; in-game verification in the final challenge run
+- Status: Verified fixed (final package: no route change during runs; one expected "route changed" notice per
+  challenge on the first load after the update, because the stored points moved to the new stable access points)
 - Component: Careers (place access, challenge signature)
 - Cause: the place access point the career saw changed when markers or route searches refined it, and the challenge
   signature included the computed route length, which varies as the city adds and removes temporary lanes. The
@@ -214,6 +215,22 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 - Detail: the simulated-input autopilot drove the truck into traffic right after loading (load lost: the correct rule
   outcome) and got the bus stuck before the first stop. Complete freight and bus runs are covered by unit tests only.
   A human playthrough is needed.
+
+### ISSUE-018 — After a failed employer job you still sit in the released truck or bus
+- Severity: Low
+- Status: Open (by design; wording could be clearer)
+- Component: Careers
+- Detail: when a freight or bus job ends, the employer's vehicle is released ("the operator collects the service
+  vehicle when you leave it"), but you remain in it until you get out. Jobs and challenges that need your own career
+  vehicle are refused meanwhile ("Challenges need one of your career vehicles"). Workaround: get out and use your own
+  vehicle (Tab → Garage → "Bring here").
+
+### ISSUE-019 — Test teleport helper can silently fail
+- Severity: Low (test tooling only)
+- Status: Open
+- Component: Test bridge
+- Detail: `career goplace` reports success even when the avatar could not be placed at the target (invalid ground or
+  inside a footprint). It caused one refused repair during the soak; the next maintenance visit succeeded.
 
 ## 7. Release use
 

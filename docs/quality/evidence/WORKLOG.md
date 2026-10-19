@@ -64,6 +64,7 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 06:11 | Challenge run on the final package: armed, then voided by a recovery while reaching the start point (rule-correct). | session 20261019-061036 |
 | 06:13 | Real-time soak (120 min) started on the final package. | session 20261019-061251 |
 | 06:24 | Soak stopped after 11 min: the rental broke down (condition 0 after test-autopilot collisions) and the soak script did not repair it. Added a service-point maintenance step (as a player would) and paid-fare counting; restarted from zero on the same package. | session 20261019-061251 |
+| 08:31 | Last retries on the final package: freight loaded then lost in a crash by the test autopilot; challenge starts refused while still in the released shipper truck (rule-correct). No further retries. | session 20261019-083020 |
 | 06:26-08:29 | **Real-time soak, 122.9 min, passed for stability**: no crash; 30 fps average (p95 40.9 ms); 5 saves while driving and 2 reloads without failure; leak check 0; managed heap 390-490 MB with no steady growth; whole-game private memory +1 GB, flattening (no mod-off comparison); 12 company periods settled. | [RUN-0004](RUN-0004/REPORT.md) §3, session 20261019-062523 |
 
 ## Known gaps at this point (next work)

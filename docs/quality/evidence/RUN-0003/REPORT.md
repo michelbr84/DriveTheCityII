@@ -58,3 +58,14 @@ were fixed and the affected sections re-run on the next build).
 | Save with all careers' state | **Passed** | `DTC2-LAB-CAREERS`, `-F`, `-G` |
 
 Test-seeded profile: yes for this city (XP, reputation, money and one fuel level were seeded).
+
+### Retries on the final package `0.1.0-3eaf045` (session 20261019-083020)
+
+- **Freight:** truck provided, boarded, loaded at 87 Sunset Street; the test autopilot then tried to pass a stopped
+  vehicle and hit it, so the load was lost (0 cr, reputation -5). The career rules again behaved as specified; a
+  completed freight run is still **not observed in game**.
+- **Challenges:** after the failed freight job the player was still sitting in the released shipper truck, so starting a
+  challenge was refused with "Challenges need one of your career vehicles" (correct rule; the test ran freight before
+  challenges). Earlier challenge runs on the final package were armed and then voided by recoveries while reaching the
+  start. In those runs the route no longer flipped to "changed" during the run (ISSUE-016 fix confirmed). A finished run
+  with a time and medal is still **not observed in game**.

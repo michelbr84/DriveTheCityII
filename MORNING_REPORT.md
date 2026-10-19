@@ -93,6 +93,10 @@ Full list: [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md). The ones you will notic
 - When you stop in the middle of a wide road, you may step out onto the road (ISSUE-010). Park at the curb.
 - Rare 50–130 ms stutters when the road graph rebuilds (ISSUE-009).
 - The career pauses while the game window is not focused (ISSUE-011, by design).
+- After a failed freight or bus job you are still in the released employer vehicle; get out and bring your own car
+  (Tab, Garage, "Bring here") before the next job or challenge (ISSUE-018).
+- Over the 2-hour soak the whole game's memory grew by about 1 GB and was flattening out; a comparison without the mod was
+  not run, so the cause is unknown.
 - Gamepad untested. Remapping keys in Options untested.
 - Some career messages stay English in Portuguese mode (values embedded in the English text).
 - The lab cities used for testing are **test-seeded** (money, XP and reputation were granted). Start a real career in
