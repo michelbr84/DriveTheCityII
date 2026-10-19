@@ -37,6 +37,7 @@ namespace DriveTheCityII.Careers
         private double m_DistanceAccum;
         private double m_ImpactMax;
         private float m_LastSpeed;
+        private float m_AccelFiltered;
         private MissionObjects m_Objects;
         private JsonValue m_PreservedCareer;
         private bool m_UiRegistered;
@@ -234,7 +235,18 @@ namespace DriveTheCityII.Careers
                 snap.SpeedMps = Math.Abs(v.State.Speed);
                 snap.VehicleId = v.Kind == ActorKind.CareerVehicle ? v.CareerVehicleId : null;
                 snap.HeadingDegrees = v.State.Yaw * MathX.Rad2Deg;
-                float accel = dt > 0f ? (v.State.Speed - m_LastSpeed) / dt : 0f;
+                // Driving acceleration for harsh-driving rules: limited to what the engine and brakes can do and smoothed
+                // over about 0.35 s. A frame-to-frame speed difference spikes far above that when the vehicle touches a curb
+                // or pole, or changes direction while creeping; such spikes are contacts (scored separately from the impact
+                // speed), not harsh driving. Observed in game on 2026-10-19: cargo lost at walking pace from these spikes.
+                float raw = dt > 0f ? (v.State.Speed - m_LastSpeed) / dt : 0f;
+                raw = math.clamp(raw, -v.Spec.BrakeDeceleration * 1.1f, v.Spec.Acceleration * 1.5f);
+                if (Math.Abs(v.State.Speed) < 0.8f && Math.Abs(m_LastSpeed) < 0.8f)
+                {
+                    raw = 0f;
+                }
+                m_AccelFiltered += (raw - m_AccelFiltered) * Math.Min(1f, dt / 0.35f);
+                float accel = m_AccelFiltered;
                 snap.LongitudinalAccel = accel;
                 snap.LateralAccel = Math.Abs(v.State.Speed) * Math.Abs(v.State.Speed) * Math.Abs((float)Math.Tan(v.State.SteerAngle)) / Math.Max(1f, v.Spec.WheelBase);
                 m_LastSpeed = v.State.Speed;
@@ -245,6 +257,7 @@ namespace DriveTheCityII.Careers
                 snap.SpeedMps = P.Avatar.HorizontalSpeed;
                 snap.HeadingDegrees = P.Avatar.Yaw * MathX.Rad2Deg;
                 m_LastSpeed = 0f;
+                m_AccelFiltered = 0f;
             }
             snap.Stationary = snap.SpeedMps < CareerBalance.ServiceSpeedMps;
             snap.DistanceDrivenMeters = m_DistanceAccum;
