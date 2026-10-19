@@ -519,9 +519,11 @@ namespace DriveTheCityII.CityBridge
                 vel = new Vec2(mv.m_Velocity.x, mv.m_Velocity.z);
             }
             float3 c = pos + math.mul(rot, MathUtils.Center(geo.m_Bounds));
+            // Vehicle prefab bounds include the mirrors; contacts use the body width (see VehicleBodyWidthFactor).
+            float bodyFactor = vehicle ? VehicleBodyWidthFactor : 1f;
             results.Add(new Obstacle
             {
-                Footprint = new Obb2(new Vec2(c.x, c.z), new Vec2(fwd.x, fwd.z), math.max(0.2f, (geo.m_Bounds.max.x - geo.m_Bounds.min.x) * 0.5f), math.max(0.2f, (geo.m_Bounds.max.z - geo.m_Bounds.min.z) * 0.5f)),
+                Footprint = new Obb2(new Vec2(c.x, c.z), new Vec2(fwd.x, fwd.z), math.max(0.2f, (geo.m_Bounds.max.x - geo.m_Bounds.min.x) * 0.5f * bodyFactor), math.max(0.2f, (geo.m_Bounds.max.z - geo.m_Bounds.min.z) * 0.5f)),
                 YMin = pos.y + geo.m_Bounds.min.y,
                 YMax = pos.y + math.max(geo.m_Bounds.max.y, 1f),
                 Kind = vehicle ? ObstacleKind.Vehicle : ObstacleKind.Creature,
@@ -748,6 +750,13 @@ namespace DriveTheCityII.CityBridge
         /// The car lane (edge or intersection lane) under a vehicle, preferring lanes aligned with its heading. Used to
         /// register the player's vehicle in the lane object buffers AI traffic reads (refcache note 04 §5).
         /// </summary>
+        /// <summary>
+        /// Body width as a share of a vehicle prefab's width. Prefab sizes include the mirrors (a sedan reads 2.0 m, a
+        /// city bus 3.3 m, the delivery truck 3.2 m), which made two vehicles in neighbouring 3 m lanes touch even when
+        /// both were centred (observed in game on 2026-10-19 as repeated side impacts from passing traffic).
+        /// </summary>
+        public const float VehicleBodyWidthFactor = 0.82f;
+
         public bool FindCarLaneUnder(float3 pos, float2 heading, out Entity laneEntity, out float curveT)
         {
             laneEntity = Entity.Null;

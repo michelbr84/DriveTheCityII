@@ -1301,7 +1301,7 @@ namespace DriveTheCityII.Player
             if (inVehicle)
             {
                 // A spot where the whole vehicle fits (a bus moved to the nearest lane point can still overlap a pole).
-                if (FindClearVehicleSpot(m_Vehicle.Spec, from, false, radius, out float3 p, out float placedYaw))
+                if (FindClearVehicleSpot(m_Vehicle.Spec, from, false, radius, out float3 p, out float placedYaw, m_Vehicle.State.Yaw))
                 {
                     m_Vehicle.State.Position = new Vec3(p.x, p.y, p.z);
                     m_Vehicle.State.Yaw = placedYaw;
@@ -1641,7 +1641,7 @@ namespace DriveTheCityII.Player
             var s = new VehicleSpec
             {
                 Name = info.Name,
-                Width = math.clamp(info.Size.x, 1.4f, 3.2f),
+                Width = math.clamp(info.Size.x * CityWorldProbe.VehicleBodyWidthFactor, 1.4f, 3.0f),
                 Height = math.clamp(info.Size.y, 1.2f, 4.5f),
                 Length = math.clamp(info.Size.z, 3f, 18f),
             };

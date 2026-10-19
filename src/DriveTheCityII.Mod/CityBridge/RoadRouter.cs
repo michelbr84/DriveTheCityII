@@ -37,7 +37,10 @@ namespace DriveTheCityII.CityBridge
     /// Driving routes over the city's car-lane graph (CityBridge route-planning port, SPEC-MODULES 4.2). Lanes connect
     /// when one lane's end PathNode equals the next lane's start PathNode, which encodes one-way streets and lane
     /// connections at intersections (refcache note 05 §C3). Slave lanes are not part of the graph, as in the game's own
-    /// pathfinder. The graph is rebuilt lazily when the road network changes.
+    /// pathfinder, but the route polyline runs on them: a master lane's curve lies between the lanes of a multi-lane
+    /// carriageway, and a vehicle following it straddles the lane line (observed in game on 2026-10-19: a truck on a
+    /// four-lane road was clipped by traffic in both neighbouring lanes until its cargo was lost). The graph is rebuilt
+    /// lazily when the road network changes.
     /// </summary>
     public sealed class RoadRouter
     {
@@ -50,6 +53,8 @@ namespace DriveTheCityII.CityBridge
             public float Speed;
             public Bezier4x3 Curve;
             public bool Forbidden;
+            /// <summary>For a master lane: the curves of the lanes vehicles actually drive in (null otherwise).</summary>
+            public Bezier4x3[] Slaves;
         }
 
         private const float Cell = 64f;
@@ -121,6 +126,7 @@ namespace DriveTheCityII.CityBridge
                         Speed = math.max(5f, cl.m_SpeedLimit),
                         Curve = curves[i].m_Bezier,
                         Forbidden = (cl.m_Flags & CarLaneFlags.Forbidden) != 0,
+                        Slaves = SlaveCurves(em, ents[i]),
                     };
                     int idx = m_Lanes.Count;
                     m_Lanes.Add(node);
@@ -140,6 +146,37 @@ namespace DriveTheCityII.CityBridge
                 Revision++;
             }
             DtcLog.Info($"RoadRouter: graph built with {m_Lanes.Count} car lanes in {sw.ElapsedMilliseconds} ms (revision {Revision})");
+        }
+
+        /// <summary>The curves of a master lane's slave lanes (its sub-lane index range in the owner, same group).</summary>
+        private static Bezier4x3[] SlaveCurves(EntityManager em, Entity lane)
+        {
+            if (!em.HasComponent<Game.Net.MasterLane>(lane) || !em.HasComponent<Owner>(lane))
+            {
+                return null;
+            }
+            Game.Net.MasterLane m = em.GetComponentData<Game.Net.MasterLane>(lane);
+            Entity owner = em.GetComponentData<Owner>(lane).m_Owner;
+            if (!em.HasBuffer<Game.Net.SubLane>(owner))
+            {
+                return null;
+            }
+            DynamicBuffer<Game.Net.SubLane> subs = em.GetBuffer<Game.Net.SubLane>(owner, true);
+            var list = new List<Bezier4x3>(4);
+            for (int k = m.m_MinIndex; k <= m.m_MaxIndex && k < subs.Length; k++)
+            {
+                Entity s = subs[k].m_SubLane;
+                if (s == lane || !em.HasComponent<SlaveLane>(s) || !em.HasComponent<CarLane>(s) || !em.HasComponent<Curve>(s))
+                {
+                    continue;
+                }
+                if (em.GetComponentData<SlaveLane>(s).m_Group != m.m_Group)
+                {
+                    continue;
+                }
+                list.Add(em.GetComponentData<Curve>(s).m_Bezier);
+            }
+            return list.Count > 1 ? list.ToArray() : null;
         }
 
         private void AddToGrid(int idx, Bezier4x3 c)
@@ -307,8 +344,36 @@ namespace DriveTheCityII.CityBridge
                 chain.Add(c);
             }
             chain.Reverse();
+            // The lane actually driven on each master lane, chosen from the destination backwards: the one that leads
+            // into the next lane driven (so the vehicle is in the right lane for each turn), and on the last lane the one
+            // nearest the destination (curb-side docks and stops).
+            var drive = new Bezier4x3[chain.Count];
+            for (int i = chain.Count - 1; i >= 0; i--)
+            {
+                LaneNode n = m_Lanes[chain[i]];
+                drive[i] = n.Curve;
+                if (n.Slaves == null)
+                {
+                    continue;
+                }
+                bool last = i == chain.Count - 1;
+                float lastT = last ? goalT[chain[i]] : 1f;
+                float3 target = last ? to : drive[i + 1].a;
+                float best = float.MaxValue;
+                foreach (Bezier4x3 s in n.Slaves)
+                {
+                    float d = math.distance(MathUtils.Position(s, lastT).xz, target.xz);
+                    if (d < best)
+                    {
+                        best = d;
+                        drive[i] = s;
+                    }
+                }
+            }
             double dist = 0, time = 0;
             int junctions = 0;
+            bool laneChange = false;
+            float3 finalPt = default;
             for (int i = 0; i < chain.Count; i++)
             {
                 LaneNode n = m_Lanes[chain[i]];
@@ -329,12 +394,33 @@ namespace DriveTheCityII.CityBridge
                 for (int k = 0; k <= samples; k++)
                 {
                     float t = math.lerp(t0, t1, k / (float)samples);
-                    float3 pt = MathUtils.Position(n.Curve, t);
+                    float3 pt = MathUtils.Position(drive[i], t);
+                    finalPt = pt;
+                    if (res.Polyline.Count > 0)
+                    {
+                        float3 lastPt = res.Polyline[res.Polyline.Count - 1];
+                        if (k == 0 && math.distance(lastPt.xz, pt.xz) > 1.5f)
+                        {
+                            laneChange = true; // the next lane driven is beside the previous one
+                        }
+                        if (laneChange)
+                        {
+                            if (math.distance(lastPt.xz, pt.xz) < 12f)
+                            {
+                                continue;
+                            }
+                            laneChange = false;
+                        }
+                    }
                     if (res.Polyline.Count == 0 || math.distancesq(res.Polyline[res.Polyline.Count - 1], pt) > 1f)
                     {
                         res.Polyline.Add(pt);
                     }
                 }
+            }
+            if (res.Polyline.Count > 0 && math.distancesq(res.Polyline[res.Polyline.Count - 1], finalPt) > 1f)
+            {
+                res.Polyline.Add(finalPt);
             }
             res.DistanceMeters = dist;
             // Free-flow time at the speed limit is unrealistically short for a driver: calibrate for acceleration,

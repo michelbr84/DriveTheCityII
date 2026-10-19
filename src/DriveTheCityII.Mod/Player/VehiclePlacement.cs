@@ -50,9 +50,13 @@ namespace DriveTheCityII.Player
         /// <summary>
         /// The closest spot near <paramref name="near"/> on a road lane (or a parking lane, for small vehicles) where the
         /// whole vehicle fits. Tries the nearest lane point first, then slides along the lane and widens the search in rings.
+        /// With <paramref name="preferYaw"/> (recovery), lanes running the other way count as 25 m further away, so the
+        /// vehicle is not put on the opposite carriageway facing backwards when a spot in its own direction is near.
         /// </summary>
-        public bool FindClearVehicleSpot(VehicleSpec spec, float3 near, bool allowParking, float maxRadius, out float3 pos, out float yaw)
+        public bool FindClearVehicleSpot(VehicleSpec spec, float3 near, bool allowParking, float maxRadius, out float3 pos, out float yaw, float preferYaw = float.NaN)
         {
+            bool prefer = !float.IsNaN(preferYaw);
+            float2 preferDir = prefer ? new float2(math.sin(preferYaw), math.cos(preferYaw)) : default;
             pos = default;
             yaw = 0f;
             m_PlaceProbes.Clear();
@@ -72,12 +76,14 @@ namespace DriveTheCityII.Player
                 ? new[] { CityWorldProbe.LaneKind.Parking, CityWorldProbe.LaneKind.Road }
                 : new[] { CityWorldProbe.LaneKind.Road };
             float bestD = float.MaxValue;
+            bool bestPenalized = false;
             int ringEnd = 1;
             bool found = false;
             for (int i = 0; i < m_PlaceProbes.Count; i++)
             {
-                // Finish the current ring once something was found, so the closest clear spot wins.
-                if (found && i >= ringEnd)
+                // Finish the current ring once something was found, so the closest clear spot wins (keep looking while
+                // the best spot faces the wrong way and the rings are still within the penalty distance).
+                if (found && i >= ringEnd && (!bestPenalized || math.distance(m_PlaceProbes[i].xz, near.xz) > bestD))
                 {
                     break;
                 }
@@ -103,11 +109,17 @@ namespace DriveTheCityII.Player
                         }
                         float cyaw = math.atan2(ctan.x, ctan.z);
                         float d = math.distance(cand.xz, near.xz);
+                        bool penalized = prefer && math.dot(math.normalizesafe(ctan.xz), preferDir) < 0f;
+                        if (penalized)
+                        {
+                            d += 25f;
+                        }
                         if (d >= bestD || !IsFootprintClear(spec, cand, cyaw))
                         {
                             continue;
                         }
                         bestD = d;
+                        bestPenalized = penalized;
                         pos = cand;
                         yaw = cyaw;
                         found = true;

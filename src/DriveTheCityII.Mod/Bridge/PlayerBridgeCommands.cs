@@ -106,6 +106,8 @@ namespace DriveTheCityII.Bridge
                 Vec2 fwd = Vec2.FromYaw(yaw);
                 var list = new List<DriveTheCityII.Core.World.Obstacle>();
                 P.Probe.QueryObstacles(c, radius, list);
+                // Vehicles first, nearest first.
+                list.Sort((x, y) => x.Kind == y.Kind ? Vec2.Distance(x.Footprint.Center, c).CompareTo(Vec2.Distance(y.Footprint.Center, c)) : (x.Kind == DriveTheCityII.Core.World.ObstacleKind.Vehicle ? -1 : y.Kind == DriveTheCityII.Core.World.ObstacleKind.Vehicle ? 1 : x.Kind.CompareTo(y.Kind)));
                 var parts = new List<string>();
                 foreach (var o in list)
                 {
@@ -391,12 +393,15 @@ namespace DriveTheCityII.Bridge
             var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
             Unity.Entities.Entity myLane = em.Exists(v.Entity) && em.HasComponent<Game.Vehicles.CarCurrentLane>(v.Entity)
                 ? em.GetComponentData<Game.Vehicles.CarCurrentLane>(v.Entity).m_Lane : Unity.Entities.Entity.Null;
+            // traffic [radius]: vehicles nearest first as [along side speed heading-dot].
+            float radius = a.Length > 1 ? F(a[1]) : 40f;
             var obs = new List<Obstacle>();
-            P.Probe.QueryObstacles(v.State.Position.XZ, 40f, obs);
+            P.Probe.QueryObstacles(v.State.Position.XZ, radius, obs);
             Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
             var parts = new List<string>();
             int behindStopped = 0;
-            foreach (Obstacle o in obs.Where(o => o.Kind == ObstacleKind.Vehicle))
+            int moving = 0;
+            foreach (Obstacle o in obs.Where(o => o.Kind == ObstacleKind.Vehicle).OrderBy(o => Vec2.Distance(o.Footprint.Center, v.State.Position.XZ)))
             {
                 Vec2 d = o.Footprint.Center - v.State.Position.XZ;
                 float along = Vec2.Dot(d, fwd);
@@ -406,9 +411,30 @@ namespace DriveTheCityII.Bridge
                 {
                     behindStopped++;
                 }
-                parts.Add($"[{along:0} {side:0} {sp:0.0}]");
+                if (sp >= 1f)
+                {
+                    moving++;
+                }
+                parts.Add($"[{along:0} {side:0.0} {sp:0.0} h{Vec2.Dot(o.Footprint.Forward, fwd):0.0}]");
             }
-            return new InstantOp(true, $"myLane={myLane} vehicles={parts.Count} behindStoppedSameLine={behindStopped} along/side/speed: {string.Join(" ", parts.Take(20))}");
+            string laneInfo = string.Empty;
+            if (myLane != Unity.Entities.Entity.Null && em.HasComponent<Game.Net.Curve>(myLane))
+            {
+                var bez = em.GetComponentData<Game.Net.Curve>(myLane).m_Bezier;
+                float dl = Colossal.Mathematics.MathUtils.Distance(bez.xz, new float2(v.State.Position.X, v.State.Position.Z), out float tl);
+                float2 tanl = math.normalizesafe(Colossal.Mathematics.MathUtils.Tangent(bez, tl).xz);
+                float2 rel = new float2(v.State.Position.X, v.State.Position.Z) - Colossal.Mathematics.MathUtils.Position(bez, tl).xz;
+                float signed = rel.x * tanl.y - rel.y * tanl.x;
+                float lw = 0f;
+                if (em.HasComponent<Game.Prefabs.PrefabRef>(myLane) && em.HasComponent<Game.Prefabs.NetLaneData>(em.GetComponentData<Game.Prefabs.PrefabRef>(myLane).m_Prefab))
+                {
+                    lw = em.GetComponentData<Game.Prefabs.NetLaneData>(em.GetComponentData<Game.Prefabs.PrefabRef>(myLane).m_Prefab).m_Width;
+                }
+                laneInfo = string.Format(System.Globalization.CultureInfo.InvariantCulture, " laneOffset={0:0.00} (right +) laneWidth={1:0.0} master={2} ownWidth={3:0.00}",
+                    signed, lw, em.HasComponent<Game.Net.MasterLane>(myLane), v.Spec.Width);
+                _ = dl;
+            }
+            return new InstantOp(true, $"myLane={myLane}{laneInfo} vehicles={parts.Count} moving={moving} behindStoppedSameLine={behindStopped} along/side/speed/heading: {string.Join(" ", parts.Take(40))}");
         }
 
         private static IBridgeOp Probe(string[] a)

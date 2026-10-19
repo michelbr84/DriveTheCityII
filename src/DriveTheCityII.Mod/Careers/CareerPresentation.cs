@@ -53,7 +53,9 @@ namespace DriveTheCityII.Careers
                 {
                     float3 from = P.Vehicle.State.Position.ToF3();
                     float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                    float wrongWay = P.Vehicle.Spec.Length > 7f ? 600f : 30f;
+                    // Long vehicles: prefer going round the block to turning in the road, but not at any price. With 600 s a
+                    // truck placed facing away from its drop was sent on an 11 km loop (observed in game on 2026-10-19).
+                    float wrongWay = P.Vehicle.Spec.Length > 7f ? 120f : 30f;
                     // End the route on a lane right at the target (docks and bus stops have 8 m arrival radii); widen only
                     // if no lane is that close.
                     RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay);
@@ -161,7 +163,7 @@ namespace DriveTheCityII.Careers
             {
                 float3 from = P.Vehicle.State.Position.ToF3();
                 float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, P.Vehicle.Spec.Length > 7f ? 600f : 30f);
+                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, P.Vehicle.Spec.Length > 7f ? 120f : 30f);
                 if (r.Status == RouteStatusCode.Reachable)
                 {
                     MarkerBoard.Route.AddRange(r.Polyline);

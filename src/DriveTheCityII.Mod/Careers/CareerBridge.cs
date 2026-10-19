@@ -220,6 +220,9 @@ namespace DriveTheCityII.Careers
         private float m_LastConflict = float.MaxValue;
         private float m_WaitingSince = -1f;
         private float m_NotDrivingSince = -1f;
+        private float3 m_StillAnchor;
+        private float m_StillSince = -1f;
+        private float m_TouchedAt = -999f;
 
         private readonly int m_UntilLeg;
         private readonly bool m_Challenge;
@@ -363,6 +366,27 @@ namespace DriveTheCityII.Careers
                 m_WaitingSince = -1f;
             }
             bool watchdogPaused = holding || m_KTurn || (waitingInTraffic && now - m_WaitingSince < 120f);
+            // Hard limit, whatever the reason (the waiting timer above restarts whenever the gap reading flickers): not
+            // moving 8 m in 120 s, or in 60 s while touching a stopped vehicle, is a deadlock. Observed in game on
+            // 2026-10-19: a truck turning across our lane stopped against our front, the queues behind both locked the
+            // road for 15 minutes, and traffic flowed again within minutes of our truck leaving.
+            if (holding || m_StillSince < 0f || math.distance(pos.xz, m_StillAnchor.xz) > 8f)
+            {
+                m_StillAnchor = pos;
+                m_StillSince = now;
+            }
+            else
+            {
+                bool touching = now - m_TouchedAt < 5f;
+                float still = now - m_StillSince;
+                if (still > 120f || (touching && still > 60f))
+                {
+                    m_StillSince = now;
+                    DtcLog.Info(string.Format(CultureInfo.InvariantCulture, "autopilot: deadlock after {0:0} s without moving (touching={1}) at {2}", still, touching, v.State.Position));
+                    Recover(p, now, touching ? "deadlock against a stopped vehicle" : "no movement for 120 s");
+                    return false;
+                }
+            }
             if (m_MoveCheckAt <= 0f || watchdogPaused)
             {
                 m_MoveAnchor = pos;
@@ -459,7 +483,10 @@ namespace DriveTheCityII.Careers
             }
 
             bool heavy = v.Spec.Length > 7f;
-            float want = Mathf.Clamp(dist * 0.35f, 4f, heavy ? 9f : 12f);
+            // Trucks and buses: 9 m/s in general, 12 m/s on straight road. Observed in game on 2026-10-19: at 9 m/s on a
+            // highway, traffic at 36-40 m/s ran into the truck from behind while changing lanes.
+            bool straight = turnAhead < 0.15f && Math.Abs(err) < 0.15f;
+            float want = Mathf.Clamp(dist * 0.35f, 4f, heavy ? (straight ? 12f : 9f) : 12f);
             if (turnAhead > 0.9f)
             {
                 want = Math.Min(want, heavy ? 3.5f : 4.5f);
@@ -477,11 +504,13 @@ namespace DriveTheCityII.Careers
                 want = Math.Min(want, 4f);
             }
             bool ignoreStopped = now < m_IgnoreStoppedUntil || bypassing;
-            float gap = VehicleAheadGap(p, v, pos, Math.Max(speed, 2f), ignoreStopped, out bool stoppedAhead, out float conflictIn);
+            float gap = VehicleAheadGap(p, v, pos, Math.Max(speed, 2f), ignoreStopped, out bool stoppedAhead, out float conflictIn, out float leaderSpeed);
             if (gap < 40f)
             {
-                // Speed that still allows stopping 3 m behind the vehicle ahead at a gentle 2.5 m/s².
-                want = Math.Min(want, (float)Math.Sqrt(2.0 * 2.5 * Math.Max(0f, gap - 3f)));
+                // Follow the vehicle ahead: its speed (a little less, so the gap opens) plus what still allows stopping 3 m
+                // behind it at a gentle 2.5 m/s². A car cutting in close but moving as fast as we are needs no hard stop
+                // (observed in game on 2026-10-19: full stops for cut-ins cost heavy cargo 4 points each).
+                want = Math.Min(want, leaderSpeed * 0.9f + (float)Math.Sqrt(2.0 * 2.5 * Math.Max(0f, gap - 3f)));
                 // Waiting behind a vehicle that does not move (parked, or waiting itself). Cars try to pass it after 20 s;
                 // trucks and buses keep waiting (a collision would cost the cargo), and the stall watchdog decides.
                 m_BlockedFor = stoppedAhead && Math.Abs(speed) < 0.5f ? m_BlockedFor + dt : 0f;
@@ -509,6 +538,10 @@ namespace DriveTheCityII.Careers
             }
             m_LastGap = gap;
             m_LastConflict = conflictIn;
+            if (gap < 1f && Math.Abs(speed) < 0.3f)
+            {
+                m_TouchedAt = now;
+            }
             if (conflictIn < 3f)
             {
                 // Another vehicle is predicted to cross or enter our path (junctions, merges): yield.
@@ -518,6 +551,12 @@ namespace DriveTheCityII.Careers
             else
             {
                 m_YieldFor = 0f;
+            }
+            if (!bypassing && speed > -0.1f && !FootprintClearAhead(p, v, pos, 0.8f + Math.Max(0f, speed) * 0.5f, Math.Sign(err)))
+            {
+                // Something is just ahead of the bumper (a pole or bollard in a lot, a car's corner): creep, so a touch
+                // stays a light contact instead of costing cargo (observed in game on 2026-10-19: poles hit at 3.7 m/s).
+                want = Math.Min(want, 1.2f);
             }
             if (bypassing)
             {
@@ -537,8 +576,13 @@ namespace DriveTheCityII.Careers
             {
                 // Comfortable braking (about 0.3 g for trucks and buses: harsh braking damages cargo and upsets
                 // passengers); full braking only when a collision is imminent.
-                bool emergency = conflictIn < 1f || gap < 4f;
-                f.Brake = math.clamp((speed - want) * 0.3f, 0.1f, emergency ? 1f : heavy ? 0.42f : 0.7f);
+                // Trucks and buses: firm (about 0.33 g, under the heavy-cargo limit) when a conflict is close, full only
+                // when a collision is imminent; a contact costs more cargo than one harsh stop.
+                float closing = speed - leaderSpeed;
+                bool imminent = conflictIn < 0.6f || (gap < 2f && closing > 1f);
+                bool emergency = conflictIn < 1f || (gap < 4f && closing > 0.5f);
+                float maxBrake = imminent ? 1f : emergency ? (heavy ? 0.5f : 1f) : heavy ? 0.42f : 0.7f;
+                f.Brake = math.clamp((speed - want) * 0.3f, 0.1f, maxBrake);
             }
 
             DtcLog.Throttled("autopilot", now, 3f, string.Format(CultureInfo.InvariantCulture,
@@ -695,6 +739,7 @@ namespace DriveTheCityII.Careers
             m_LastRecoverAt = now;
             m_Recoveries++;
             m_Log.Add($"recovery:{why}({now - m_Start:0}s)");
+            DtcLog.Info("autopilot: recovery (" + why + ")");
             p.Input.Injected = null;
             p.EnterRecovery("test autopilot " + why);
         }
@@ -740,9 +785,10 @@ namespace DriveTheCityII.Careers
         /// Bumper-to-bumper gap to the vehicle ahead in our corridor, and the time until another vehicle is predicted to
         /// enter our path (straight-line prediction of both over 3 s; covers cross traffic at junctions).
         /// </summary>
-        private float VehicleAheadGap(PlayerSystem p, ControlledVehicle v, float3 pos, float speed, bool ignoreStopped, out bool nearestStopped, out float conflictIn)
+        private float VehicleAheadGap(PlayerSystem p, ControlledVehicle v, float3 pos, float speed, bool ignoreStopped, out bool nearestStopped, out float conflictIn, out float leaderSpeed)
         {
             nearestStopped = false;
+            leaderSpeed = 0f;
             conflictIn = float.MaxValue;
             Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
             Vec2 right = fwd.RightPerp;
@@ -763,7 +809,11 @@ namespace DriveTheCityII.Careers
                 bool stopped = o.Velocity.Length < 0.5f;
                 // Only vehicles ahead or alongside can cut into our path; one coming up from behind is the follower's
                 // business (counting it made us wait for a car that was itself waiting for us).
-                if (!stopped && along > -ownHalf * 0.5f)
+                // A vehicle going our way faster than we are (overtaking, or cutting in ahead and pulling away) is no
+                // conflict: braking for it only upsets the cargo (observed in game: full stops for lane changes ahead).
+                float vAlong = Vec2.Dot(o.Velocity, fwd);
+                bool pullingAway = vAlong > 0.7f * o.Velocity.Length && vAlong > speed + 0.5f;
+                if (!stopped && !pullingAway && along > -ownHalf * 0.5f)
                 {
                     // Predicted conflict: both move in straight lines; the other vehicle ends up inside our corridor
                     // just ahead of our front bumper.
@@ -794,6 +844,7 @@ namespace DriveTheCityII.Careers
                 {
                     gap = Math.Max(0f, clearance);
                     nearestStopped = stopped;
+                    leaderSpeed = Math.Max(0f, Vec2.Dot(o.Velocity, fwd));
                 }
             }
             return gap;
