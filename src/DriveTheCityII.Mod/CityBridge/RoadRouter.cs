@@ -244,6 +244,13 @@ namespace DriveTheCityII.CityBridge
             var res = new RouteResult();
             var starts = new List<(int idx, float t, float d)>();
             LanesNear(from, 25f, starts);
+            // Only lanes on the vehicle's own level can start the route when there are any: a penalty was not enough, the
+            // route kept switching to the road 7 m below an elevated road whenever that saved a long detour (observed in
+            // game on 2026-10-19), and the truck followed it off the deck's edge.
+            if (starts.Exists(s => math.abs(MathUtils.Position(m_Lanes[s.idx].Curve, s.t).y - from.y) <= 1.2f))
+            {
+                starts.RemoveAll(s => math.abs(MathUtils.Position(m_Lanes[s.idx].Curve, s.t).y - from.y) > 1.2f);
+            }
             var goals = new List<(int idx, float t, float d)>();
             LanesNear(to, goalRadius, goals);
             if (starts.Count == 0 || goals.Count == 0)
