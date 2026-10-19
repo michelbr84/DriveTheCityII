@@ -34,6 +34,14 @@ function OwnCar() {
 function Attempt([string]$career, [int]$seconds) {
     OwnCar
     $offers = Last (Bridge "career offers $career") 'career offers'
+    if ($offers -notmatch 'eligible=True' -and $career -eq 'Freight') {
+        # Offers are generated near the player: after a failed job far from industry there may be none. Go to the
+        # nearest industrial place with the car and ask again.
+        OnFoot
+        Bridge 'career goplace Industrial;wait 1' | Out-Null
+        OwnCar
+        $offers = Last (Bridge "career offers $career") 'career offers'
+    }
     $best = -1; $bestM = [double]::MaxValue
     foreach ($m in [regex]::Matches($offers, '#(\d+) .*? (\d+)m pay .*? eligible=True')) { if ([double]$m.Groups[2].Value -lt $bestM) { $bestM = [double]$m.Groups[2].Value; $best = [int]$m.Groups[1].Value } }
     if ($best -lt 0) { Note "$career no eligible offer: $(($offers -split ' :: ')[-1])"; Bridge 'wait 20' | Out-Null; return $false }

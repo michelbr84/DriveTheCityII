@@ -290,6 +290,44 @@ namespace DriveTheCityII.Core.Tests
             Assert.True(s.Position.Z + c.Spec.Length / 2 <= 27.05f, $"car inside building: {s.Position}");
         }
 
+        private static Obstacle MovingCar(float z, float speedZ) => new Obstacle
+        {
+            Footprint = Obb2.FromYaw(new Vec2(0f, z), 0f, 0.9f, 2.2f),
+            YMin = 0f,
+            YMax = 1.5f,
+            Kind = ObstacleKind.Vehicle,
+            SourceId = 7,
+            Velocity = new Vec2(0f, speedZ),
+        };
+
+        [Fact]
+        public void CarOvertakingThroughOursIsNoContact()
+        {
+            // Native traffic can pass straight through the player's vehicle; overlapping our front while pulling away
+            // at 30 m/s is not an impact, and must not stop or push the car.
+            var w = new FakeWorld();
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn();
+            s.Speed = 12f;
+            w.Obstacles.Add(MovingCar(c.Spec.Length * 0.5f + 1.5f, 30f));
+            var r = c.Step(w, ref s, new VehicleInput { Throttle = 0.3f }, 1f / 60f);
+            Assert.Equal(0f, r.ImpactSpeed);
+            Assert.True(s.Speed > 11.5f, $"speed {s.Speed}");
+        }
+
+        [Fact]
+        public void RearContactWithSlowerCarScoresTheClosingSpeed()
+        {
+            var w = new FakeWorld();
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn();
+            s.Speed = 10f;
+            w.Obstacles.Add(MovingCar(c.Spec.Length * 0.5f + 2.1f, 6f));
+            var r = c.Step(w, ref s, new VehicleInput(), 1f / 60f);
+            Assert.InRange(r.ImpactSpeed, 3.5f, 4.5f);
+            Assert.InRange(s.Speed, 4f, 7f);
+        }
+
         [Fact]
         public void ParkingBrakeHoldsCar()
         {

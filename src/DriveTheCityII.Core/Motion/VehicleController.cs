@@ -335,12 +335,17 @@ namespace DriveTheCityII.Core.Motion
                     {
                         continue;
                     }
+                    float closing = float.MaxValue;
                     if (o.Kind == ObstacleKind.Vehicle || o.Kind == ObstacleKind.Creature)
                     {
                         // Moving obstacles only block the car when it drives into them; an overlap they caused must not
-                        // shove a stationary or receding player vehicle.
+                        // shove a stationary or receding player vehicle. "Into" also needs a closing speed relative to
+                        // the other's own motion: native traffic can overtake straight through the player's vehicle,
+                        // and when it overlaps the front it is pulling away, not being hit (observed in game on
+                        // 2026-10-19: cars passing through a truck at 30 m/s were scored as 9.7 m/s impacts).
                         float into = -Vec2.Dot(Vec2.FromYaw(yaw) * s.Speed, pen.Normal);
-                        if (into <= 0.05f)
+                        closing = into + Vec2.Dot(o.Velocity, pen.Normal);
+                        if (into <= 0.05f || closing <= 0.05f)
                         {
                             continue;
                         }
@@ -358,11 +363,14 @@ namespace DriveTheCityII.Core.Motion
                     float approach = -Vec2.Dot(vel, pen.Normal);
                     if (approach > 0f)
                     {
-                        Vec2 responded = vel + pen.Normal * (approach * (1f + spec.Restitution));
+                        // Against a moving vehicle the impact is the closing speed (a slower car ahead: the difference;
+                        // an oncoming one: the sum), and the car only loses what it closes at, never more than its own.
+                        float impact = closing == float.MaxValue ? approach : closing;
+                        Vec2 responded = vel + pen.Normal * (Math.Min(approach, impact) * (1f + spec.Restitution));
                         float newSpeed = Vec2.Dot(responded, fwd);
-                        if (approach > report.ImpactSpeed)
+                        if (impact > report.ImpactSpeed)
                         {
-                            report.ImpactSpeed = approach;
+                            report.ImpactSpeed = impact;
                             report.ImpactKind = o.Kind;
                             report.ImpactSource = o.SourceId;
                         }
