@@ -216,10 +216,17 @@ namespace DriveTheCityII.Careers
         private readonly int m_UntilLeg;
         private readonly bool m_Challenge;
 
+        private Action<Core.Motion.VehicleStepReport> m_OnImpact;
+
         public MissionAutopilotOp(float seconds, int untilLeg = -1, bool challenge = false)
         {
             m_UntilLeg = untilLeg;
             m_Challenge = challenge;
+            m_OnImpact = ReportImpact;
+            if (PlayerSystem.Instance != null)
+            {
+                PlayerSystem.Instance.VehicleImpact += m_OnImpact;
+            }
             m_Start = Time.realtimeSinceStartup;
             m_End = m_Start + seconds;
         }
@@ -242,6 +249,7 @@ namespace DriveTheCityII.Careers
                 p.Input.Injected = null;
                 Ok = true;
                 Result = $"{(m_Challenge ? "challenge" : "mission")} finished after {now - m_Start:0}s; {Summary()} :: {CareerBridge.Status()} {(m_Challenge ? CareerBridge.Challenges() : string.Empty)}";
+                Unsubscribe();
                 return true;
             }
             int legIndex;
@@ -278,6 +286,7 @@ namespace DriveTheCityII.Careers
                 p.Input.Injected = null;
                 Ok = true;
                 Result = $"reached leg {legIndex} after {now - m_Start:0}s; {Summary()} :: {CareerBridge.Status()}";
+                Unsubscribe();
                 return true;
             }
             if (m_UntilLeg >= 0 && legIndex >= m_UntilLeg && p.Vehicle != null)
@@ -290,6 +299,7 @@ namespace DriveTheCityII.Careers
                 p.Input.Injected = null;
                 Ok = false;
                 Result = $"timeout; {Summary()} :: {CareerBridge.Status()}";
+                Unsubscribe();
                 return true;
             }
             if (legIndex != m_LastLeg)
@@ -316,7 +326,8 @@ namespace DriveTheCityII.Careers
                     {
                         Ok = false;
                         Result = $"player returned to city building; {Summary()} :: {CareerBridge.Status()}";
-                        return true;
+                        Unsubscribe();
+                return true;
                     }
                 }
                 return false;
@@ -381,7 +392,7 @@ namespace DriveTheCityII.Careers
             }
             if (now < m_ReverseUntil)
             {
-                p.Input.Injected = new InputFrame { Brake = v.Spec.Length > 7f ? 0.35f : 0.8f, Steer = m_ReverseSteer };
+                p.Input.Injected = Reverse(v, m_ReverseSteer);
                 return false;
             }
 
@@ -398,7 +409,7 @@ namespace DriveTheCityII.Careers
             if (dist < Math.Max(14f, radius * 2.5f) && Math.Abs(directErr) > 1.6f && speed < 1.5f)
             {
                 float errRear = MathX.WrapAngle(math.atan2(target.x - pos.x, target.z - pos.z) - (v.State.Yaw + math.PI));
-                p.Input.Injected = new InputFrame { Brake = v.Spec.Length > 7f ? 0.3f : 0.5f, Steer = math.clamp(-2f * errRear, -1f, 1f) };
+                p.Input.Injected = Reverse(v, math.clamp(-2f * errRear, -1f, 1f));
                 return false;
             }
 
@@ -415,7 +426,7 @@ namespace DriveTheCityII.Careers
                 }
                 m_ReverseUntil = now + 1.8f;
                 m_ReverseSteer = -Math.Sign(err);
-                p.Input.Injected = new InputFrame { Brake = v.Spec.Length > 7f ? 0.35f : 1f, Steer = m_ReverseSteer };
+                p.Input.Injected = Reverse(v, m_ReverseSteer);
                 return false;
             }
 
@@ -508,10 +519,61 @@ namespace DriveTheCityII.Careers
                 m_Backouts++;
                 m_ReverseUntil = now + 2f;
                 m_ReverseSteer = -Math.Sign(f.Steer);
-                f = new InputFrame { Brake = heavy ? 0.35f : 1f, Steer = m_ReverseSteer };
+                f = Reverse(v, m_ReverseSteer);
             }
             p.Input.Injected = f;
             return false;
+        }
+
+        /// <summary>
+        /// Reverse input: enough pedal to overcome rolling resistance (a weak pedal does not move a truck at all), released
+        /// above a slow reverse speed (1.5 m/s for trucks and buses, 2.5 m/s for cars).
+        /// </summary>
+        private static InputFrame Reverse(ControlledVehicle v, float steer)
+        {
+            float limit = v.Spec.Length > 7f ? 1.5f : 2.5f;
+            float pedal = -v.State.Speed < limit ? (v.Spec.Length > 7f ? 0.8f : 0.7f) : 0f;
+            if (v.State.Gear == Core.Motion.Gear.Forward && Math.Abs(v.State.Speed) < 0.3f)
+            {
+                pedal = 1f; // engage reverse (held brake at a standstill)
+            }
+            return new InputFrame { Brake = pedal, Steer = steer };
+        }
+
+        /// <summary>Diagnostics: what was hit, where it was relative to the vehicle, and what the autopilot had measured.</summary>
+        private void ReportImpact(Core.Motion.VehicleStepReport r)
+        {
+            PlayerSystem p = PlayerSystem.Instance;
+            if (p?.Vehicle == null)
+            {
+                return;
+            }
+            Vec2 c = p.Vehicle.State.Position.XZ;
+            Vec2 fwd = Vec2.FromYaw(p.Vehicle.State.Yaw);
+            var list = new List<Obstacle>();
+            p.Probe.QueryObstacles(c, p.Vehicle.Spec.Length + 4f, list);
+            string hit = "not found";
+            foreach (Obstacle o in list)
+            {
+                if (o.SourceId == r.ImpactSource)
+                {
+                    Vec2 rel = o.Footprint.Center - c;
+                    hit = string.Format(CultureInfo.InvariantCulture, "along={0:0.0} lat={1:0.0} size={2:0.0}x{3:0.0} v=({4:0.0},{5:0.0}) heading-dot={6:0.00}",
+                        Vec2.Dot(rel, fwd), Vec2.Dot(rel, fwd.RightPerp), o.Footprint.HalfWidth * 2f, o.Footprint.HalfLength * 2f,
+                        Vec2.Dot(o.Velocity, fwd), Vec2.Dot(o.Velocity, fwd.RightPerp), Vec2.Dot(o.Footprint.Forward, fwd));
+                }
+            }
+            DtcLog.Info(string.Format(CultureInfo.InvariantCulture, "autopilot impact: {0:0.0} m/s with {1} #{2} :: {3} :: own speed {4:0.0} steer {5:0.00} lastGap {6:0.0} lastConflict {7:0.0}",
+                r.ImpactSpeed, r.ImpactKind, r.ImpactSource, hit, p.Vehicle.State.Speed, p.Vehicle.State.SteerAngle, m_LastGap > 1000f ? -1f : m_LastGap, m_LastConflict > 1000f ? -1f : m_LastConflict));
+        }
+
+        private void Unsubscribe()
+        {
+            if (m_OnImpact != null && PlayerSystem.Instance != null)
+            {
+                PlayerSystem.Instance.VehicleImpact -= m_OnImpact;
+                m_OnImpact = null;
+            }
         }
 
         private void Recover(PlayerSystem p, float now, string why)

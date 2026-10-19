@@ -96,6 +96,26 @@ namespace DriveTheCityII.Bridge
                 }
                 return new InstantOp(true, $"camera pivot {x},{y},{z}");
             };
+            TestBridge.Handlers["obstacles"] = a =>
+            {
+                // obstacles [radius]: what is around the controlled vehicle (or the avatar), relative to its heading.
+                float radius = a.Length > 1 ? F(a[1]) : 15f;
+                ControlledVehicle v = P.Vehicle;
+                Vec2 c = v != null ? v.State.Position.XZ : P.Avatar.Position.XZ;
+                float yaw = v != null ? v.State.Yaw : P.Avatar.Yaw;
+                Vec2 fwd = Vec2.FromYaw(yaw);
+                var list = new List<DriveTheCityII.Core.World.Obstacle>();
+                P.Probe.QueryObstacles(c, radius, list);
+                var parts = new List<string>();
+                foreach (var o in list)
+                {
+                    Vec2 rel = o.Footprint.Center - c;
+                    parts.Add(string.Format(CultureInfo.InvariantCulture, "{0} along={1:0.0} lat={2:0.0} size={3:0.0}x{4:0.0} y={5:0.0}..{6:0.0} v={7:0.0}",
+                        o.Kind, Vec2.Dot(rel, fwd), Vec2.Dot(rel, fwd.RightPerp), o.Footprint.HalfWidth * 2f, o.Footprint.HalfLength * 2f, o.YMin, o.YMax, o.Velocity.Length));
+                }
+                string self = v != null ? string.Format(CultureInfo.InvariantCulture, "vehicle {0:0.0}x{1:0.0} at y={2:0.0} clear={3}", v.Spec.Width, v.Spec.Length, v.State.Position.Y, P.IsFootprintClear(v.Spec, v.State.Position.ToF3(), v.State.Yaw)) : "on foot";
+                return new InstantOp(true, self + " :: " + list.Count + " obstacles: " + string.Join(" | ", parts.Take(25)));
+            };
             TestBridge.Handlers["setting"] = a =>
             {
                 // setting <Property> <value>: changes a Drive the City II option for this session (mod settings only).

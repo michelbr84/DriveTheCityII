@@ -232,6 +232,28 @@ namespace DriveTheCityII.Bridge
                 return;
             }
             PerfMonitor.Sample();
+            // An "abort" file stops the running operation and drops queued commands (test tooling only).
+            string abortPath = Path.Combine(TestBridge.Root, "abort");
+            if (File.Exists(abortPath))
+            {
+                try
+                {
+                    File.Delete(abortPath);
+                }
+                catch (IOException)
+                {
+                }
+                if (m_Current != null)
+                {
+                    TestBridge.Log($"< ERR [{UTime.realtimeSinceStartup - m_CurrentStart:0.00}s] {m_CurrentText} :: aborted by request");
+                    m_Current = null;
+                }
+                m_Pending.Clear();
+                if (Player.PlayerSystem.Instance != null)
+                {
+                    Player.PlayerSystem.Instance.Input.Injected = null;
+                }
+            }
             PollFile();
             int guard = 0;
             while (guard++ < 32)
