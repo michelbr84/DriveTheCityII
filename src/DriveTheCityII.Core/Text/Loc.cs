@@ -103,6 +103,9 @@ namespace DriveTheCityII.Core.Text
             Add("mode.recovery", "Recovering", "Recuperando");
             Add("hud.sandbox", "SANDBOX", "SANDBOX");
             Add("hud.speed", "{0} km/h", "{0} km/h");
+            Add("hud.speedMph", "{0} mph", "{0} mph");
+            Add("msg.safeDisabled", "Drive the City II is safe-disabled in the mod options. Turn it off there to play again.",
+                "Drive the City II está com a desativação segura ligada nas opções do mod. Desligue-a lá para jogar de novo.");
             Add("hud.fuel", "Fuel", "Combustível");
             Add("hud.condition", "Condition", "Estado");
             Add("hud.level", "Level {0}", "Nível {0}");

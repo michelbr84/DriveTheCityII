@@ -74,6 +74,7 @@ namespace DriveTheCityII.Player
         private readonly List<ControlledVehicle> m_ParkedVehicles = new List<ControlledVehicle>();
         private int m_NextRecordId = 1;
 
+        private float m_FovBase = 62f;
         private float m_CamYaw;
         private float m_CamPitch = -8f;
         private CameraView m_FootView = CameraView.ThirdPerson;
@@ -203,7 +204,32 @@ namespace DriveTheCityII.Player
             CompleteDependency();
             m_Probe.BeginFrame();
             m_Catalog.EnsureBuilt(EntityManager, m_PrefabSystem);
+            if (m_Sm.State != PlayerState.Building)
+            {
+                CityServices.Refresh(EntityManager, m_Probe, UTime.realtimeSinceStartup);
+            }
+            MarkerBoard.Visible = m_Sm.State != PlayerState.Building;
 
+            Settings.DriveTheCityIISettings settings = Settings.DriveTheCityIISettings.Instance;
+            if (settings != null)
+            {
+                Sandbox = settings.SandboxBorrowing;
+                m_FovBase = settings.FieldOfView;
+                if (settings.SafeDisable)
+                {
+                    // Safe-disable (SPEC-MODULES 4.9): normal cleanup back to Building, then stay inert.
+                    if (m_Sm.State != PlayerState.Building)
+                    {
+                        ForceBuilding("safe-disable");
+                        Say(Loc.T("msg.safeDisabled"));
+                    }
+                    if (m_Input.ToggleWasPressed())
+                    {
+                        Say(Loc.T("msg.safeDisabled"));
+                    }
+                    return;
+                }
+            }
             float dt = math.clamp(UTime.unscaledDeltaTime, 0f, 0.1f);
             bool menu = m_Screens != null && m_Screens.isMenuActive;
             bool paused = HostFlow.SimulationSpeed <= 0f || !Application.isFocused;
@@ -1361,7 +1387,7 @@ namespace DriveTheCityII.Player
                     target = ClampCameraAboveSurface(target, basePos.y + 0.8f);
                     yawDeg = camYaw * MathX.Rad2Deg;
                     pitchDeg = 8f;
-                    fov = 62f + math.min(10f, math.abs(s.Speed) * 0.25f);
+                    fov = m_FovBase + math.min(10f, math.abs(s.Speed) * 0.25f);
                 }
             }
             else
@@ -1383,7 +1409,7 @@ namespace DriveTheCityII.Player
                 }
                 yawDeg = m_CamYaw * MathX.Rad2Deg;
                 pitchDeg = -m_CamPitch;
-                fov = m_FootView == CameraView.FirstPerson ? 70f : 60f;
+                fov = m_FootView == CameraView.FirstPerson ? m_FovBase + 8f : m_FovBase;
             }
 
             if (!m_CamInitialized)

@@ -34,6 +34,7 @@ namespace DriveTheCityII
                     DtcLog.Info($"Mod asset: {asset.name} at {DtcLog.Sanitize(asset.path)}");
                 }
                 Runtime.Startup(updateSystem);
+                Settings.DriveTheCityIISettings.Create(this);
                 DtcLog.Info("Drive the City II systems registered");
             }
             catch (Exception ex)

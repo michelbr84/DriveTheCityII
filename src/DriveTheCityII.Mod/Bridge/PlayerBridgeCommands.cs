@@ -46,6 +46,36 @@ namespace DriveTheCityII.Bridge
                 UI.HudUISystem.Instance?.InvokeAction(a[1]);
                 return new InstantOp(UI.HudUISystem.Instance != null, "ui action " + a[1]);
             };
+            TestBridge.Handlers["places"] = a =>
+            {
+                CityServices.Refresh(Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager, P.Probe, 0f);
+                string kinds = string.Join(" ", CityServices.Places.Places.GroupBy(pl => pl.Kind).Select(g => g.Key + "=" + g.Count()));
+                return new InstantOp(true, $"lanes={CityServices.Router.LaneCount} places={CityServices.Places.Places.Count} [{kinds}] busLines={CityServices.Places.BusLines.Count} " +
+                    string.Join(" | ", CityServices.Places.BusLines.Take(5).Select(l => $"{l.Name}#{l.Number}:{l.Stops.Count} stops")));
+            };
+            TestBridge.Handlers["route"] = a =>
+            {
+                var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+                CityServices.Refresh(em, P.Probe, 0f);
+                string kind = a.Length > 1 ? a[1] : "Commercial";
+                float minDist = a.Length > 2 ? F(a[2]) : 300f;
+                float3 from = P.Vehicle != null ? P.Vehicle.State.Position.ToF3() : P.Avatar.Position.ToF3();
+                float2 heading = P.Vehicle != null ? new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw)) : float2.zero;
+                CityPlace target = CityServices.Places.Places
+                    .Where(pl => pl.Kind.ToString().Equals(kind, StringComparison.OrdinalIgnoreCase) && math.distance(pl.RoadAccess, from) >= minDist)
+                    .OrderBy(pl => math.distance(pl.RoadAccess, from)).FirstOrDefault();
+                if (target == null)
+                {
+                    return new InstantOp(false, "no place of kind " + kind);
+                }
+                CityServices.Places.RefineAccess(P.Probe, target);
+                RouteResult r = CityServices.Timed(() => CityServices.Router.FindRoute(em, from, heading, target.RoadAccess, 15f), out long ms);
+                MarkerBoard.Clear();
+                MarkerBoard.Markers.Add(new WorldMarker { Position = target.RoadAccess, Style = MarkerStyle.Dropoff, Radius = 4f });
+                MarkerBoard.Route.AddRange(r.Polyline);
+                return new InstantOp(r.Status == RouteStatusCode.Reachable,
+                    $"to '{target.Name}' ({target.Kind}, id={target.Id}) straight={math.distance(from, target.RoadAccess):0}m status={r.Status} dist={r.DistanceMeters:0}m time={r.TimeSeconds:0}s expansions={r.Expansions} points={r.Polyline.Count} ms={ms}");
+            };
             TestBridge.Handlers["traffic"] = Traffic;
             TestBridge.Handlers["trafficwatch"] = a => new TrafficWatchOp(a.Length > 1 ? F(a[1]) : 20f);
             TestBridge.Handlers["trafficsetup"] = a =>

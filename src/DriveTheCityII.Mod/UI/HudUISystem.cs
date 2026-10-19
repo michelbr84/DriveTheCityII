@@ -156,8 +156,9 @@ namespace DriveTheCityII.UI
             bool driving = state == PlayerState.Driving && v != null;
             if (driving)
             {
-                int kmh = (int)Math.Round(Math.Abs(v.State.Speed) * 3.6);
-                hud.Set("speed", Loc.T("hud.speed", kmh));
+                bool mph = Settings.DriveTheCityIISettings.Instance != null && Settings.DriveTheCityIISettings.Instance.Units == Settings.SpeedUnits.Mph;
+                int shown = (int)Math.Round(Math.Abs(v.State.Speed) * (mph ? 2.23694 : 3.6));
+                hud.Set("speed", Loc.T(mph ? "hud.speedMph" : "hud.speed", shown));
                 hud.Set("gear", v.State.ParkingBrake ? "P" : v.State.Gear == Gear.Reverse ? "R" : "D");
                 hud.Set("sandbox", v.Kind == ActorKind.BorrowedNativeVehicle);
                 hud.Set("sandboxLabel", Loc.T("hud.sandbox"));

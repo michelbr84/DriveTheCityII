@@ -41,6 +41,12 @@ namespace DriveTheCityII
             updateSystem.UpdateBefore<Player.PlayerSystem, Game.Rendering.PreRenderSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateBefore<Player.PlayerCameraSystem, Game.Rendering.CameraUpdateSystem>(SystemUpdatePhase.PreCulling);
 
+            // Persistence: career envelope inside every city save (system serializer) plus sidecar backups.
+            updateSystem.UpdateAt<Persistence.DtcSaveSystem>(SystemUpdatePhase.MainLoop);
+
+            // World markers and route guidance, drawn right before the game's overlay renderer.
+            updateSystem.UpdateBefore<CityBridge.WorldMarkerSystem, Game.Rendering.OverlayRenderSystem>(SystemUpdatePhase.Rendering);
+
             // UI: HUD view model and action routing.
             updateSystem.UpdateAt<UI.HudUISystem>(SystemUpdatePhase.UIUpdate);
 
