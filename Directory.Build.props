@@ -1,0 +1,21 @@
+<Project>
+  <!--
+    Drive the City II - shared build settings.
+    Generated build output and intermediates go OUTSIDE the OneDrive-synced project folder (OPEN-028):
+    %LOCALAPPDATA%\DriveTheCityII\build\  (override with -p:DtcBuildRoot=...).
+  -->
+  <PropertyGroup>
+    <DtcBuildRoot Condition="'$(DtcBuildRoot)' == ''">$(LOCALAPPDATA)\DriveTheCityII\build</DtcBuildRoot>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(DtcBuildRoot)\artifacts</ArtifactsPath>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Company>Drive the City II (private project)</Company>
+    <Product>Drive the City II</Product>
+    <DtcVersion>0.1.0</DtcVersion>
+    <Version>$(DtcVersion)</Version>
+  </PropertyGroup>
+</Project>

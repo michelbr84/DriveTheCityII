@@ -1,0 +1,71 @@
+using System;
+using System.Linq;
+using DriveTheCityII.Bridge;
+using DriveTheCityII.Diagnostics;
+using Game;
+using Game.SceneFlow;
+using Unity.Entities;
+
+namespace DriveTheCityII
+{
+    /// <summary>
+    /// Composition root and Supervisor (SPEC-MODULES 4.1): registers systems in a fixed order, detects conflicting
+    /// controllers, and holds session-wide flags (safe-disable, conflict, degraded modules).
+    /// </summary>
+    public static class Runtime
+    {
+        public static bool ConflictDetected { get; private set; }
+        public static string ConflictReason { get; private set; } = string.Empty;
+        public static bool TestMode { get; private set; }
+
+        /// <summary>Assembly names of other vehicle-control mods that must not run together with ours (REQ-COMPAT-001).</summary>
+        private static readonly string[] s_ConflictingAssemblies = { "BetaTestDrivingMod" };
+
+        public static void Startup(UpdateSystem updateSystem)
+        {
+            TestMode = TestBridge.IsEnabled();
+            DtcLog.Info($"Test bridge {(TestMode ? "ENABLED (lab sessions only)" : "disabled")}");
+
+            // Bridge first so that it can drive the menus even if a later module fails.
+            updateSystem.UpdateAt<TestBridgeSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAt<SessionGuardSystem>(SystemUpdatePhase.MainLoop);
+
+            GameManager.instance.onGameLoadingComplete += OnLoadingComplete;
+            GameManager.instance.onGamePreload += OnGamePreload;
+        }
+
+        public static void Shutdown()
+        {
+            if (GameManager.instance != null)
+            {
+                GameManager.instance.onGameLoadingComplete -= OnLoadingComplete;
+                GameManager.instance.onGamePreload -= OnGamePreload;
+            }
+        }
+
+        /// <summary>Checks loaded assemblies for a conflicting vehicle controller. Called once mods are loaded.</summary>
+        public static void CheckConflicts()
+        {
+            string found = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetName().Name)
+                .FirstOrDefault(n => s_ConflictingAssemblies.Contains(n));
+            if (found != null && !ConflictDetected)
+            {
+                ConflictDetected = true;
+                ConflictReason = $"Conflicting vehicle-control mod loaded: {found}. Drive the City II stays inactive.";
+                DtcLog.Warn(ConflictReason);
+            }
+        }
+
+        private static void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            DtcLog.Info($"Host: preload purpose={purpose} mode={mode}");
+        }
+
+        private static void OnLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            CheckConflicts();
+            DtcLog.Info($"Host: loading complete purpose={purpose} mode={mode} city='{CityBridge.HostFlow.CityName}' session={CityBridge.HostFlow.SessionGuid}");
+        }
+    }
+}

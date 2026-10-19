@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Pure logic with no reference to Cities: Skylines II, Unity, or any engine type (SPEC-MODULES section 7).
+    It is compiled twice: as this netstandard2.0 library for the unit tests, and as source files inside the
+    mod assembly (see DriveTheCityII.Mod.csproj), so the shipped mod is a single DLL.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>DriveTheCityII.Core</RootNamespace>
+    <AssemblyName>DriveTheCityII.Core</AssemblyName>
+  </PropertyGroup>
+</Project>

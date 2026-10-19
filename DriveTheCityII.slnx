@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DriveTheCityII.Core/DriveTheCityII.Core.csproj" />
+    <Project Path="src/DriveTheCityII.Mod/DriveTheCityII.Mod.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DriveTheCityII.Core.Tests/DriveTheCityII.Core.Tests.csproj" />
+  </Folder>
+</Solution>
