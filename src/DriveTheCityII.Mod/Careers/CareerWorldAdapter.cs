@@ -112,7 +112,9 @@ namespace DriveTheCityII.Careers
             {
                 return null;
             }
-            return ToInfo(p);
+            // Same access point as QueryPlaces returns: Career compares stored access points with Describe results
+            // (challenge signatures, mission revalidation), so both must use the same, stable road-edge point.
+            return ToInfoFast(p);
         }
 
         public RouteEstimate Estimate(MapPoint from, string placeId, VehicleClass vehicleClass)

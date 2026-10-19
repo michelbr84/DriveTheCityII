@@ -167,7 +167,9 @@ namespace DriveTheCityII.Core.Career
                         return false;
                     }
                     reference += e.TimeSeconds;
-                    sb.Append(Math.Round(e.DistanceMeters / 10).ToString(CultureInfo.InvariantCulture)).Append(';');
+                    // 50 m buckets: a live city rebuilds temporary lanes constantly, and small route-length differences
+                    // must not mark a challenge route as changed (observed in game on 2026-10-19).
+                    sb.Append(Math.Round(e.DistanceMeters / 50).ToString(CultureInfo.InvariantCulture)).Append(';');
                 }
             }
             if (def.Type == ChallengeType.Parking)

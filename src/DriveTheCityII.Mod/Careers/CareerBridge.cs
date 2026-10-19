@@ -518,7 +518,7 @@ namespace DriveTheCityII.Careers
                 }
                 // Bumper-to-bumper clearance (long trucks and buses: center distances alone would overlap the car ahead).
                 float clearance = along - ownHalf - o.Footprint.HalfLength;
-                if (along > 1f && clearance < 40f && Math.Abs(Vec2.Dot(rel, right)) < 1.8f && clearance < gap)
+                if (along > 1f && clearance < 40f && Math.Abs(Vec2.Dot(rel, right)) < v.Spec.Width * 0.5f + o.Footprint.HalfWidth + 0.4f && clearance < gap)
                 {
                     gap = Math.Max(0f, clearance);
                     nearestStopped = stopped;

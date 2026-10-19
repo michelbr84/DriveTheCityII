@@ -27,7 +27,7 @@ function Record([string]$step, [bool]$ok, [string]$detail) {
     Write-Host ("[{0}] {1} :: {2}" -f $(if ($ok) { 'PASS' } else { 'FAIL' }), $step, $detail)
 }
 function Status() { return (Last (Bridge 'career status') 'career status') }
-function OnFoot() { Bridge 'player exit;waitstate OnFoot 15' | Out-Null; if ((Bridge 'player state') -notmatch 'player=OnFoot') { Bridge 'player enter;waitstate OnFoot 15' | Out-Null } }
+function OnFoot() { Bridge 'input brake=1 t=2;input hand=1 t=1;player exit;waitstate OnFoot 15' | Out-Null; if ((Bridge 'player state') -notmatch 'player=OnFoot') { Bridge 'player enter;waitstate OnFoot 15' | Out-Null } }
 function Cond([string]$status, [string]$vid) { if ($status -match "${vid}:[^,\]]*:cond(\d+)") { return [int]$Matches[1] }; return -1 }
 function Fuel([string]$status, [string]$vid) { if ($status -match "${vid}:[^,\]]*:fuel(\d+)") { return [int]$Matches[1] }; return -1 }
 function VehicleOf([string]$status, [string]$pattern) { if ($status -match "((?:S?V)-?[A-Za-z0-9]+):$pattern") { return $Matches[1] }; return $null }
