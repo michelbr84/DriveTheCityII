@@ -110,6 +110,10 @@ namespace DriveTheCityII.Core.Motion
         private readonly List<Obstacle> m_Obstacles = new List<Obstacle>(64);
         private readonly GroundResult[] m_Wheels = new GroundResult[4];
 
+        /// <summary>Largest ground pitch and roll the vehicle follows (radians): about 20 degrees and 9 degrees.</summary>
+        public const float MaxPitch = 0.35f;
+        public const float MaxRoll = 0.15f;
+
         /// <summary>Optional filter: obstacles with this source id are ignored (the controlled vehicle itself).</summary>
         public long IgnoreSourceId;
 
@@ -422,13 +426,29 @@ namespace DriveTheCityII.Core.Motion
                 }
             }
 
-            float front = (m_Wheels[0].Height + m_Wheels[1].Height) * 0.5f;
-            float rear = (m_Wheels[2].Height + m_Wheels[3].Height) * 0.5f;
-            float left = (m_Wheels[0].Height + m_Wheels[2].Height) * 0.5f;
-            float rightH = (m_Wheels[1].Height + m_Wheels[3].Height) * 0.5f;
+            // A wheel far above or below the other three is over an edge or picked a different level (for example the
+            // edge of an overpass ramp beside the road): use the others' height for it. Without this, one bad sample
+            // tilts the vehicle, the tilt raises the next prediction, and the vehicle rolls over in a feedback loop
+            // (observed in game on 2026-10-19 with a rigid truck under an overpass).
+            float[] h = { m_Wheels[0].Height, m_Wheels[1].Height, m_Wheels[2].Height, m_Wheels[3].Height };
+            float outlier = 0.6f + 0.12f * spec.WheelBase;
+            float sum = h[0] + h[1] + h[2] + h[3];
+            for (int i = 0; i < 4; i++)
+            {
+                float others = (sum - m_Wheels[i].Height) / 3f;
+                if (Math.Abs(m_Wheels[i].Height - others) > outlier)
+                {
+                    h[i] = others;
+                }
+            }
+            float front = (h[0] + h[1]) * 0.5f;
+            float rear = (h[2] + h[3]) * 0.5f;
+            float left = (h[0] + h[2]) * 0.5f;
+            float rightH = (h[1] + h[3]) * 0.5f;
             groundY = (front + rear) * 0.5f;
-            pitch = (float)Math.Atan2(front - rear, spec.WheelBase);
-            roll = (float)Math.Atan2(left - rightH, halfTrack * 2f);
+            // Roads and ramps never tilt a vehicle beyond these angles.
+            pitch = MathX.Clamp((float)Math.Atan2(front - rear, spec.WheelBase), -MaxPitch, MaxPitch);
+            roll = MathX.Clamp((float)Math.Atan2(left - rightH, halfTrack * 2f), -MaxRoll, MaxRoll);
             // Only drop when the whole car has lost support; a single wheel over a curb edge keeps it supported.
             if (worst == GroundStatus.Drop)
             {

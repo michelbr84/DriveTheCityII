@@ -322,6 +322,34 @@ namespace DriveTheCityII.Core.Tests
         }
 
         [Fact]
+        public void TruckBesideRisingRampStaysUprightOnTheRoad()
+        {
+            // Regression (in game, 2026-10-19): a truck whose right wheels were over the edge of an overpass ramp rising
+            // beside the road rolled over in a feedback loop between the tilt and the per-wheel height prediction.
+            var w = new FakeWorld();
+            w.AddDeck(0, 50, 4, 60, 0f, SurfaceKind.Road, 1);
+            for (int i = 0; i < 400; i++)
+            {
+                float zc = i * 0.25f + 0.125f;
+                w.AddDeck(2.6f, zc, 1.5f, 0.125f, 6f * zc / 60f, SurfaceKind.Elevated, 2000 + i);
+            }
+            var spec = new VehicleSpec { Length = 9.8f, Width = 2.8f, WheelBase = 5.9f, Acceleration = 1.8f, MaxSpeed = 24f };
+            var c = new VehicleController(spec);
+            var s = Spawn(0, 1, 0f);
+            float maxRoll = 0f;
+            float maxY = 0f;
+            for (int i = 0; i < 400; i++)
+            {
+                c.Step(w, ref s, new VehicleInput { Throttle = 0.5f }, 1f / 50f);
+                maxRoll = Math.Max(maxRoll, Math.Abs(s.Roll));
+                maxY = Math.Max(maxY, s.Position.Y);
+            }
+            Assert.True(s.Position.Z > 10f, $"z={s.Position.Z}");
+            Assert.True(maxRoll <= VehicleController.MaxRoll + 1e-4f, $"roll={maxRoll}");
+            Assert.True(maxY < 0.6f, $"y={maxY}");
+        }
+
+        [Fact]
         public void TerrainWallBlocksCar()
         {
             var w = new FakeWorld { Terrain = (x, z) => z > 20 ? 6f : 0f };
