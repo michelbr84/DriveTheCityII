@@ -608,6 +608,33 @@ namespace DriveTheCityII.Player
                 Say(Loc.T("msg.noModel", prefabOrCategory));
                 return false;
             }
+            return SpawnCareerVehicle(info, pos, yaw, careerVehicleId, out vehicle);
+        }
+
+        /// <summary>
+        /// Places a career vehicle of a category near a point where its whole footprint is clear (road lane; parking lane
+        /// for small vehicles), then spawns it.
+        /// </summary>
+        public bool SpawnCareerVehicleNear(string prefabOrCategory, float3 near, string careerVehicleId, out ControlledVehicle vehicle)
+        {
+            vehicle = null;
+            CarPrefabInfo info = m_Catalog.FindCar(prefabOrCategory, UnityEngine.Random.Range(0, 1000));
+            if (info == null)
+            {
+                Say(Loc.T("msg.noModel", prefabOrCategory));
+                return false;
+            }
+            VehicleSpec spec = VehicleSpecs.FromPrefab(info);
+            if (!FindClearVehicleSpot(spec, near, spec.Length <= 6.5f, 160f, out float3 at, out float yaw))
+            {
+                Say(Loc.T("career.noRoadNearby"));
+                return false;
+            }
+            return SpawnCareerVehicle(info, at, yaw, careerVehicleId, out vehicle);
+        }
+
+        private bool SpawnCareerVehicle(CarPrefabInfo info, float3 pos, float yaw, string careerVehicleId, out ControlledVehicle vehicle)
+        {
             var v = new ControlledVehicle
             {
                 Kind = ActorKind.CareerVehicle,
@@ -1273,10 +1300,11 @@ namespace DriveTheCityII.Player
             float radius = 30f * m_RecoverySearches;
             if (inVehicle)
             {
-                if (m_Probe.FindNearestLanePoint(from, radius, pedestrian: false, out float3 p, out float3 tan, out _))
+                // A spot where the whole vehicle fits (a bus moved to the nearest lane point can still overlap a pole).
+                if (FindClearVehicleSpot(m_Vehicle.Spec, from, false, radius, out float3 p, out float placedYaw))
                 {
                     m_Vehicle.State.Position = new Vec3(p.x, p.y, p.z);
-                    m_Vehicle.State.Yaw = math.atan2(tan.x, tan.z);
+                    m_Vehicle.State.Yaw = placedYaw;
                     m_Vehicle.State.Speed = 0f;
                     m_Vehicle.State.VerticalSpeed = 0f;
                     m_Vehicle.State.Grounded = true;

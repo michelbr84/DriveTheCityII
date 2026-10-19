@@ -361,14 +361,8 @@ namespace DriveTheCityII.Careers
             {
                 return true;
             }
-            if (!P.Probe.FindNearestLanePoint(near, 40f, CityWorldProbe.LaneKind.Parking, out float3 at, out float3 tan, out _) &&
-                !P.Probe.FindNearestLanePoint(near, 120f, CityWorldProbe.LaneKind.Road, out at, out tan, out _))
-            {
-                error = Loc.T("career.noRoadNearby");
-                return false;
-            }
             string category = string.IsNullOrEmpty(view.PrefabCategory) ? "car" : view.PrefabCategory;
-            if (!P.SpawnCareerVehicle(category, at, math.atan2(tan.x, tan.z), view.Id, out ControlledVehicle cv))
+            if (!P.SpawnCareerVehicleNear(category, near, view.Id, out ControlledVehicle cv))
             {
                 error = P.LastMessage;
                 return false;
@@ -397,7 +391,8 @@ namespace DriveTheCityII.Careers
             else
             {
                 P.Say(Loc.T("career.serviceVehicleReady", view.Name));
-                MarkerBoard.Markers.Add(new WorldMarker { Position = near, Style = MarkerStyle.Vehicle, Radius = 4f });
+                ControlledVehicle placed = FindWorldVehicle(view.Id);
+                MarkerBoard.Markers.Add(new WorldMarker { Position = placed != null ? placed.State.Position.ToF3() : near, Style = MarkerStyle.Vehicle, Radius = 4f });
             }
         }
 

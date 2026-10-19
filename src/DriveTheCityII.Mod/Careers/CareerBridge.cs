@@ -207,6 +207,10 @@ namespace DriveTheCityII.Careers
         private float3 m_MoveAnchor;
         private float m_MoveCheckAt;
         private float m_LastRecoverAt = -999f;
+        private float m_YieldFor;
+        private float m_LastGap = float.MaxValue;
+        private float m_LastConflict = float.MaxValue;
+        private float m_WaitingSince = -1f;
         private float m_NotDrivingSince = -1f;
 
         private readonly int m_UntilLeg;
@@ -326,7 +330,21 @@ namespace DriveTheCityII.Careers
             // Stalled (moved < 25 m in 45 s) or no gain towards the target in 3 minutes (routes may first lead away):
             // use recovery like a player would.
             bool holding = serviceLeg || (dist < radius && lastPoint);
-            if (m_MoveCheckAt <= 0f || holding)
+            // Waiting in traffic (queue ahead or a crossing vehicle) is not a stall, up to two minutes.
+            bool waitingInTraffic = m_LastGap < 25f || m_LastConflict < 3f;
+            if (waitingInTraffic)
+            {
+                if (m_WaitingSince < 0f)
+                {
+                    m_WaitingSince = now;
+                }
+            }
+            else
+            {
+                m_WaitingSince = -1f;
+            }
+            bool watchdogPaused = holding || (waitingInTraffic && now - m_WaitingSince < 120f);
+            if (m_MoveCheckAt <= 0f || watchdogPaused)
             {
                 m_MoveAnchor = pos;
                 m_MoveCheckAt = now + 45f;
@@ -342,7 +360,7 @@ namespace DriveTheCityII.Careers
                     return false;
                 }
             }
-            if (dist < m_ProgressDist - 10f || holding)
+            if (dist < m_ProgressDist - 10f || watchdogPaused)
             {
                 m_ProgressDist = dist;
                 m_ProgressCheckAt = now + 180f;
@@ -388,14 +406,15 @@ namespace DriveTheCityII.Careers
                 return false;
             }
 
-            float want = Mathf.Clamp(dist * 0.35f, 4f, 12f);
+            bool heavy = v.Spec.Length > 7f;
+            float want = Mathf.Clamp(dist * 0.35f, 4f, heavy ? 9f : 12f);
             if (turnAhead > 0.9f)
             {
-                want = Math.Min(want, 4.5f);
+                want = Math.Min(want, heavy ? 3.5f : 4.5f);
             }
             else if (turnAhead > 0.45f)
             {
-                want = Math.Min(want, 7f);
+                want = Math.Min(want, heavy ? 5f : 7f);
             }
             if (Math.Abs(err) > 0.9f)
             {
@@ -406,23 +425,36 @@ namespace DriveTheCityII.Careers
                 want = Math.Min(want, 4f);
             }
             bool ignoreStopped = now < m_IgnoreStoppedUntil;
-            float gap = VehicleAheadGap(p, v, pos, ignoreStopped, out bool stoppedAhead);
+            float gap = VehicleAheadGap(p, v, pos, Math.Max(speed, 2f), ignoreStopped, out bool stoppedAhead, out float conflictIn);
             if (gap < 40f)
             {
                 // Speed that still allows stopping 3 m behind the vehicle ahead at a gentle 2.5 m/s².
                 want = Math.Min(want, (float)Math.Sqrt(2.0 * 2.5 * Math.Max(0f, gap - 3f)));
-                // Waiting behind a vehicle that does not move (parked or itself waiting): after 4 s, go around it.
+                // Waiting behind a vehicle that does not move (parked, or waiting itself). Cars try to pass it after 20 s;
+                // trucks and buses keep waiting (a collision would cost the cargo), and the stall watchdog decides.
                 m_BlockedFor = stoppedAhead && Math.Abs(speed) < 0.5f ? m_BlockedFor + dt : 0f;
-                if (m_BlockedFor > 4f)
+                if (m_BlockedFor > 20f && !heavy)
                 {
                     m_BlockedFor = 0f;
-                    m_IgnoreStoppedUntil = now + 8f;
+                    m_IgnoreStoppedUntil = now + 6f;
                     m_Log.Add($"pass-stopped-vehicle({now - m_Start:0}s)");
                 }
             }
             else
             {
                 m_BlockedFor = 0f;
+            }
+            m_LastGap = gap;
+            m_LastConflict = conflictIn;
+            if (conflictIn < 3f)
+            {
+                // Another vehicle is predicted to cross or enter our path (junctions, merges): yield.
+                want = conflictIn < 1.6f ? 0f : Math.Min(want, 2.5f);
+                m_YieldFor += dt;
+            }
+            else
+            {
+                m_YieldFor = 0f;
             }
             var f = new InputFrame { Steer = math.clamp(err * 2f, -1f, 1f) };
             if (speed < want - 0.3f)
@@ -431,7 +463,10 @@ namespace DriveTheCityII.Careers
             }
             else if (speed > want + 0.5f)
             {
-                f.Brake = math.clamp((speed - want) * 0.3f, 0.1f, 1f);
+                // Comfortable braking (about 0.3 g for trucks and buses: harsh braking damages cargo and upsets
+                // passengers); full braking only when a collision is imminent.
+                bool emergency = conflictIn < 1f || gap < 4f;
+                f.Brake = math.clamp((speed - want) * 0.3f, 0.1f, emergency ? 1f : heavy ? 0.42f : 0.7f);
             }
 
             DtcLog.Throttled("autopilot", now, 3f, string.Format(CultureInfo.InvariantCulture,
@@ -520,16 +555,22 @@ namespace DriveTheCityII.Careers
             return route[j];
         }
 
-        private float VehicleAheadGap(PlayerSystem p, ControlledVehicle v, float3 pos, bool ignoreStopped, out bool nearestStopped)
+        /// <summary>
+        /// Bumper-to-bumper gap to the vehicle ahead in our corridor, and the time until another vehicle is predicted to
+        /// enter our path (straight-line prediction of both over 3 s; covers cross traffic at junctions).
+        /// </summary>
+        private float VehicleAheadGap(PlayerSystem p, ControlledVehicle v, float3 pos, float speed, bool ignoreStopped, out bool nearestStopped, out float conflictIn)
         {
             nearestStopped = false;
+            conflictIn = float.MaxValue;
             Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
             Vec2 right = fwd.RightPerp;
             var me = new Vec2(pos.x, pos.z);
             m_Obstacles.Clear();
-            p.Probe.QueryObstacles(me + fwd * 20f, 21f, m_Obstacles);
+            p.Probe.QueryObstacles(me + fwd * 20f, 30f, m_Obstacles);
             float gap = float.MaxValue;
             float ownHalf = v.Spec.Length * 0.5f;
+            float ownHalfW = v.Spec.Width * 0.5f;
             foreach (Obstacle o in m_Obstacles)
             {
                 if (o.Kind != ObstacleKind.Vehicle)
@@ -539,6 +580,27 @@ namespace DriveTheCityII.Careers
                 Vec2 rel = o.Footprint.Center - me;
                 float along = Vec2.Dot(rel, fwd);
                 bool stopped = o.Velocity.Length < 0.5f;
+                if (!stopped)
+                {
+                    // Predicted conflict: both move in straight lines; the other vehicle ends up inside our corridor
+                    // just ahead of our front bumper.
+                    for (float t = 0.5f; t <= 3f; t += 0.5f)
+                    {
+                        Vec2 relT = o.Footprint.Center + o.Velocity * t - (me + fwd * (speed * t));
+                        float aT = Vec2.Dot(relT, fwd);
+                        float lT = Math.Abs(Vec2.Dot(relT, right));
+                        if (lT < ownHalfW + o.Footprint.HalfWidth + 0.6f && aT > -ownHalf && aT < ownHalf + o.Footprint.HalfLength + 3f)
+                        {
+                            // Ignore vehicles in our own lane moving the same way (handled by the gap below).
+                            bool sameWay = Vec2.Dot(o.Velocity, fwd) > 0.7f * o.Velocity.Length && Math.Abs(Vec2.Dot(rel, right)) < ownHalfW + o.Footprint.HalfWidth + 0.4f;
+                            if (!sameWay)
+                            {
+                                conflictIn = Math.Min(conflictIn, t);
+                            }
+                            break;
+                        }
+                    }
+                }
                 if (ignoreStopped && stopped)
                 {
                     continue;
