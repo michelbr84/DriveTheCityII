@@ -9,9 +9,14 @@
 | Responsible role | Coordinator (maintainer); the Implementer records observations; the project owner authorizes installs |
 | Related requirements | REQ-REL-001 (players need no development tools), REQ-DIAG-001 (version identification) |
 | Related documents | [WINDOWS_SETUP](WINDOWS_SETUP.md), [BUILD_AND_RUN](BUILD_AND_RUN.md), [DEPENDENCIES](DEPENDENCIES.md), [CS2_INTEGRATION_FINDINGS](../research/CS2_INTEGRATION_FINDINGS.md), [SOURCES](../research/SOURCES.md) |
-| Last updated | 2026-10-18 (installed side: TASK-0001) |
+| Last updated | 2026-10-19 (private .NET SDK installed for the implementation run) |
 
 > **Confirmed for this project: none of the mod toolchain.** The installed side was recorded by TASK-0001 on
+> **2026-10-19:** a private, user-scoped **.NET SDK 10.0.402** (official zip, SHA-512 verified) is installed at
+> `%LOCALAPPDATA%\DriveTheCityII\tools\dotnet`, with `ilspycmd` 11.1 as a scoped tool for reading game assemblies. The
+> mod builds with it against the game's own assemblies ([BUILD_AND_RUN](BUILD_AND_RUN.md) §0, ADR-0005). The official
+> toolchain and the Unity Editor are still not installed and were not needed.
+>
 > 2026-10-18: the official toolchain, Unity Editor, and .NET SDK are **not installed**. Visual Studio 2022 Build Tools
 > and Visual Studio 2026 are present. Installing anything needs the owner's authorization (TASK-0003).
 
@@ -32,7 +37,7 @@
 | Official modding toolchain (installer) | Installs and updates the components below | In-game Options → Modding (SRC-008; 1.1.12f1) | **Not installed** (no `CSII_*` variables, no Unity Editor; TASK-0001, 2026-10-18) | No |
 | Unity Editor | Required by the toolchain | 2022.3.7f1, "required to be installed" (SRC-008; **1.1.12f1 only**; the page says the version tracks game updates) | **Not found** (no Unity Hub or Editor folders; 2026-10-18). The installed game runs Unity 2022.3.71f1 | No (OPEN-406) |
 | Unity license | Legal prerequisite of the Unity Editor | Personal or commercial license, "a legal requirement we can not automate" (SRC-008; 1.1.12f1) | Unknown (owner question) | No (OPEN-406; owner action) |
-| .NET SDK | Compiles the C# project | Minimum 6, "8 is recommended"; the toolchain installs 8 (SRC-008; 1.1.12f1) | **Not found** (`dotnet` absent from PATH and its standard folder; 2026-10-18) | No (OPEN-002) |
+| .NET SDK | Compiles the C# project | Minimum 6, "8 is recommended"; the toolchain installs 8 (SRC-008; 1.1.12f1) | **10.0.402, private** at `%LOCALAPPDATA%\DriveTheCityII\tools\dotnet` (2026-10-19); not on the system PATH | Yes (used for every build since 2026-10-19) |
 | C# mod template | Project scaffolding | NuGet template through `dotnet new` (SRC-008); the name `csiimod` comes from the community (SRC-005) | Not installed (no .NET SDK) | No |
 | IDE | Build and publish profiles | Visual Studio 2022 (17.8) or Rider (2021.3.3) (SRC-008; 1.1.12f1) | Visual Studio Build Tools 2022 **17.14.37628.2** and Visual Studio Community 2026 **18.10.12201.205**, MSBuild present (vswhere, 2026-10-18); Rider not found | No |
 | Node.js | UI mod build only | Minimum 18; the toolchain installs 20.11 (SRC-008; 1.1.12f1) | `v24.19.0` observed 2026-10-18 (see §4) | No (not tried for UI builds) |
