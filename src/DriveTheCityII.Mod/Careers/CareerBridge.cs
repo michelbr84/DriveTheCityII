@@ -486,7 +486,8 @@ namespace DriveTheCityII.Careers
             // Trucks and buses: 9 m/s in general, 12 m/s on straight road. Observed in game on 2026-10-19: at 9 m/s on a
             // highway, traffic at 36-40 m/s ran into the truck from behind while changing lanes.
             bool straight = turnAhead < 0.15f && Math.Abs(err) < 0.15f;
-            float want = Mathf.Clamp(dist * 0.35f, 4f, heavy ? (straight ? 12f : 9f) : 12f);
+            bool open = turnAhead < 0.06f && Math.Abs(err) < 0.06f && m_LastGap > 40f;
+            float want = Mathf.Clamp(dist * 0.35f, 4f, heavy ? (open ? 16f : straight ? 12f : 9f) : 12f);
             if (turnAhead > 0.9f)
             {
                 want = Math.Min(want, heavy ? 3.5f : 4.5f);
@@ -569,7 +570,15 @@ namespace DriveTheCityII.Careers
                     want = 0f;
                 }
             }
-            var f = new InputFrame { Steer = math.clamp(err * 2f, -1f, 1f) };
+            // Steering within a comfortable lateral acceleration: about 0.25 g for trucks and buses (heavy cargo is damaged
+            // from 0.35 g), 0.38 g for cars. Lateral acceleration is scored as v² tan(steer) / wheelbase; observed in game
+            // on 2026-10-19: steering swings of 0.3 rad at 8 m/s cost heavy cargo three harsh events in two seconds.
+            float aLat = heavy ? 2.45f : 3.7f;
+            float v2 = speed * speed;
+            float steerMax = v2 > 1f ? (float)Math.Atan(aLat * v.Spec.WheelBase / v2) : 1f;
+            float lockAngle = v.Spec.MaxSteerAngle * MathX.Lerp(1f, v.Spec.HighSpeedSteerFactor, MathX.Clamp01(Math.Abs(speed) / v.Spec.SteerReferenceSpeed));
+            float steerIn = lockAngle > 1e-3f ? Math.Min(1f, steerMax / lockAngle) : 1f;
+            var f = new InputFrame { Steer = math.clamp(err * 2f, -steerIn, steerIn) };
             if (speed < want - 0.3f)
             {
                 f.Throttle = math.clamp((want - speed) * 0.4f, 0.2f, 1f);
@@ -774,7 +783,9 @@ namespace DriveTheCityII.Careers
             }
             float2 d0 = math.normalizesafe(route[Math.Min(best + 1, route.Count - 1)].xz - route[best].xz);
             acc = 0f;
-            for (int k = best; k < route.Count - 1 && acc < 30f; k++)
+            // Far enough to slow down gently for the corner (30 m in town, more at highway speed).
+            float window = Math.Max(30f, speed * speed / 4f + 10f);
+            for (int k = best; k < route.Count - 1 && acc < window; k++)
             {
                 float2 dk = math.normalizesafe(route[k + 1].xz - route[k].xz);
                 turnAhead = Math.Max(turnAhead, math.acos(math.clamp(math.dot(d0, dk), -1f, 1f)));
