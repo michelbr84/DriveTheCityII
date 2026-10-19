@@ -422,7 +422,19 @@ namespace DriveTheCityII.Core.Motion
             {
                 float wheelRef = refY + along[i] * tp + side[i] * halfTrack * tr;
                 float wheelHint = float.IsNaN(LevelHint) ? float.NaN : LevelHint + (wheelRef - refY);
-                m_Wheels[i] = m_Ground.Solve(probe, pts[i].X, pts[i].Z, wheelRef, spec.StepUp, spec.StepDown, spec.MaxWaterDepth, m_Wheels[i].SourceId, wheelHint);
+                long prevSource = m_Wheels[i].SourceId;
+                m_Wheels[i] = m_Ground.Solve(probe, pts[i].X, pts[i].Z, wheelRef, spec.StepUp, spec.StepDown, spec.MaxWaterDepth, prevSource, wheelHint);
+                if (m_Wheels[i].Status == GroundStatus.Blocked && wheelRef != refY)
+                {
+                    // The tilt prediction can be stale (a vehicle put flat on a road while still pitched from a deck): the
+                    // road then reads as a wall in front of a wheel predicted 0.6 m too low. Ask again without it.
+                    // Observed in game on 2026-10-19: a truck recovered onto a road never moved again.
+                    GroundResult flat = m_Ground.Solve(probe, pts[i].X, pts[i].Z, refY, spec.StepUp, spec.StepDown, spec.MaxWaterDepth, prevSource, LevelHint);
+                    if (flat.Status == GroundStatus.Supported)
+                    {
+                        m_Wheels[i] = flat;
+                    }
+                }
                 GroundStatus st = m_Wheels[i].Status;
                 if (st == GroundStatus.Blocked || st == GroundStatus.Invalid || st == GroundStatus.DeepWater)
                 {

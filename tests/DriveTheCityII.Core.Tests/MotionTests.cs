@@ -528,6 +528,23 @@ namespace DriveTheCityII.Core.Tests
         }
 
         [Fact]
+        public void CarLeftTiltedOnAFlatRoadCanDriveAway()
+        {
+            // Regression (in game, 2026-10-19): recovery put a truck flat on a road with the pitch and roll it had on a deck.
+            var w = new FakeWorld();
+            w.AddDeck(0, 50, 4, 60, 0f, SurfaceKind.Road, 1);
+            var c = new VehicleController(new VehicleSpec { Length = 9f, Width = 2.4f, WheelBase = 5.4f, Acceleration = 1.8f, MaxSpeed = 24f });
+            var s = Spawn(0, 5, 0f);
+            s.Pitch = -0.23f;
+            s.Roll = 0.15f;
+            for (int i = 0; i < 100; i++)
+            {
+                c.Step(w, ref s, new VehicleInput { Throttle = 1f }, 1f / 50f);
+            }
+            Assert.True(s.Position.Z > 5.5f, $"z={s.Position.Z}");
+        }
+
+        [Fact]
         public void TerrainWallBlocksCar()
         {
             var w = new FakeWorld { Terrain = (x, z) => z > 20 ? 6f : 0f };

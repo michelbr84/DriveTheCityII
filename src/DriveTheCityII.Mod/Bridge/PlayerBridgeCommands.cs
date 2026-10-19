@@ -38,6 +38,8 @@ namespace DriveTheCityII.Bridge
                 }
                 v.State.Position = new Vec3(F(a[1]), F(a[2]), F(a[3]));
                 v.State.Yaw = F(a[4]) * MathX.Deg2Rad;
+                v.State.Pitch = 0f;
+                v.State.Roll = 0f;
                 v.State.Speed = 0f;
                 v.State.VerticalSpeed = 0f;
                 v.State.Grounded = true;

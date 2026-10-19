@@ -1308,6 +1308,8 @@ namespace DriveTheCityII.Player
                 {
                     m_Vehicle.State.Position = new Vec3(p.x, p.y, p.z);
                     m_Vehicle.State.Yaw = placedYaw;
+                    m_Vehicle.State.Pitch = 0f;
+                    m_Vehicle.State.Roll = 0f;
                     m_Vehicle.State.Speed = 0f;
                     m_Vehicle.State.VerticalSpeed = 0f;
                     m_Vehicle.State.Grounded = true;
