@@ -116,6 +116,42 @@ namespace DriveTheCityII.Bridge
                 string self = v != null ? string.Format(CultureInfo.InvariantCulture, "vehicle {0:0.0}x{1:0.0} at y={2:0.0} clear={3}", v.Spec.Width, v.Spec.Length, v.State.Position.Y, P.IsFootprintClear(v.Spec, v.State.Position.ToF3(), v.State.Yaw)) : "on foot";
                 return new InstantOp(true, self + " :: " + list.Count + " obstacles: " + string.Join(" | ", parts.Take(25)));
             };
+            TestBridge.Handlers["stepdiag"] = a =>
+            {
+                // stepdiag: simulates one 0.2 s step of the controlled vehicle with full throttle on a copy of its state
+                // and reports why it does or does not move (ground per wheel, obstacles). Diagnostics only.
+                ControlledVehicle v = P.Vehicle;
+                if (v == null)
+                {
+                    return new InstantOp(false, "not driving");
+                }
+                var ctrl = new DriveTheCityII.Core.Motion.VehicleController(v.Spec.Clone());
+                DriveTheCityII.Core.Motion.VehicleState copy = v.State;
+                copy.Gear = DriveTheCityII.Core.Motion.Gear.Forward;
+                copy.ParkingBrake = false;
+                var rep = ctrl.Step(P.Probe, ref copy, new DriveTheCityII.Core.Motion.VehicleInput { Throttle = a.Length > 1 ? F(a[1]) : 1f }, 0.2f);
+                var gs = new GroundSolver();
+                Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
+                Vec2 right = fwd.RightPerp;
+                float ht = v.Spec.Width * 0.4f;
+                float hb = v.Spec.WheelBase * 0.5f;
+                Vec2 c0 = v.State.Position.XZ;
+                var parts = new List<string>();
+                foreach (float ahead in new[] { 0f, 0.5f })
+                {
+                    Vec2 c = c0 + fwd * ahead;
+                    Vec2[] pts = { c + fwd * hb - right * ht, c + fwd * hb + right * ht, c - fwd * hb - right * ht, c - fwd * hb + right * ht };
+                    for (int i = 0; i < 4; i++)
+                    {
+                        GroundResult g = gs.Solve(P.Probe, pts[i].X, pts[i].Z, v.State.Position.Y, v.Spec.StepUp, v.Spec.StepDown, v.Spec.MaxWaterDepth);
+                        parts.Add(string.Format(CultureInfo.InvariantCulture, "+{0:0.0}w{1}:{2}@{3:0.00}{4}", ahead, i, g.Status, g.Height, g.Kind));
+                    }
+                }
+                return new InstantOp(true, string.Format(CultureInfo.InvariantCulture,
+                    "step: moved {0:0.000} m speed {1:0.00} blocked={2} worst={3} impact={4:0.0} {5}#{6} pitch={7:0.00} roll={8:0.00} y={9:0.00} :: wheels {10}",
+                    Vec2.Distance(copy.Position.XZ, c0), copy.Speed, rep.BlockedByGround, rep.WorstGround, rep.ImpactSpeed, rep.ImpactKind, rep.ImpactSource,
+                    copy.Pitch, copy.Roll, copy.Position.Y, string.Join(" ", parts)));
+            };
             TestBridge.Handlers["setting"] = a =>
             {
                 // setting <Property> <value>: changes a Drive the City II option for this session (mod settings only).
