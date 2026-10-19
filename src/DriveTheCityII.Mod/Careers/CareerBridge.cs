@@ -260,7 +260,7 @@ namespace DriveTheCityII.Careers
                 {
                     if (l.Index == m.CurrentLegIndex && l.Radius > 0)
                     {
-                        radius = (float)Math.Max(4.0, l.Radius * 0.6);
+                        radius = (float)Math.Max(4.0, l.Radius * 0.85);
                     }
                 }
             }
@@ -391,6 +391,16 @@ namespace DriveTheCityII.Careers
             DtcLog.Throttled("autopilot-pre", now, 3f, string.Format(CultureInfo.InvariantCulture,
                 "autopilot-pre: leg={0} dist={1:0} err={2:0.00} speed={3:0.0} routePts={4} aim=({5:0},{6:0}) pos=({7:0},{8:0}) target=({9:0},{10:0}) gear={11} ground={12}",
                 legIndex, dist, err, speed, MarkerBoard.Route.Count, aim.x, aim.z, pos.x, pos.z, target.x, target.z, v.State.Gear, v.State.GroundKind));
+
+            // Target close and behind (a dock or stop we just passed): reverse straight onto it, as a driver would,
+            // instead of turning round. The rear points along yaw + pi; steering is inverted when reversing.
+            float directErr = MathX.WrapAngle(math.atan2(target.x - pos.x, target.z - pos.z) - v.State.Yaw);
+            if (dist < Math.Max(14f, radius * 2.5f) && Math.Abs(directErr) > 1.6f && speed < 1.5f)
+            {
+                float errRear = MathX.WrapAngle(math.atan2(target.x - pos.x, target.z - pos.z) - (v.State.Yaw + math.PI));
+                p.Input.Injected = new InputFrame { Brake = v.Spec.Length > 7f ? 0.3f : 0.5f, Steer = math.clamp(-2f * errRear, -1f, 1f) };
+                return false;
+            }
 
             // Route starts behind the car: three-point turn (reverse on the opposite lock), as on a narrow street.
             if (Math.Abs(err) > 1.9f && speed < 2.5f)
