@@ -86,6 +86,8 @@ namespace DriveTheCityII.Careers
                     s.DebugSeedXp(kind, long.Parse(a[3], CultureInfo.InvariantCulture));
                     return new InstantOp(true, $"xp seeded: {kind} level {s.GetProgress().TotalLevel} (profile marked test-seeded)");
                 }
+                case "fuel":
+                    return new InstantOp(s.DebugSetFuel(a[2], double.Parse(a[3], CultureInfo.InvariantCulture)), "fuel set (profile marked test-seeded) :: " + Status());
                 case "rep":
                     s.DebugSetReputation(int.Parse(a[2], CultureInfo.InvariantCulture));
                     return new InstantOp(true, $"reputation {s.GetProgress().Reputation} (profile marked test-seeded)");

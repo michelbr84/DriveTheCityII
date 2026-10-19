@@ -47,6 +47,29 @@ evidence; full records are in [WORKLOG](docs/quality/evidence/WORKLOG.md) and th
 - **Docs:** ADR-0005 Accepted; TASK-0003 In review; [START_HERE](START_HERE.md); PROJECT_STATUS §0; COMPATIBILITY_MATRIX
   tested rows; MELTY_EVALUATION §9a.
 
+### Added — 2026-10-19 (later the same day) — Careers in game, M1 acceptance, audio, language option
+
+- **Careers (Core, 93 new unit tests; 143 in total):** taxi, delivery, freight, bus, garage (rent, buy, sell,
+  refuel, repair, upgrades, roadside help, tow), progression and unlocks, home and garage base, a managed company
+  (hire, fleet, contracts, period settlement), and challenges. Money moves only through an append-only ledger with
+  operation IDs, so a repeated action or a reload never pays or charges twice.
+- **Careers in the mod:** job board, garage, company, challenges and profile tabs; objective card; markers and route
+  guidance for missions and running challenges; mod-owned taxi passengers; employer-provided trucks and buses.
+- **Fixes from in-game runs:**
+  - a 1.1 s freeze when building taxi offers (ISSUE-007);
+  - running challenges were invisible (ISSUE-008);
+  - freight and bus jobs were refused while the player drove a car;
+  - route time estimates assumed free-flow driving, so delivery deadlines expired too early;
+  - the job board regenerated offers on every HUD refresh when none were available;
+  - exits from a car stopped mid-lane now prefer the nearest sidewalk within 8 m (ISSUE-010).
+- **Presentation:** procedural vehicle sound (engine, rolling noise, impact thump) routed through the game's mixer,
+  with an Options switch; "Mod language" option (game / English / Português do Brasil).
+- **Validation:** M1 acceptance with real keyboard input, 17/17 ([RUN-0002](docs/quality/evidence/RUN-0002/REPORT.md)).
+  Career persistence campaign: mid-fare save and reload, no double payout, older save restored exactly. Career
+  coverage campaign: see the WORKLOG and MORNING_REPORT.
+- **Test tooling:** `track` measurement op, test autopilot for missions and challenges (simulated input, labelled in
+  every result), campaign scripts, a mod-less load check, and a real-time soak script.
+
 ### Changed — 2026-10-18 — PHASE-00 audits (TASK-0001, TASK-0002) and Melty check
 
 - **TASK-0001 (read-only Windows discovery), now In review.**

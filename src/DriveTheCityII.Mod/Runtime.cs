@@ -44,6 +44,9 @@ namespace DriveTheCityII
             // Career host: after the Player module, before rendering.
             updateSystem.UpdateAfter<Careers.CareerSystem, Player.PlayerSystem>(SystemUpdatePhase.MainLoop);
 
+            // Procedural vehicle sound for the driven vehicle, after the Player module updated the vehicle state.
+            updateSystem.UpdateAfter<Player.VehicleAudioSystem, Player.PlayerSystem>(SystemUpdatePhase.MainLoop);
+
             // Persistence: career envelope inside every city save (system serializer) plus sidecar backups.
             updateSystem.UpdateAt<Persistence.DtcSaveSystem>(SystemUpdatePhase.MainLoop);
 

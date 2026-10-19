@@ -7,14 +7,15 @@
 | Scope | Demonstrated state of the whole project |
 | Responsible role | Coordinator (maintainer); every completed task updates it |
 | Related documents | [ROADMAP](../ROADMAP.md), [BACKLOG](planning/BACKLOG.md), [TRACEABILITY](planning/TRACEABILITY.md), [RISKS_AND_OPEN_QUESTIONS](planning/RISKS_AND_OPEN_QUESTIONS.md), [HANDOFF_TO_PHASE_00](agents/HANDOFF_TO_PHASE_00.md) |
-| Last updated | 2026-10-19 (implementation run in progress) |
+| Last updated | 2026-10-19 |
 
-> **Overall state: IMPLEMENTATION IN PROGRESS (owner brief of 2026-10-19 grants execution authority).**
+> **Overall state: PRIVATE PLAYABLE BUILD, VALIDATION IN PROGRESS (owner brief of 2026-10-19).**
 >
-> - A native CS2 mod exists, builds against 1.6.2f1, and runs in a disposable lab city. Character mode (walk, run,
->   enter, drive, brake, reverse, exit, return to city building) works in game, verified with simulated input and,
->   for the core controls, with real keyboard input.
-> - Career, progression, company, challenges, and full UI are **not finished**; see section 0 for the live state.
+> - A native CS2 mod builds against 1.6.2f1 and runs in disposable lab cities.
+> - **M1 is reached** with real keyboard input ([RUN-0002](quality/evidence/RUN-0002/REPORT.md)): walk, enter, drive,
+>   brake, steer, exit, return to city building, save, quit, relaunch, reload, continue.
+> - All four careers, garage, progression, home, company, and challenges are implemented and unit-tested (143+
+>   tests). In-game coverage per feature is in section 0 and in [MORNING_REPORT](../MORNING_REPORT.md).
 > - Nothing is published or uploaded; the deliverable is a private local package.
 
 ## 0. Current execution state (keep this section current)
@@ -24,12 +25,12 @@
 | Working build | Git `main` (local only). Last committed: see `git log -1`. Packages: `%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt` |
 | Install / rollback | `tools\deploy.ps1 -Install` / `-Rollback` / `-Uninstall` / `-Status` (ownership manifest in `%LOCALAPPDATA%\DriveTheCityII\deploy`) |
 | Test sessions | `tools\test-session.ps1 -Start` / `-Stop`; bridge `tools\bridge.ps1`; real keys `tools\realinput.ps1`; work log [WORKLOG](quality/evidence/WORKLOG.md) |
-| Lab city | `DTC2-LAB-Bench-S1` (lab copy of the game's built-in benchmark city); further lab saves `-S2`, `-S3` |
-| Verified in game | Mod load; lab city create/save/load; walk/run; career car spawn, enter, drive, brake, reverse, exit; return to Building with camera/input/tools restored and 0 mod entities; save while driving (mod actors excluded from the save, no leak after reload); AI traffic queues behind the player (0 pass-throughs); HUD and panel; route finding and markers; persistence envelope round trip; co-load guard; real keys F8, W, S, Space, E |
-| Defects found and fixed | Direct exe launch without Steam ids (fatal); `Deleted` during save crashed the game; owner-less taxi crashed `TransportPathfindSetup`; traffic pushing the player's car |
-| In progress | Career logic (parallel agent, `src/DriveTheCityII.Core/Career`), then in-game career integration (jobs, rental, fuel, missions) |
-| Not started | Company/challenges UI integration, bus/delivery/freight in-game validation, localization review, accessibility polish, soak test, final package docs |
-| Blockers | None currently; Melty offers no native CS2 route (not needed) |
+| Lab cities | `DTC2-LAB-Bench-S1` (lab copy of the game's built-in benchmark city); campaign saves `DTC2-LAB-M1`, `DTC2-LAB-CAREER-A/B/C`, `DTC2-LAB-CAREERS`, `DTC2-LAB-SOAK`, `DTC2-LAB-NOMOD` |
+| Verified in game | See [MORNING_REPORT](../MORNING_REPORT.md) for the per-feature table. Highlights: M1 loop with real keys (17/17); transition cycles 33/33; save while driving; relaunch and reload; taxi fares end to end; mid-fare save/reload resumes the same stage; no double payout after reload; older save restores its exact balance; career clock stops while paused |
+| Defects found and fixed | ISSUE-001 to ISSUE-008 in [KNOWN_ISSUES](quality/KNOWN_ISSUES.md), plus: freight/bus jobs refused while driving another vehicle class; free-flow route times made delivery deadlines unreachable |
+| Open issues | ISSUE-009 to ISSUE-012 (rebuild hitches, mid-lane exits, unfocused window pauses career, audio/animation/gamepad limits) |
+| Test automation | 143+ unit tests; campaign scripts for M1, career persistence, career coverage, no-mod load, and a real-time soak (`tools\*.ps1`) |
+| Blockers | None; Melty offers no native CS2 route (not needed) |
 
 This file records only what has been demonstrated, with evidence. Intentions belong in the [ROADMAP](../ROADMAP.md)
 and the task files.

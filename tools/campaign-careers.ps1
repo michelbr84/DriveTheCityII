@@ -84,11 +84,11 @@ $owned = VehicleOf $st 'car\.used'
 Record 'Buy a used car' ([bool]$owned) (Tail (Last $o 'garage:buy'))
 if ($owned) {
     $wBefore = Wallet $st
-    # Drive it a little so it uses fuel, then refuel twice in the same instant (double click) at the service point.
+    # Drive it a little, set the tank to 30 % (test seeding), then refuel twice in the same instant (double click).
     Board $owned | Out-Null
     Bridge 'input throttle=1 t=6;input brake=1 t=3;input hand=1 t=1' 60 | Out-Null
     OnFoot
-    Bridge 'career goplace ServicePoint;wait 1' | Out-Null
+    Bridge "career fuel $owned 0.3;career goplace ServicePoint;wait 1" | Out-Null
     $o = Bridge "career ui garage:call:$owned;wait 2;career status"
     $mid = Wallet (Last $o 'career status')
     $f0 = Fuel (Last $o 'career status') $owned

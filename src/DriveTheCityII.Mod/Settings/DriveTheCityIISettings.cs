@@ -91,6 +91,9 @@ namespace DriveTheCityII.Settings
         [SettingsUISection(kGeneralTab, kDisplayGroup)]
         public ModLanguage Language { get; set; }
 
+        [SettingsUISection(kGeneralTab, kDisplayGroup)]
+        public bool VehicleSounds { get; set; }
+
         [SettingsUISlider(min = 75, max = 150, step = 5, unit = Unit.kPercentage)]
         [SettingsUISection(kGeneralTab, kDisplayGroup)]
         public int HudScale { get; set; }
@@ -173,6 +176,7 @@ namespace DriveTheCityII.Settings
             FieldOfView = 62;
             Units = SpeedUnits.Kmh;
             Language = ModLanguage.FollowGame;
+            VehicleSounds = true;
             HudScale = 100;
             HighContrastHud = false;
             ShowOnboarding = true;
@@ -306,6 +310,9 @@ namespace DriveTheCityII.Settings
                 "Returns to city building, keeps your career data, and stops all Drive the City II gameplay until turned off.",
                 "Volta à construção da cidade, mantém os dados da carreira e para toda a jogabilidade do Drive the City II até ser desligado.");
             Opt(nameof(DriveTheCityIISettings.ResetBindings), "Reset key bindings", "Restaurar teclas", "Restores the default keys.", "Restaura as teclas padrão.");
+            Opt(nameof(DriveTheCityIISettings.VehicleSounds), "Vehicle sounds", "Sons do veículo",
+                "Engine, rolling and impact sounds for the vehicle you drive (uses the game's in-game volume).",
+                "Sons de motor, rodagem e impacto do veículo que você dirige (usa o volume do jogo).");
             Opt(nameof(DriveTheCityIISettings.Language), "Mod language", "Idioma do mod",
                 "Language of the Drive the City II HUD and panels: the game's language, English, or Brazilian Portuguese.",
                 "Idioma do HUD e dos painéis do Drive the City II: o idioma do jogo, inglês ou português do Brasil.");

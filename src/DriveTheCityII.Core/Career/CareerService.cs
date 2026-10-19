@@ -627,6 +627,19 @@ namespace DriveTheCityII.Core.Career
             m_State.Progression.AddReputation(reputation - m_State.Progression.Reputation);
         }
 
+        /// <summary>Diagnostics-only: sets a vehicle's fuel level (0..1). Marks the profile test-seeded permanently.</summary>
+        public bool DebugSetFuel(string vehicleId, double fraction)
+        {
+            CareerVehicle v = m_State.FindVehicle(vehicleId);
+            if (v == null || v.TankLiters <= 0)
+            {
+                return false;
+            }
+            m_State.TestSeeded = true;
+            v.FuelLiters = v.TankLiters * CareerMath.Clamp(fraction, 0, 1);
+            return true;
+        }
+
         /// <summary>Diagnostics-only: a Correction ledger entry (+/-). Marks the profile test-seeded permanently.</summary>
         public CareerResult DebugGrant(long cents, double now)
         {

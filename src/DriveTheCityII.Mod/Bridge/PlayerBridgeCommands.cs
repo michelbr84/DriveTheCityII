@@ -96,6 +96,26 @@ namespace DriveTheCityII.Bridge
                 }
                 return new InstantOp(true, $"camera pivot {x},{y},{z}");
             };
+            TestBridge.Handlers["setting"] = a =>
+            {
+                // setting <Property> <value>: changes a Drive the City II option for this session (mod settings only).
+                var st = Settings.DriveTheCityIISettings.Instance;
+                System.Reflection.PropertyInfo prop = a.Length > 2 ? typeof(Settings.DriveTheCityIISettings).GetProperty(a[1]) : null;
+                if (st == null || prop == null || !prop.CanWrite)
+                {
+                    return new InstantOp(false, "unknown setting");
+                }
+                object value = prop.PropertyType.IsEnum ? Enum.Parse(prop.PropertyType, a[2], true)
+                    : Convert.ChangeType(a[2], prop.PropertyType, CultureInfo.InvariantCulture);
+                prop.SetValue(st, value);
+                st.ApplyAndSave();
+                return new InstantOp(true, $"{prop.Name}={prop.GetValue(st)}");
+            };
+            TestBridge.Handlers["audio"] = a =>
+            {
+                VehicleAudioSystem audio = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<VehicleAudioSystem>();
+                return new InstantOp(audio != null, audio == null ? "no audio system" : audio.Describe());
+            };
             TestBridge.Handlers["lang"] = a =>
             {
                 // lang auto|en|pt: sets the mod's own language option (not the game's language).

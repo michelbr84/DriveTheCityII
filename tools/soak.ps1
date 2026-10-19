@@ -33,6 +33,7 @@ function Log([string]$text) {
 function Alive() { return [bool](Get-Process -Name Cities2 -ErrorAction SilentlyContinue) }
 function VehicleId() {
     $s = Bridge 'career status'
+    if ($s -match '(V-[A-Za-z0-9]+):car\.basic:') { return $Matches[1] }
     if ($s -match 'vehicles=\[(V-[A-Za-z0-9]+):') { return $Matches[1] }
     return $null
 }
@@ -79,10 +80,12 @@ try {
         try {
             if (-not (EnsureDriving)) { $counts.errors++; Log "iteration ${iter}: could not get into a vehicle"; Bridge 'player building;wait 2' | Out-Null; continue }
             $o = Bridge 'career offers Taxi'
-            if ($o -match '(\d+) offers') {
-                $a = Bridge 'career accept 0 Taxi'
+            $best = -1; $bestM = [double]::MaxValue
+            foreach ($m in [regex]::Matches($o, '#(\d+) .*? (\d+)m pay .*? eligible=True')) { if ([double]$m.Groups[2].Value -lt $bestM) { $bestM = [double]$m.Groups[2].Value; $best = [int]$m.Groups[1].Value } }
+            if ($best -ge 0) {
+                $a = Bridge "career accept $best Taxi"
                 if ($a -match 'accept .*: Ok') {
-                    $d = Bridge 'career drive 420' 480
+                    $d = Bridge 'career drive 900' 1000
                     if ($d -match 'mission finished') { $counts.missions++; Log "taxi mission $($counts.missions) done" }
                     else { $counts.missionFailures++; Log ("taxi mission not finished: " + (($d -split "`n" | Select-String 'career drive') -join ' ')); Bridge 'career cancel' | Out-Null }
                 }

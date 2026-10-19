@@ -1075,6 +1075,15 @@ namespace DriveTheCityII.Player
                     found = true;
                 }
             }
+            // No sidewalk right beside the car (stopped mid-lane on a wide road): prefer the nearest sidewalk within 8 m
+            // over the carriageway, if it is clear and at a similar height (ISSUE-010).
+            float3 car = v.State.Position.ToF3();
+            if (m_Probe.FindNearestLanePoint(car, 8f, CityWorldProbe.LaneKind.Sidewalk, out float3 walk, out _, out _) &&
+                math.abs(walk.y - car.y) < 1.0f && !m_Motor.IsPenetrating(m_Probe, new Vec2(walk.x, walk.z), walk.y))
+            {
+                point = walk;
+                return true;
+            }
             return found;
         }
 

@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Cs2Ref Include="mscorlib;System;System.Core;netstandard;System.Runtime;System.Xml;System.Numerics;Game;Colossal.Core;Colossal.AssetPipeline;Colossal.Collections;Colossal.Mathematics;Colossal.Logging;Colossal.IO.AssetDatabase;Colossal.Localization;Colossal.UI;Colossal.UI.Binding;Colossal.PSI.Common;Unity.Collections;Unity.Entities;Unity.Mathematics;Unity.Burst;Unity.InputSystem;UnityEngine.CoreModule;UnityEngine.IMGUIModule;UnityEngine.InputLegacyModule;UnityEngine.ScreenCaptureModule;UnityEngine.ImageConversionModule;UnityEngine.TextRenderingModule;UnityEngine.AnimationModule;Unity.RenderPipelines.Core.Runtime;Unity.RenderPipelines.HighDefinition.Runtime;Cinemachine;System.Memory" />
+    <Cs2Ref Include="mscorlib;System;System.Core;netstandard;System.Runtime;System.Xml;System.Numerics;Game;Colossal.Core;Colossal.AssetPipeline;Colossal.Collections;Colossal.Mathematics;Colossal.Logging;Colossal.IO.AssetDatabase;Colossal.Localization;Colossal.UI;Colossal.UI.Binding;Colossal.PSI.Common;Unity.Collections;Unity.Entities;Unity.Mathematics;Unity.Burst;Unity.InputSystem;UnityEngine.CoreModule;UnityEngine.IMGUIModule;UnityEngine.InputLegacyModule;UnityEngine.ScreenCaptureModule;UnityEngine.ImageConversionModule;UnityEngine.TextRenderingModule;UnityEngine.AnimationModule;UnityEngine.AudioModule;Unity.RenderPipelines.Core.Runtime;Unity.RenderPipelines.HighDefinition.Runtime;Cinemachine;System.Memory" />
     <Reference Include="@(Cs2Ref)">
       <HintPath>$(Cs2ManagedPath)\%(Identity).dll</HintPath>
       <Private>false</Private>
