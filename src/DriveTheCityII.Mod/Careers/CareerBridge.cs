@@ -505,7 +505,7 @@ namespace DriveTheCityII.Careers
                 want = Math.Min(want, 4f);
             }
             bool ignoreStopped = now < m_IgnoreStoppedUntil || bypassing;
-            float gap = VehicleAheadGap(p, v, pos, Math.Max(speed, 2f), ignoreStopped, out bool stoppedAhead, out float conflictIn, out float leaderSpeed);
+            float gap = VehicleAheadGap(p, v, pos, Math.Max(speed, 1f), ignoreStopped, out bool stoppedAhead, out float conflictIn, out float leaderSpeed);
             if (gap < 40f)
             {
                 // Follow the vehicle ahead: its speed (a little less, so the gap opens) plus what still allows stopping 3 m
@@ -581,7 +581,11 @@ namespace DriveTheCityII.Careers
             var f = new InputFrame { Steer = math.clamp(err * 2f, -steerIn, steerIn) };
             if (speed < want - 0.3f)
             {
-                f.Throttle = math.clamp((want - speed) * 0.4f, 0.2f, 1f);
+                // Moving off needs a firm pedal: a loaded truck on a lot surface does not move at all at 0.4 (rolling
+                // resistance), which looked like being stuck and sent it reversing into a pole (observed in game on
+                // 2026-10-19 in a shipper's lot).
+                float minThrottle = Math.Abs(speed) < 1f ? (heavy ? 0.75f : 0.45f) : 0.2f;
+                f.Throttle = math.clamp((want - speed) * 0.4f, minThrottle, 1f);
             }
             else if (speed > want + 0.5f)
             {
