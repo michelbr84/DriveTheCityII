@@ -538,7 +538,9 @@ namespace DriveTheCityII.Careers
             }
             m_LastGap = gap;
             m_LastConflict = conflictIn;
-            if (gap < 1f && Math.Abs(speed) < 0.3f)
+            // Touching means the bodies overlap (a vehicle stopped against or into ours), not a tight queue: native cars
+            // stop well under a metre apart, and a normal queue on a bridge was taken for a deadlock.
+            if (gap < 1f && Math.Abs(speed) < 0.3f && !p.IsFootprintClear(v.Spec, pos, v.State.Yaw, 0f, 0f))
             {
                 m_TouchedAt = now;
             }

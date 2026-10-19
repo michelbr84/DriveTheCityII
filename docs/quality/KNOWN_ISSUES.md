@@ -232,6 +232,61 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 - Detail: `career goplace` reports success even when the avatar could not be placed at the target (invalid ground or
   inside a footprint). It caused one refused repair during the soak; the next maintenance visit succeeded.
 
+### ISSUE-020 — The employer's bus could appear overlapping a pole or shelter and never move
+- Severity: High (bus shifts unplayable when it happens)
+- Status: Fixed; bus verification pending (the freight truck uses the same placement and was provided at clear spots)
+- Component: Player (vehicle placement)
+- Cause: the provided vehicle was put at the nearest lane point without checking its whole footprint. Placement,
+  employer vehicles and recovery now search for a spot where the full footprint is clear (`VehiclePlacement.cs`).
+
+### ISSUE-021 — Freight routes ended 25–32 m from the dock
+- Severity: High (loads could not be picked up or delivered)
+- Status: Verified fixed (cargo loaded at the dock in sessions 20261019-124402 and -130106)
+- Component: City bridge (place access), guidance route
+- Cause: a place's access point was the road centreline and the route goal radius was 18 m. The stable access point
+  is now on the curb-side car lane, and the route first tries to end within 6 m of it.
+
+### ISSUE-022 — Cargo damaged at walking pace
+- Severity: High (freight failed without any harsh driving)
+- Status: Fixed (session 20261019-124402: no harsh-driving loss at low speed)
+- Component: Careers (driving snapshot)
+- Cause: frame-to-frame speed changes from touching a curb or changing direction while creeping spiked far above
+  what the engine and brakes can do and counted as harsh driving. The driving acceleration is now limited and smoothed
+  over about 0.35 s; contacts are still scored from the impact speed.
+
+### ISSUE-023 — A rigid truck could roll over under an overpass
+- Severity: High
+- Status: Fixed (unit test `TruckBesideRisingRampStaysUprightOnTheRoad`; not seen again in game)
+- Component: Core (vehicle ground following)
+- Cause: one wheel sampled the ramp beside the road; the tilt raised the next sample and the truck rolled over in a
+  feedback loop. A wheel far from the other three now uses their height, and pitch and roll are capped.
+
+### ISSUE-024 — Vehicles straddled the lane line on multi-lane roads and passing traffic clipped them
+- Severity: High (freight loads lost on multi-lane roads; the guidance line was also misleading)
+- Status: Fixed; verification in progress
+- Component: City bridge (router), world contact
+- Cause: the route followed the game's "master lane", whose curve runs between the lanes of a multi-lane road, and
+  vehicle contacts used prefab widths that include the mirrors (a sedan reads 2.0 m, the delivery truck 3.2 m), so two
+  vehicles centred in neighbouring 3 m lanes already touched. Observed in session 20261019-124402: seven side and rear
+  contacts with traffic at 20–40 m/s, load lost. The route now runs on a real lane (chosen backwards from the
+  destination so the vehicle is in the lane for each turn) and contacts use about 82% of the prefab width.
+
+### ISSUE-025 — The player's vehicle can lock traffic when it stops in a turning vehicle's path
+- Severity: Medium
+- Status: Open (workaround available)
+- Component: Player (traffic presence), host-game traffic behaviour
+- Detail: in session 20261019-122014 a truck turning across our lane stopped against our front; the queues behind both
+  locked the road for 15 minutes, and traffic flowed again within minutes of our vehicle leaving. Native traffic does
+  not give way to a stopped player vehicle. Workaround: reverse if there is room, or use recovery (Backspace). Recovery
+  now prefers a spot facing the vehicle's own direction.
+
+### ISSUE-026 — Guidance sent a truck facing away from its drop on an 11 km loop
+- Severity: Medium
+- Status: Fixed (U-turn penalty for long vehicles 600 s → 120 s); verification in progress
+- Component: Careers (guidance route)
+- Detail: session 20261019-130106: after a recovery the truck faced away from the drop; the route avoided turning
+  round at almost any cost, the job missed its hard deadline 1.6 km from the drop.
+
 ## 7. Release use
 
 - Before each phase gate, QA lists the open issues by severity in the gate evidence.

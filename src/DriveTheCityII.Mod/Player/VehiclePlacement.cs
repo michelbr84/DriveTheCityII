@@ -19,14 +19,17 @@ namespace DriveTheCityII.Player
         private readonly List<float3> m_PlaceProbes = new List<float3>(80);
 
         /// <summary>True when a vehicle footprint at a position and heading overlaps no building, static object or vehicle.</summary>
-        public bool IsFootprintClear(VehicleSpec spec, float3 pos, float yaw)
+        public bool IsFootprintClear(VehicleSpec spec, float3 pos, float yaw) => IsFootprintClear(spec, pos, yaw, 0.15f, 0.3f);
+
+        /// <summary>As above with explicit margins (0, 0: the bodies themselves overlap).</summary>
+        public bool IsFootprintClear(VehicleSpec spec, float3 pos, float yaw, float widthMargin, float lengthMargin)
         {
             if (!m_Probe.IsInsideMap(pos.x, pos.z))
             {
                 return false;
             }
             var c = new Vec2(pos.x, pos.z);
-            var box = new Obb2(c, Vec2.FromYaw(yaw), spec.Width * 0.5f + 0.15f, spec.Length * 0.5f + 0.3f);
+            var box = new Obb2(c, Vec2.FromYaw(yaw), spec.Width * 0.5f + widthMargin, spec.Length * 0.5f + lengthMargin);
             m_PlaceScratch.Clear();
             m_Probe.QueryObstacles(c, spec.Length * 0.5f + 4f, m_PlaceScratch);
             foreach (Obstacle o in m_PlaceScratch)
@@ -113,6 +116,13 @@ namespace DriveTheCityII.Player
                         if (penalized)
                         {
                             d += 25f;
+                        }
+                        // Another level (the road under an overpass, or the bridge above): only when nothing is near on
+                        // this level (observed in game: recovery on an elevated road put the truck on the road below).
+                        if (math.abs(cand.y - near.y) > 2.5f)
+                        {
+                            d += 40f;
+                            penalized = true;
                         }
                         if (d >= bestD || !IsFootprintClear(spec, cand, cyaw))
                         {
