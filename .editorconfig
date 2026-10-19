@@ -1,0 +1,14 @@
+# Drive the City II: editor defaults for documentation maintenance.
+# Rules for future code files are decided with the code layout in PHASE-01 (see docs/engineering/CODING_STANDARDS.md).
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+[*.md]
+end_of_line = lf
+indent_style = space
+indent_size = 2
+# Markdown can use two trailing spaces as a hard line break; do not strip them automatically.
+trim_trailing_whitespace = false

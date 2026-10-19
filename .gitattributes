@@ -1,0 +1,10 @@
+# Drive the City II: line-ending and binary rules for safe documentation maintenance.
+# Let Git normalize text files, and keep Markdown with LF line endings so diffs stay clean across editors.
+* text=auto
+*.md text eol=lf
+
+# Images that may appear in documentation or evidence summaries are binary.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary

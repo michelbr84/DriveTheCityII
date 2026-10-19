@@ -1,0 +1,32 @@
+# Drive the City II: prospective version-control ignore rules.
+# No Git repository exists yet (see OPEN-029 in docs/planning/RISKS_AND_OPEN_QUESTIONS.md).
+# These rules keep private machine data and generated artifacts out of version control once one exists.
+# They intentionally do NOT ignore docs/, *.md, or future source folders.
+
+# Machine-specific and private files (real copy of docs/engineering/LOCAL_ENVIRONMENT.example.md lives here).
+.local/
+
+# Generated artifacts: builds, large logs, captures, dumps (see docs/quality/evidence/README.md).
+artifacts/
+
+# Future .NET / IDE build output and per-user IDE state (adjust when the code layout is decided in PHASE-01).
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+
+# Future UI tooling dependencies.
+node_modules/
+
+# Python caches from local documentation-validation scripts.
+__pycache__/
+
+# Operating-system and OneDrive/Office temporary files.
+Thumbs.db
+Desktop.ini
+.DS_Store
+~$*
+
+# Reminder (policy, not a pattern): never place CS2 saves, game DLLs, or extracted game assets in this project.
