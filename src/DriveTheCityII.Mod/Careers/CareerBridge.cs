@@ -208,6 +208,7 @@ namespace DriveTheCityII.Careers
         private float m_MoveCheckAt;
         private float m_LastRecoverAt = -999f;
         private float m_YieldFor;
+        private double m_LastIntegrity = 100.0;
         private float m_BypassUntil;
         private float m_BypassSide;
         private bool m_KTurn;
@@ -413,6 +414,13 @@ namespace DriveTheCityII.Careers
             }
             float desired = math.atan2(aim.x - pos.x, aim.z - pos.z);
             float err = MathX.WrapAngle(desired - v.State.Yaw);
+            if (missionActive && m.LoadIntegrity >= 0 && Math.Abs(m.LoadIntegrity - m_LastIntegrity) > 0.5)
+            {
+                DtcLog.Info(string.Format(CultureInfo.InvariantCulture,
+                    "autopilot: load integrity {0:0.0} -> {1:0.0} (speed {2:0.0}, gear {3}, k-turn {4}, bypass {5}, steer {6:0.00}, leg {7})",
+                    m_LastIntegrity, m.LoadIntegrity, speed, v.State.Gear, m_KTurn, bypassing, v.State.SteerAngle, legIndex));
+                m_LastIntegrity = m.LoadIntegrity;
+            }
             DtcLog.Throttled("autopilot-pre", now, 3f, string.Format(CultureInfo.InvariantCulture,
                 "autopilot-pre: leg={0} dist={1:0} err={2:0.00} speed={3:0.0} routePts={4} aim=({5:0},{6:0}) pos=({7:0},{8:0}) target=({9:0},{10:0}) gear={11} ground={12}",
                 legIndex, dist, err, speed, MarkerBoard.Route.Count, aim.x, aim.z, pos.x, pos.z, target.x, target.z, v.State.Gear, v.State.GroundKind));
@@ -602,7 +610,7 @@ namespace DriveTheCityII.Careers
                 if (wrongGear)
                 {
                     // Stop the reverse roll first (throttle acts as the brake in reverse).
-                    p.Input.Injected = new InputFrame { Throttle = 0.6f, Steer = m_KDir };
+                    p.Input.Injected = new InputFrame { Throttle = heavy ? 0.3f : 0.5f, Steer = m_KDir };
                 }
             }
             else
@@ -630,6 +638,10 @@ namespace DriveTheCityII.Careers
             if (v.State.Gear == Core.Motion.Gear.Forward && Math.Abs(v.State.Speed) < 0.3f)
             {
                 pedal = 1f; // engage reverse (held brake at a standstill)
+            }
+            else if (v.State.Gear == Core.Motion.Gear.Forward && v.State.Speed > 0.3f)
+            {
+                pedal = v.Spec.Length > 7f ? 0.3f : 0.5f; // stop gently first (harsh braking damages cargo)
             }
             return new InputFrame { Brake = pedal, Steer = steer };
         }
