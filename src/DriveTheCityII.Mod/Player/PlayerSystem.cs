@@ -1011,14 +1011,18 @@ namespace DriveTheCityII.Player
             Vec2 c = v.State.Position.XZ;
             float hw = v.Spec.Width * 0.5f + 0.7f;
             float hl = v.Spec.Length * 0.5f + 0.8f;
+            // Curb side first (right-hand traffic: the right of the direction of travel), then the other side, rear, front,
+            // then farther out on each side so that a sidewalk across a parking lane is still found.
             Vec2[] candidates =
             {
-                c - right * hw,
                 c + right * hw,
+                c - right * hw,
                 c - fwd * hl,
                 c + fwd * hl,
-                c - right * (hw + 1.2f),
-                c + right * (hw + 1.2f),
+                c + right * (hw + 1.5f),
+                c + right * (hw + 3.0f),
+                c - right * (hw + 1.5f),
+                c - right * (hw + 3.0f),
             };
             var gs = new GroundSolver();
             bool found = false;

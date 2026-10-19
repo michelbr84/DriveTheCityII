@@ -80,6 +80,10 @@ namespace DriveTheCityII.CityBridge
         private int m_BuiltVersion = -1;
         private int m_RoutesVersion = -1;
         private float m_NextCheck;
+        private int m_BuiltCount = -1;
+        private float m_BuiltTime;
+        private int m_RoutesCount = -1;
+        private float m_RoutesTime;
 
         public int Revision { get; private set; }
         public IReadOnlyList<CityPlace> Places => m_Places;
@@ -113,19 +117,33 @@ namespace DriveTheCityII.CityBridge
                 return;
             }
             m_NextCheck = now + 5f;
+            // Same policy as the road graph: rebuild on a real change in the number of buildings/lines, or at most
+            // every 3 minutes when only transient tags changed the query version.
             int v = m_BuildingQuery.GetCombinedComponentOrderVersion();
             int rv = m_RouteQuery.GetCombinedComponentOrderVersion();
-            if (v != m_BuiltVersion)
+            int count = m_BuildingQuery.CalculateEntityCount();
+            int rcount = m_RouteQuery.CalculateEntityCount();
+            if (v != m_BuiltVersion && (m_BuiltVersion < 0 || count != m_BuiltCount || now - m_BuiltTime > 180f))
             {
                 BuildPlaces(em, probe, names);
                 m_BuiltVersion = v;
-                Revision++;
+                m_BuiltTime = now;
+                if (count != m_BuiltCount)
+                {
+                    Revision++;
+                }
+                m_BuiltCount = count;
             }
-            if (rv != m_RoutesVersion)
+            if (rv != m_RoutesVersion && (m_RoutesVersion < 0 || rcount != m_RoutesCount || now - m_RoutesTime > 60f))
             {
                 BuildLines(em, probe, names);
                 m_RoutesVersion = rv;
-                Revision++;
+                m_RoutesTime = now;
+                if (rcount != m_RoutesCount)
+                {
+                    Revision++;
+                }
+                m_RoutesCount = rcount;
             }
         }
 

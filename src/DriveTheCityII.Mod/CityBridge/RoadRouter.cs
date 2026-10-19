@@ -59,6 +59,9 @@ namespace DriveTheCityII.CityBridge
         private EntityQuery m_Query;
         private bool m_HasQuery;
         private int m_BuiltVersion = -1;
+        private int m_BuiltCount = -1;
+        private float m_BuiltTime;
+        private int m_LastRevisionLaneCount = -1;
 
         /// <summary>Changes whenever the road network changed (used as the city revision for career revalidation).</summary>
         public int Revision { get; private set; }
@@ -76,11 +79,22 @@ namespace DriveTheCityII.CityBridge
                 });
                 m_HasQuery = true;
             }
+            // Lanes receive transient tags constantly in a live city, so the order version alone would trigger a rebuild
+            // nearly every frame (observed: 2,589 rebuilds in 3 minutes). Rebuild when the number of car lanes changes
+            // (a real road edit), or at most every 2 minutes when only the version changed.
+            float now = UnityEngine.Time.realtimeSinceStartup;
             int version = m_Query.GetCombinedComponentOrderVersion();
             if (version == m_BuiltVersion)
             {
                 return;
             }
+            int count = m_Query.CalculateEntityCount();
+            if (m_BuiltVersion >= 0 && count == m_BuiltCount && now - m_BuiltTime < 120f)
+            {
+                return;
+            }
+            m_BuiltCount = count;
+            m_BuiltTime = now;
             var sw = System.Diagnostics.Stopwatch.StartNew();
             m_Query.CompleteDependency();
             m_Lanes.Clear();
@@ -120,7 +134,11 @@ namespace DriveTheCityII.CityBridge
                 }
             }
             m_BuiltVersion = version;
-            Revision++;
+            if (m_Lanes.Count != m_LastRevisionLaneCount)
+            {
+                m_LastRevisionLaneCount = m_Lanes.Count;
+                Revision++;
+            }
             DtcLog.Info($"RoadRouter: graph built with {m_Lanes.Count} car lanes in {sw.ElapsedMilliseconds} ms (revision {Revision})");
         }
 

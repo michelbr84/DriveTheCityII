@@ -96,6 +96,16 @@ namespace DriveTheCityII.Bridge
                 }
                 return new InstantOp(true, $"camera pivot {x},{y},{z}");
             };
+            TestBridge.Handlers["cycles"] = a => new TransitionCyclesOp(a.Length > 1 ? int.Parse(a[1], CultureInfo.InvariantCulture) : 10);
+            TestBridge.Handlers["perf"] = a =>
+            {
+                if (a.Length > 1 && a[1] == "reset")
+                {
+                    PerfMonitor.Reset();
+                    return new InstantOp(true, "perf reset");
+                }
+                return new InstantOp(true, PerfMonitor.Report());
+            };
             TestBridge.Handlers["traffic"] = Traffic;
             TestBridge.Handlers["trafficwatch"] = a => new TrafficWatchOp(a.Length > 1 ? F(a[1]) : 20f);
             TestBridge.Handlers["trafficsetup"] = a =>

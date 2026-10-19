@@ -231,6 +231,7 @@ namespace DriveTheCityII.Bridge
             {
                 return;
             }
+            PerfMonitor.Sample();
             PollFile();
             int guard = 0;
             while (guard++ < 32)
