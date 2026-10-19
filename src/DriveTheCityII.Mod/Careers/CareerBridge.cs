@@ -542,8 +542,8 @@ namespace DriveTheCityII.Careers
             }
 
             DtcLog.Throttled("autopilot", now, 3f, string.Format(CultureInfo.InvariantCulture,
-                "autopilot: leg={0} dist={1:0} err={2:0.00} speed={3:0.0} want={4:0.0} gap={5:0} routePts={6} turnAhead={7:0.00} ground={8} pos={9}",
-                legIndex, dist, err, speed, want, gap > 1000f ? -1f : gap, MarkerBoard.Route.Count, turnAhead, v.State.GroundKind, v.State.Position));
+                "autopilot: leg={0} dist={1:0} err={2:0.00} speed={3:0.0} want={4:0.0} gap={5:0} conflict={10:0.0} routePts={6} turnAhead={7:0.00} ground={8} pos={9}",
+                legIndex, dist, err, speed, want, gap > 1000f ? -1f : gap, MarkerBoard.Route.Count, turnAhead, v.State.GroundKind, v.State.Position, conflictIn > 1000f ? -1f : conflictIn));
             // Stuck: pushing the throttle but not moving.
             if (f.Throttle > 0.15f && Math.Abs(speed) < 0.3f)
             {
@@ -761,7 +761,9 @@ namespace DriveTheCityII.Careers
                 Vec2 rel = o.Footprint.Center - me;
                 float along = Vec2.Dot(rel, fwd);
                 bool stopped = o.Velocity.Length < 0.5f;
-                if (!stopped)
+                // Only vehicles ahead or alongside can cut into our path; one coming up from behind is the follower's
+                // business (counting it made us wait for a car that was itself waiting for us).
+                if (!stopped && along > -ownHalf * 0.5f)
                 {
                     // Predicted conflict: both move in straight lines; the other vehicle ends up inside our corridor
                     // just ahead of our front bumper.
