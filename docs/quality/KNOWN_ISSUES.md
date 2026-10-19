@@ -306,6 +306,17 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
   above and the truck steered at a point it could not reach (session 20261019-140429). Lanes on another level are now
   heavily penalized as start lanes; recovery also prefers spots on the vehicle's own level.
 
+### ISSUE-029 — A vehicle on a road could climb onto a ramp built over that road and fall off its edge
+- Severity: High
+- Status: Fixed (unit tests `CarOnTheRoadDoesNotClimbAnOverlappingRamp`, `CarOnTheRampKeepsClimbingIt`); in-game
+  verification in progress
+- Component: Core (ground following)
+- Detail: in the lab city an elevated one-lane ramp starts at road level on top of a road and rises over it. Each
+  wheel took the highest surface within its step allowance, so a truck following the road climbed the ramp; as the
+  two separated sideways it ran off the ramp's edge and fell 7 m (sessions 20261019-140429, -155015; mapped with the
+  new `probegrid`, `netsat` and `lanesat` diagnostics). Where two road or deck surfaces overlap, each wheel now keeps
+  the one closest to its own height; stepping from terrain onto a road is unchanged.
+
 ## 7. Release use
 
 - Before each phase gate, QA lists the open issues by severity in the gate evidence.

@@ -931,6 +931,61 @@ namespace DriveTheCityII.CityBridge
             }
         }
 
+        /// <summary>
+        /// Height of the car lane the vehicle is following: the nearest lane running along the heading (either way), within
+        /// a lane's width of the position and <paramref name="maxDy"/> of its height. Used as the ground level hint where
+        /// road surfaces overlap (VehicleController.LevelHint).
+        /// </summary>
+        public bool TryLaneLevel(float3 pos, float2 heading, float maxDy, out float laneY)
+        {
+            laneY = float.NaN;
+            if (!m_Ready)
+            {
+                return false;
+            }
+            CollectNet(new Bounds3(pos - new float3(4f, maxDy + 2f, 4f), pos + new float3(4f, maxDy + 2f, 4f)));
+            float best = float.MaxValue;
+            float2 h = math.normalizesafe(heading);
+            for (int i = 0; i < m_Items.Count; i++)
+            {
+                if (!m_SubLanes.TryGetBuffer(m_Items[i], out DynamicBuffer<Game.Net.SubLane> lanes))
+                {
+                    continue;
+                }
+                for (int l = 0; l < lanes.Length; l++)
+                {
+                    Entity lane = lanes[l].m_SubLane;
+                    if (!m_CarLane.HasComponent(lane) || m_MasterLane.HasComponent(lane) || !m_Curve.TryGetComponent(lane, out Curve c))
+                    {
+                        continue;
+                    }
+                    float width = 3f;
+                    if (m_PrefabRef.TryGetComponent(lane, out PrefabRef lp) && m_NetLaneData.TryGetComponent(lp.m_Prefab, out NetLaneData nld))
+                    {
+                        width = math.max(1.5f, nld.m_Width);
+                    }
+                    float d = MathUtils.Distance(c.m_Bezier.xz, pos.xz, out float t);
+                    if (d > width * 0.5f + 1f || d >= best)
+                    {
+                        continue;
+                    }
+                    float3 lp3 = MathUtils.Position(c.m_Bezier, t);
+                    if (math.abs(lp3.y - pos.y) > maxDy)
+                    {
+                        continue;
+                    }
+                    float2 tan = math.normalizesafe(MathUtils.Tangent(c.m_Bezier, t).xz);
+                    if (math.abs(math.dot(tan, h)) < 0.7f)
+                    {
+                        continue;
+                    }
+                    best = d;
+                    laneY = lp3.y;
+                }
+            }
+            return best < float.MaxValue;
+        }
+
         /// <summary>Diagnostics: car lanes within 8 m of a point (owner, master/slave, nearest point, width).</summary>
         public string DescribeLanesAt(float x, float z)
         {

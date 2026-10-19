@@ -1231,6 +1231,9 @@ namespace DriveTheCityII.Player
             if (dt > 0f)
             {
                 m_VehCtrl.SetSpec(m_Vehicle.Spec);
+                // Which level the vehicle is on where road surfaces overlap: the lane it is following (ISSUE-029).
+                float2 hd = new float2(math.sin(m_Vehicle.State.Yaw), math.cos(m_Vehicle.State.Yaw));
+                m_VehCtrl.LevelHint = m_Probe.TryLaneLevel(m_Vehicle.State.Position.ToF3(), hd, 3f, out float laneY) ? laneY : float.NaN;
                 VehicleStepReport r = m_VehCtrl.Step(m_Probe, ref m_Vehicle.State, vi, dt);
                 LastImpact = r.ImpactSpeed > 2f ? r : LastImpact;
                 if (r.ImpactSpeed > 2f)

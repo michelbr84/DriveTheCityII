@@ -442,6 +442,78 @@ namespace DriveTheCityII.Core.Tests
         }
 
         [Fact]
+        public void CarClimbingToACrestStaysOnItsRoadWhereARampBranchesAbove()
+        {
+            // The road climbs to a crest and descends again; a ramp starts at the crest over the same strip and keeps
+            // climbing. A car on the road (still pitched up at the crest) must follow its road down.
+            var w = new FakeWorld();
+            for (int i = 0; i < 400; i++)
+            {
+                float zc = i * 0.25f + 0.125f;
+                float road = zc < 20f ? zc * 0.1f : Math.Max(0f, 2f - (zc - 20f) * 0.1f);
+                w.AddDeck(0f, zc, 4f, 0.125f, road, SurfaceKind.Road, 5000);
+                if (zc >= 20f)
+                {
+                    w.AddDeck(0f, zc, 2.5f, 0.125f, 2f + (zc - 20f) * 0.1f, SurfaceKind.Elevated, 6000 + i);
+                }
+            }
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn(0, 2, 0.2f);
+            for (int i = 0; i < 700; i++)
+            {
+                c.Step(w, ref s, new VehicleInput { Throttle = 0.5f }, 1f / 50f);
+            }
+            Assert.True(s.Position.Z > 45f, $"z={s.Position.Z}");
+            Assert.True(s.Position.Y < 0.6f, $"y={s.Position.Y} z={s.Position.Z}");
+        }
+
+        private static FakeWorld SplitDeck()
+        {
+            // An elevated road at 2 m splits at z=20: one branch stays up, the other drops at 15% under it (as in the lab
+            // city where a road crosses a railway). Both run the same way over the same strip.
+            var w = new FakeWorld();
+            w.AddDeck(0f, 10f, 4f, 10f, 2f, SurfaceKind.Elevated, 7000);
+            w.AddDeck(0f, 45f, 4f, 25f, 2f, SurfaceKind.Elevated, 7001);
+            for (int i = 0; i < 200; i++)
+            {
+                float zc = 20f + i * 0.25f + 0.125f;
+                w.AddDeck(0f, zc, 4f, 0.125f, Math.Max(0f, 2f - (zc - 20f) * 0.15f), SurfaceKind.Road, 7100 + i);
+            }
+            return w;
+        }
+
+        [Fact]
+        public void LaneLevelHintTakesTheBranchDroppingUnderTheDeck()
+        {
+            var w = SplitDeck();
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn(0, 5, 2f);
+            for (int i = 0; i < 500; i++)
+            {
+                float z = s.Position.Z;
+                c.LevelHint = z < 20f ? 2f : Math.Max(0f, 2f - (z - 20f) * 0.15f); // the lower branch's lane
+                c.Step(w, ref s, new VehicleInput { Throttle = 0.5f }, 1f / 50f);
+            }
+            Assert.True(s.Position.Z > 40f, $"z={s.Position.Z}");
+            Assert.True(s.Position.Y < 0.5f, $"y={s.Position.Y} z={s.Position.Z}");
+        }
+
+        [Fact]
+        public void LaneLevelHintKeepsTheBranchThatStaysUp()
+        {
+            var w = SplitDeck();
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn(0, 5, 2f);
+            for (int i = 0; i < 500; i++)
+            {
+                c.LevelHint = 2f;
+                c.Step(w, ref s, new VehicleInput { Throttle = 0.5f }, 1f / 50f);
+            }
+            Assert.True(s.Position.Z > 40f, $"z={s.Position.Z}");
+            Assert.True(s.Position.Y > 1.8f, $"y={s.Position.Y} z={s.Position.Z}");
+        }
+
+        [Fact]
         public void CarOnTheRampKeepsClimbingIt()
         {
             var w = RoadWithOverlappingRamp();

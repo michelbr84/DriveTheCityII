@@ -51,7 +51,13 @@ namespace DriveTheCityII.Core.World
         /// <summary>How far below the reference height surfaces are searched (metres).</summary>
         public float MaxScanDepth = 250f;
 
-        public GroundResult Solve(IWorldProbe probe, float x, float z, float refY, float stepUp, float stepDown, float maxWaterDepth)
+        /// <param name="preferSource">The surface this point was on last time (0: none). While it is still under the point within the
+        /// step range it is kept, so a vehicle stays on its own road where another deck overlaps it (a ramp branching off
+        /// the crest of the road it then runs above).</param>
+        /// <param name="preferHeight">Height of the lane being followed at this point (NaN: unknown). Where road or deck surfaces
+        /// overlap, the one closest to it is taken: at a split where an elevated road stays up and a road drops away under
+        /// it, only the lane tells which one the vehicle is on.</param>
+        public GroundResult Solve(IWorldProbe probe, float x, float z, float refY, float stepUp, float stepDown, float maxWaterDepth, long preferSource = 0, float preferHeight = float.NaN)
         {
             if (!probe.IsInsideMap(x, z))
             {
@@ -94,10 +100,45 @@ namespace DriveTheCityII.Core.World
                 }
             }
 
-            // Two road or deck surfaces overlapping under the wheel (a ramp rising out of the road it runs over): keep the
-            // level closest to where the wheel is. Taking the highest one let a truck on the road climb onto an
-            // overlapping ramp, follow the road's line, and fall 7 m off the ramp's edge (observed in game on 2026-10-19).
-            if (haveBest && best.Kind != SurfaceKind.Terrain)
+            // Two road or deck surfaces overlapping under the wheel (a ramp rising out of the road it runs over): stay on the
+            // surface the wheel was on, otherwise take the level closest to where the wheel is. Taking the highest one let a
+            // truck on the road climb onto an overlapping ramp, follow the road's line, and fall 7 m off the ramp's edge
+            // (observed in game on 2026-10-19).
+            bool kept = false;
+            if (haveBest && MathXFinite(preferHeight) && best.Kind != SurfaceKind.Terrain)
+            {
+                float hintDiff = Math.Abs(best.Height - preferHeight);
+                for (int i = 0; i < m_Scratch.Count; i++)
+                {
+                    SurfaceSample s = m_Scratch[i];
+                    if (s.Kind == SurfaceKind.Terrain || s.Kind == SurfaceKind.Water || !MathXFinite(s.Height) || s.Height > ceiling || s.Height < refY - stepDown)
+                    {
+                        continue;
+                    }
+                    float diff = Math.Abs(s.Height - preferHeight);
+                    if (diff < hintDiff)
+                    {
+                        best = s;
+                        hintDiff = diff;
+                    }
+                }
+                kept = true;
+            }
+            if (haveBest && !kept && preferSource != 0 && best.SourceId != preferSource)
+            {
+                for (int i = 0; i < m_Scratch.Count; i++)
+                {
+                    SurfaceSample s = m_Scratch[i];
+                    if (s.SourceId == preferSource && s.Kind != SurfaceKind.Terrain && s.Kind != SurfaceKind.Water && MathXFinite(s.Height)
+                        && s.Height <= ceiling && s.Height >= refY - stepDown)
+                    {
+                        best = s;
+                        kept = true;
+                        break;
+                    }
+                }
+            }
+            if (haveBest && !kept && best.Kind != SurfaceKind.Terrain)
             {
                 float bestDiff = Math.Abs(best.Height - refY);
                 for (int i = 0; i < m_Scratch.Count; i++)

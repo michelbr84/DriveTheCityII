@@ -117,6 +117,13 @@ namespace DriveTheCityII.Core.Motion
         /// <summary>Optional filter: obstacles with this source id are ignored (the controlled vehicle itself).</summary>
         public long IgnoreSourceId;
 
+        /// <summary>
+        /// Height of the lane the vehicle is following at its position (NaN: none known). Where road or deck surfaces
+        /// overlap (an elevated road and a road dropping away beneath it from the same junction), the wheels take the
+        /// surface closest to it. Set by the host before each step.
+        /// </summary>
+        public float LevelHint = float.NaN;
+
         public VehicleSpec Spec { get; private set; }
 
         public VehicleController(VehicleSpec spec)
@@ -414,7 +421,8 @@ namespace DriveTheCityII.Core.Motion
             for (int i = 0; i < 4; i++)
             {
                 float wheelRef = refY + along[i] * tp + side[i] * halfTrack * tr;
-                m_Wheels[i] = m_Ground.Solve(probe, pts[i].X, pts[i].Z, wheelRef, spec.StepUp, spec.StepDown, spec.MaxWaterDepth);
+                float wheelHint = float.IsNaN(LevelHint) ? float.NaN : LevelHint + (wheelRef - refY);
+                m_Wheels[i] = m_Ground.Solve(probe, pts[i].X, pts[i].Z, wheelRef, spec.StepUp, spec.StepDown, spec.MaxWaterDepth, m_Wheels[i].SourceId, wheelHint);
                 GroundStatus st = m_Wheels[i].Status;
                 if (st == GroundStatus.Blocked || st == GroundStatus.Invalid || st == GroundStatus.DeepWater)
                 {
