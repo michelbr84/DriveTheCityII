@@ -206,6 +206,8 @@ namespace DriveTheCityII.Careers
         private float m_ProgressDist = float.MaxValue;
         private float3 m_MoveAnchor;
         private float m_MoveCheckAt;
+        private float m_LastRecoverAt = -999f;
+        private float m_NotDrivingSince = -1f;
 
         private readonly int m_UntilLeg;
         private readonly bool m_Challenge;
@@ -298,8 +300,24 @@ namespace DriveTheCityII.Careers
             if (p.State != PlayerState.Driving || p.Vehicle == null)
             {
                 p.Input.Injected = null;
+                // Returned to city building (for example by the recovery-loop protection): stop instead of waiting
+                // for the timeout, so the caller can decide what to do.
+                if (p.State == PlayerState.Building)
+                {
+                    if (m_NotDrivingSince < 0f)
+                    {
+                        m_NotDrivingSince = now;
+                    }
+                    else if (now - m_NotDrivingSince > 5f)
+                    {
+                        Ok = false;
+                        Result = $"player returned to city building; {Summary()} :: {CareerBridge.Status()}";
+                        return true;
+                    }
+                }
                 return false;
             }
+            m_NotDrivingSince = -1f;
             ControlledVehicle v = p.Vehicle;
             float3 pos = v.State.Position.ToF3();
             float speed = v.State.Speed;
@@ -450,6 +468,15 @@ namespace DriveTheCityII.Careers
 
         private void Recover(PlayerSystem p, float now, string why)
         {
+            // Space recoveries out: several in quick succession trip the player's recovery-loop protection.
+            if (now - m_LastRecoverAt < 30f)
+            {
+                m_Backouts++;
+                m_ReverseUntil = now + 2f;
+                m_ReverseSteer = m_Backouts % 2 == 0 ? 1f : -1f;
+                return;
+            }
+            m_LastRecoverAt = now;
             m_Recoveries++;
             m_Log.Add($"recovery:{why}({now - m_Start:0}s)");
             p.Input.Injected = null;
