@@ -30,6 +30,19 @@ namespace DriveTheCityII
             updateSystem.UpdateAt<TestBridgeSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAt<SessionGuardSystem>(SystemUpdatePhase.MainLoop);
 
+            // CityBridge: structural entity operations where the game's Modification systems see them, and removal of
+            // every mod actor right before a save is serialized.
+            updateSystem.UpdateAt<CityBridge.ActorOpsSystem>(SystemUpdatePhase.Modification1);
+            updateSystem.UpdateBefore<Game.Serialization.PreSerialize<CityBridge.ActorOpsSystem>>(SystemUpdatePhase.Serialize);
+            updateSystem.UpdateAfter<CityBridge.ActorPostSerializeSystem, Game.Serialization.WriteSystem>(SystemUpdatePhase.Serialize);
+
+            // Player: per frame, after the game's tools and modifications, before culling and rendering; camera pose
+            // applied right before the game's camera system.
+            updateSystem.UpdateBefore<Player.PlayerSystem, Game.Rendering.PreRenderSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateBefore<Player.PlayerCameraSystem, Game.Rendering.CameraUpdateSystem>(SystemUpdatePhase.PreCulling);
+
+            PlayerBridgeCommands.Register();
+
             GameManager.instance.onGameLoadingComplete += OnLoadingComplete;
             GameManager.instance.onGamePreload += OnGamePreload;
         }
