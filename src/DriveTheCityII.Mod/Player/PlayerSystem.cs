@@ -1295,6 +1295,33 @@ namespace DriveTheCityII.Player
             }
         }
 
+        /// <summary>
+        /// The direction recovery should face: along the guidance route where it passes near the vehicle (a vehicle stuck
+        /// crosswise facing a railing was otherwise put back facing away from its route, observed in game on 2026-10-19),
+        /// else the vehicle's own heading.
+        /// </summary>
+        private static float RecoveryHeading(float3 from, float vehicleYaw)
+        {
+            List<float3> route = MarkerBoard.Route;
+            int best = -1;
+            float bestD = 60f * 60f;
+            for (int i = 0; i + 1 < route.Count; i++)
+            {
+                float d = math.distancesq(route[i].xz, from.xz);
+                if (d < bestD)
+                {
+                    bestD = d;
+                    best = i;
+                }
+            }
+            if (best < 0)
+            {
+                return vehicleYaw;
+            }
+            float2 dir = route[Math.Min(best + 3, route.Count - 1)].xz - route[best].xz;
+            return math.lengthsq(dir) > 0.25f ? math.atan2(dir.x, dir.y) : vehicleYaw;
+        }
+
         private void UpdateRecovery()
         {
             bool inVehicle = m_Vehicle != null && m_Vehicle.Entity != Entity.Null && !m_Vehicle.Lost;
@@ -1304,7 +1331,7 @@ namespace DriveTheCityII.Player
             if (inVehicle)
             {
                 // A spot where the whole vehicle fits (a bus moved to the nearest lane point can still overlap a pole).
-                if (FindClearVehicleSpot(m_Vehicle.Spec, from, false, radius, out float3 p, out float placedYaw, m_Vehicle.State.Yaw))
+                if (FindClearVehicleSpot(m_Vehicle.Spec, from, false, radius, out float3 p, out float placedYaw, RecoveryHeading(from, m_Vehicle.State.Yaw)))
                 {
                     m_Vehicle.State.Position = new Vec3(p.x, p.y, p.z);
                     m_Vehicle.State.Yaw = placedYaw;
