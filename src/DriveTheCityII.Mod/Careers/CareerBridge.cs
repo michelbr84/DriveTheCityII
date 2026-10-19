@@ -60,7 +60,7 @@ namespace DriveTheCityII.Careers
                     {
                         return new InstantOp(false, "no offer #" + idx);
                     }
-                    string vid = P.Vehicle != null && P.Vehicle.Kind == ActorKind.CareerVehicle ? P.Vehicle.CareerVehicleId : null;
+                    string vid = CareerUi.VehicleForAccept(s, offers[idx]);
                     CareerResult r = s.Accept(offers[idx].Id, vid, C.Clock);
                     return new InstantOp(r.IsOk, $"accept {offers[idx].Title}: {r.Code} {r.Text}");
                 }
@@ -73,6 +73,12 @@ namespace DriveTheCityII.Careers
                         a.Length > 3 ? int.Parse(a[3], CultureInfo.InvariantCulture) : -1);
                 case "grant":
                     return new InstantOp(true, s.DebugGrant(long.Parse(a[2], CultureInfo.InvariantCulture), C.Clock).Text);
+                case "chdrive":
+                    return new MissionAutopilotOp(a.Length > 2 ? float.Parse(a[2], CultureInfo.InvariantCulture) : 300f, -1, true);
+                case "challenges":
+                    return new InstantOp(true, Challenges());
+                case "company":
+                    return new InstantOp(true, Company());
                 case "xp":
                 {
                     // Test seeding (marks the profile test-seeded permanently; never used by normal play).
@@ -107,7 +113,7 @@ namespace DriveTheCityII.Careers
                     float bestD = float.MaxValue;
                     foreach (CityPlace p in CityServices.Places.Places)
                     {
-                        if (p.Kind != kind || !p.HasRoadAccess)
+                        if (p.Kind != kind || math.lengthsq(p.RoadAccess) < 1f)
                         {
                             continue;
                         }
@@ -118,9 +124,13 @@ namespace DriveTheCityII.Careers
                             best = p;
                         }
                     }
-                    if (best == null || P.State != PlayerState.OnFoot)
+                    if (P.State != PlayerState.OnFoot)
                     {
-                        return new InstantOp(false, "no place of kind " + kind + " (or not on foot)");
+                        return new InstantOp(false, "not on foot");
+                    }
+                    if (best == null)
+                    {
+                        return new InstantOp(false, $"no place of kind {kind} among {CityServices.Places.Places.Count} indexed places");
                     }
                     CityServices.Places.RefineAccess(P.Probe, best);
                     P.TeleportAvatar(best.WalkAccess + new float3(0f, 0.5f, 0f));
@@ -131,6 +141,27 @@ namespace DriveTheCityII.Careers
                 default:
                     return new InstantOp(false, "unknown career command");
             }
+        }
+
+        public static string Company()
+        {
+            CareerService s = C.Service;
+            CompanyView co = s.GetCompany(6);
+            string cands = string.Join(",", s.GetCandidates(C.Clock).Select(x => $"{x.Id}:skill{x.Skill}:rel{x.Reliability:0.00}:sal{x.SalaryCents}"));
+            string offers = string.Join(",", s.GetCompanyContractOffers(C.Clock).Select(x => $"{x.Id}:{x.Career}:{x.RequiredClass}:q{x.QuotaPerPeriod}:pay{x.PayPerJobCents}:minRel{x.MinReliability:0.00}"));
+            if (!co.Exists)
+            {
+                return $"company=none candidates=[{cands}] contractOffers=[{offers}]";
+            }
+            return $"company={co.Id}:'{co.Name}' cash={co.CashCents} debt={co.DebtCents} arrears={co.InArrears} lastPeriod={co.LastSettledPeriod} nextAt={co.NextSettlementAt:0} jobs={co.SimulatedJobsTotal} hqMissing={co.HeadquartersMissing} " +
+                   $"employees=[{string.Join(",", co.Employees.Select(e => $"{e.Id}:veh={e.VehicleId}:ctr={e.ContractId}"))}] contracts=[{string.Join(",", co.Contracts.Select(k => $"{k.Id}:{k.Career}:q{k.QuotaPerPeriod}:left{k.RemainingPeriods}"))}] " +
+                   $"fleet=[{string.Join(",", co.FleetVehicleIds)}] candidates=[{cands}] contractOffers=[{offers}] ledger=[{string.Join("; ", co.RecentLedger.Select(e => e.Type + ":" + e.AmountCents))}]";
+        }
+
+        public static string Challenges()
+        {
+            return "challenges=[" + string.Join(" | ", C.Service.GetChallenges().Select(c =>
+                $"{c.Id}:{c.Type}:{c.Name}:pts{c.Points.Count}:avail={c.Available}:best={c.BestSeconds:0.0}:{c.Medal}:tries{c.Attempts}{(c.Running ? ":RUNNING@" + c.NextPoint : string.Empty)}")) + "]";
         }
 
         public static string Status()
@@ -174,10 +205,12 @@ namespace DriveTheCityII.Careers
         private float m_MoveCheckAt;
 
         private readonly int m_UntilLeg;
+        private readonly bool m_Challenge;
 
-        public MissionAutopilotOp(float seconds, int untilLeg = -1)
+        public MissionAutopilotOp(float seconds, int untilLeg = -1, bool challenge = false)
         {
             m_UntilLeg = untilLeg;
+            m_Challenge = challenge;
             m_Start = Time.realtimeSinceStartup;
             m_End = m_Start + seconds;
         }
@@ -193,21 +226,52 @@ namespace DriveTheCityII.Careers
             CareerSystem c = CareerSystem.Instance;
             ActiveMissionView m = c.Service?.GetActiveMission();
             float now = Time.realtimeSinceStartup;
-            if (m == null || string.IsNullOrEmpty(m.MissionId))
+            bool missionActive = m != null && !string.IsNullOrEmpty(m.MissionId);
+            ChallengeView ch = m_Challenge && !missionActive ? c.RunningChallenge() : null;
+            if (!missionActive && (ch == null || ch.Points.Count == 0))
             {
                 p.Input.Injected = null;
                 Ok = true;
-                Result = $"mission finished after {now - m_Start:0}s; {Summary()} :: {CareerBridge.Status()}";
+                Result = $"{(m_Challenge ? "challenge" : "mission")} finished after {now - m_Start:0}s; {Summary()} :: {CareerBridge.Status()} {(m_Challenge ? CareerBridge.Challenges() : string.Empty)}";
                 return true;
             }
-            if (m_UntilLeg >= 0 && m.CurrentLegIndex >= m_UntilLeg && p.Vehicle != null && Math.Abs(p.Vehicle.State.Speed) < 0.3f)
+            int legIndex;
+            string legLabel;
+            float3 target;
+            float radius = 8f;
+            bool serviceLeg;
+            bool lastPoint = true;
+            if (missionActive)
+            {
+                legIndex = m.CurrentLegIndex;
+                legLabel = m.CurrentLegKind + "@" + m.TargetPlaceName;
+                target = CareerWorldAdapter.ToF3(m.TargetAccess);
+                serviceLeg = m.CurrentLegState == LegState.Servicing;
+                foreach (MissionLegView l in m.Legs)
+                {
+                    if (l.Index == m.CurrentLegIndex && l.Radius > 0)
+                    {
+                        radius = (float)Math.Max(4.0, l.Radius * 0.6);
+                    }
+                }
+            }
+            else
+            {
+                legIndex = Math.Min(Math.Max(0, ch.NextPoint), ch.Points.Count - 1);
+                legLabel = "Checkpoint" + (legIndex + 1) + "@" + ch.Points[legIndex].Name;
+                target = CareerWorldAdapter.ToF3(ch.Points[legIndex].Access);
+                serviceLeg = false;
+                radius = 5f;
+                lastPoint = legIndex == ch.Points.Count - 1;
+            }
+            if (m_UntilLeg >= 0 && legIndex >= m_UntilLeg && p.Vehicle != null && Math.Abs(p.Vehicle.State.Speed) < 0.3f)
             {
                 p.Input.Injected = null;
                 Ok = true;
-                Result = $"reached leg {m.CurrentLegIndex} after {now - m_Start:0}s; {Summary()} :: {CareerBridge.Status()}";
+                Result = $"reached leg {legIndex} after {now - m_Start:0}s; {Summary()} :: {CareerBridge.Status()}";
                 return true;
             }
-            if (m_UntilLeg >= 0 && m.CurrentLegIndex >= m_UntilLeg && p.Vehicle != null)
+            if (m_UntilLeg >= 0 && legIndex >= m_UntilLeg && p.Vehicle != null)
             {
                 p.Input.Injected = new InputFrame { Brake = 1f };
                 return false;
@@ -219,14 +283,14 @@ namespace DriveTheCityII.Careers
                 Result = $"timeout; {Summary()} :: {CareerBridge.Status()}";
                 return true;
             }
-            if (m.CurrentLegIndex != m_LastLeg)
+            if (legIndex != m_LastLeg)
             {
-                m_LastLeg = m.CurrentLegIndex;
+                m_LastLeg = legIndex;
                 m_TurnsThisLeg = 0;
                 m_ProgressDist = float.MaxValue;
                 m_ProgressCheckAt = now + 180f;
                 m_MoveCheckAt = 0f;
-                m_Log.Add($"{m.CurrentLegKind}@{m.TargetPlaceName}({now - m_Start:0}s)");
+                m_Log.Add($"{legLabel}({now - m_Start:0}s)");
             }
             if (p.State != PlayerState.Driving || p.Vehicle == null)
             {
@@ -237,20 +301,11 @@ namespace DriveTheCityII.Careers
             float3 pos = v.State.Position.ToF3();
             float speed = v.State.Speed;
             float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0f, 0.25f);
-            float3 target = CareerWorldAdapter.ToF3(m.TargetAccess);
             float dist = math.distance(pos.xz, target.xz);
-            float radius = 8f;
-            foreach (MissionLegView l in m.Legs)
-            {
-                if (l.Index == m.CurrentLegIndex && l.Radius > 0)
-                {
-                    radius = (float)Math.Max(4.0, l.Radius * 0.6);
-                }
-            }
             // Stalled (moved < 25 m in 45 s) or no gain towards the target in 3 minutes (routes may first lead away):
             // use recovery like a player would.
-            bool servicing = m.CurrentLegState == LegState.Servicing || dist < radius;
-            if (m_MoveCheckAt <= 0f || servicing)
+            bool holding = serviceLeg || (dist < radius && lastPoint);
+            if (m_MoveCheckAt <= 0f || holding)
             {
                 m_MoveAnchor = pos;
                 m_MoveCheckAt = now + 45f;
@@ -266,7 +321,7 @@ namespace DriveTheCityII.Careers
                     return false;
                 }
             }
-            if (dist < m_ProgressDist - 10f || servicing)
+            if (dist < m_ProgressDist - 10f || holding)
             {
                 m_ProgressDist = dist;
                 m_ProgressCheckAt = now + 180f;
@@ -278,7 +333,7 @@ namespace DriveTheCityII.Careers
                 Recover(p, now, "no progress for 3 min");
                 return false;
             }
-            if (dist < radius || m.CurrentLegState == LegState.Servicing)
+            if (holding)
             {
                 // Stop and hold with the handbrake (holding the brake at a standstill would engage reverse).
                 p.Input.Injected = new InputFrame { Brake = Math.Abs(speed) > 0.3f ? 1f : 0f, Handbrake = Math.Abs(speed) <= 0.3f };
@@ -359,7 +414,7 @@ namespace DriveTheCityII.Careers
 
             DtcLog.Throttled("autopilot", now, 3f, string.Format(CultureInfo.InvariantCulture,
                 "autopilot: leg={0} dist={1:0} err={2:0.00} speed={3:0.0} want={4:0.0} gap={5:0} routePts={6} turnAhead={7:0.00} ground={8} pos={9}",
-                m.CurrentLegIndex, dist, err, speed, want, gap > 1000f ? -1f : gap, MarkerBoard.Route.Count, turnAhead, v.State.GroundKind, v.State.Position));
+                legIndex, dist, err, speed, want, gap > 1000f ? -1f : gap, MarkerBoard.Route.Count, turnAhead, v.State.GroundKind, v.State.Position));
             // Stuck: pushing the throttle but not moving.
             if (f.Throttle > 0.15f && Math.Abs(speed) < 0.3f)
             {

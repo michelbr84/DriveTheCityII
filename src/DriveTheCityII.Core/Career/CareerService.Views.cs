@@ -313,6 +313,12 @@ namespace DriveTheCityII.Core.Career
                     Running = m_Run != null && m_Run.ChallengeId == d.Id,
                     NextPoint = m_Run != null && m_Run.ChallengeId == d.Id ? m_Run.NextPoint : 0,
                 };
+                if (v.Running)
+                {
+                    v.RunStarted = m_Run.StartedAt >= 0;
+                    v.RunElapsedSeconds = v.RunStarted ? Math.Max(0, m_State.Clock - m_Run.StartedAt) : 0;
+                    v.RunPenaltySeconds = m_Run.PenaltySeconds;
+                }
                 foreach (PlaceRef p in d.Points)
                 {
                     v.Points.Add(p.Clone());

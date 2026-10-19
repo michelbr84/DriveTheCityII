@@ -74,6 +74,8 @@ try {
     while (((Get-Date) - $start).TotalMinutes -lt $Minutes) {
         if (-not (Alive)) { $crashed = $true; Log 'GAME PROCESS ENDED'; break }
         $iter++
+        # Career time stops while the game window is unfocused (treated as paused); keep the game in front.
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'realinput.ps1') -Steps 'focus' | Out-Null
         try {
             if (-not (EnsureDriving)) { $counts.errors++; Log "iteration ${iter}: could not get into a vehicle"; Bridge 'player building;wait 2' | Out-Null; continue }
             $o = Bridge 'career offers Taxi'

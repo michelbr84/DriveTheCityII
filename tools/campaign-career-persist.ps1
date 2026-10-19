@@ -55,7 +55,8 @@ Record 'Reload B: no mod entity in the save' ($o -match 'excluded-signature cars
 Record 'Rejoin the mission car' (Rejoin $vid) ''
 $d = Last (Bridge 'career drive 900' 1000) 'career drive'
 $w = Wallet $d
-Record 'Finish the fare after reload' ($d -match 'mission finished' -and $w[0] -gt $b[0] -and $w[1] -eq $b[1] + 1) (($d -split ' :: ')[-1])
+# One settlement adds the fare entry plus, for a basic rental, the rental-share charge (2 entries at most).
+Record 'Finish the fare after reload (one settlement)' ($d -match 'mission finished' -and $w[0] -gt $b[0] -and $w[1] -ge $b[1] + 1 -and $w[1] -le $b[1] + 2 -and ([regex]::Matches($d, 'MissionSettlement:').Count -eq 1)) (($d -split ' :: ')[-1])
 
 $o = Bridge "save $Prefix-C;wait 2;load $Prefix-C;waitcity 900;wait 4;career status" 1500
 $c = Wallet (Last $o 'career status')

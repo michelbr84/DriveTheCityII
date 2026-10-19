@@ -65,6 +65,29 @@ namespace DriveTheCityII.Careers
             return p.State == PlayerState.Driving && p.Vehicle != null ? p.Vehicle.State.Position.ToF3() : p.Avatar.Position.ToF3();
         }
 
+        /// <summary>
+        /// The vehicle a job is accepted with: the career vehicle being driven, unless the job provides its own vehicle
+        /// (shipper's truck, operator's bus) and the driven one is not of an allowed class. Then the job's vehicle is used.
+        /// </summary>
+        internal static string VehicleForAccept(CareerService s, MissionOffer offer)
+        {
+            PlayerSystem p = PlayerSystem.Instance;
+            if (p == null || p.State != PlayerState.Driving || p.Vehicle == null || p.Vehicle.Kind != ActorKind.CareerVehicle)
+            {
+                return null;
+            }
+            string vid = p.Vehicle.CareerVehicleId;
+            if (offer != null && offer.ProvidesServiceVehicle)
+            {
+                VehicleView v = s.GetVehicle(vid);
+                if (v == null || !offer.AllowedClasses.Contains(v.Class))
+                {
+                    return null;
+                }
+            }
+            return vid;
+        }
+
         internal static void Report(CareerResult r)
         {
             PlayerSystem.Instance?.Say(CareerText.Result(r));
@@ -145,6 +168,24 @@ namespace DriveTheCityII.Careers
                     .Set("distance", Loc.Distance(dist))
                     .Set("reward", m.ContractValueCents > 0 ? Loc.Money(m.ContractValueCents) : string.Empty));
             }
+            else
+            {
+                ChallengeView ch = m_C.RunningChallenge();
+                if (ch != null && ch.Points.Count > 0)
+                {
+                    int next = Math.Min(Math.Max(0, ch.NextPoint), ch.Points.Count - 1);
+                    float dist = math.distance(CareerUi.PlayerPos().xz, CareerWorldAdapter.ToF3(ch.Points[next].Access).xz);
+                    string time = ch.RunStarted
+                        ? Loc.T("challenges.time", (ch.RunElapsedSeconds + ch.RunPenaltySeconds).ToString("0.0", CultureInfo.InvariantCulture))
+                        : Loc.T("challenges.toStart");
+                    hud.Set("objective", JsonValue.Object()
+                        .Set("label", Loc.T("challenge." + ch.Type.ToString().ToLowerInvariant()))
+                        .Set("title", ch.Name)
+                        .Set("detail", Loc.T("challenges.checkpoint", next + 1, ch.Points.Count) + " · " + time)
+                        .Set("distance", Loc.Distance(dist))
+                        .Set("reward", ch.BestSeconds > 0 ? Loc.T("challenges.best", ch.BestSeconds.ToString("0.0", CultureInfo.InvariantCulture), Loc.T("medal." + ch.Medal.ToString().ToLowerInvariant())) : string.Empty));
+                }
+            }
             CityPlace sp = m_C.NearestServicePoint(30f);
             if (sp != null)
             {
@@ -163,6 +204,11 @@ namespace DriveTheCityII.Careers
     {
         private readonly CareerSystem m_C;
         private CareerKind m_Career = CareerKind.Taxi;
+
+        // The panel is rebuilt at the HUD rate (10 Hz). Offers are fetched at most every 2 s (immediately after a career
+        // switch, refresh or accept), so an empty board never regenerates offers on every rebuild.
+        private IReadOnlyList<MissionOffer> m_Offers = Array.Empty<MissionOffer>();
+        private float m_NextFetch;
 
         public JobsTab(CareerSystem c)
         {
@@ -209,16 +255,21 @@ namespace DriveTheCityII.Careers
                 rows.Add(new PanelRow { Id = "duty", Title = Loc.T("jobs.taxiDuty"), Subtitle = Loc.T("jobs.taxiDutyHint") }
                     .Action("jobs:duty:on", Loc.T("common.on")).Action("jobs:duty:off", Loc.T("common.off")));
             }
-            IReadOnlyList<MissionOffer> offers;
-            try
+            float nowReal = UnityEngine.Time.realtimeSinceStartup;
+            if (nowReal >= m_NextFetch)
             {
-                offers = s.GetOffers(m_Career, CareerWorldAdapter.ToPoint(CareerUi.PlayerPos()), m_C.Clock);
+                m_NextFetch = nowReal + 2f;
+                try
+                {
+                    m_Offers = s.GetOffers(m_Career, CareerWorldAdapter.ToPoint(CareerUi.PlayerPos()), m_C.Clock);
+                }
+                catch (Exception ex)
+                {
+                    DtcLog.Error("GetOffers failed", ex);
+                    m_Offers = Array.Empty<MissionOffer>();
+                }
             }
-            catch (Exception ex)
-            {
-                DtcLog.Error("GetOffers failed", ex);
-                offers = Array.Empty<MissionOffer>();
-            }
+            IReadOnlyList<MissionOffer> offers = m_Offers;
             if (offers.Count == 0)
             {
                 rows.Add(new PanelRow { Id = "none", Title = Loc.T("jobs.none"), Subtitle = Loc.T("jobs.noneHint") });
@@ -270,9 +321,11 @@ namespace DriveTheCityII.Careers
             {
                 case "career":
                     m_Career = (CareerKind)Enum.Parse(typeof(CareerKind), a[2]);
+                    m_NextFetch = 0f;
                     return true;
                 case "refresh":
-                    s.RefreshOffers(m_Career, CareerWorldAdapter.ToPoint(CareerUi.PlayerPos()), m_C.Clock);
+                    m_Offers = s.RefreshOffers(m_Career, CareerWorldAdapter.ToPoint(CareerUi.PlayerPos()), m_C.Clock);
+                    m_NextFetch = UnityEngine.Time.realtimeSinceStartup + 2f;
                     return true;
                 case "duty":
                     s.SetTaxiDuty(a[2] == "on");
@@ -282,9 +335,12 @@ namespace DriveTheCityII.Careers
                     return true;
                 case "accept":
                 {
-                    string vehicleId = p.State == PlayerState.Driving && p.Vehicle != null && p.Vehicle.Kind == ActorKind.CareerVehicle ? p.Vehicle.CareerVehicleId : null;
-                    CareerResult r = s.Accept(string.Join(":", a.Skip(2)), vehicleId, m_C.Clock);
+                    string offerId = string.Join(":", a.Skip(2));
+                    MissionOffer offer = m_Offers.FirstOrDefault(o => o.Id == offerId);
+                    string vehicleId = CareerUi.VehicleForAccept(s, offer);
+                    CareerResult r = s.Accept(offerId, vehicleId, m_C.Clock);
                     CareerUi.Report(r);
+                    m_NextFetch = 0f;
                     if (r.IsOk)
                     {
                         HudUISystem.Instance.SetPanel(false);

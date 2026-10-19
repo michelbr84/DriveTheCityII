@@ -3,18 +3,23 @@
 | Field | Value |
 |---|---|
 | ID | TASK-0004 |
-| Task status | Planned |
+| Task status | In review (implemented and run in game on 2026-10-19; awaiting owner review) |
 | Task type | Implementation |
 | Phase | [PHASE-01](../phases/PHASE-01-foundation-and-save-safety.md): WP-01-02, WP-01-03, WP-01-04, and the activation and unload part of WP-01-05 |
 | Responsible role | Implementer (builds); Reviewer (scoped to control authority and entity lifecycle for the state skeleton and registry); QA (evidence runs); project owner (authorizations and decisions) |
 | Depends on | [TASK-0003](TASK-0003-isolated-baseline-validation.md) evidence that the native route builds and loads on the installed game; owner decisions in WP-01-01 (OPEN-027 license, OPEN-028 output location, OPEN-029 Git, OPEN-604 identifiers); acceptance of [ADR-0005](../../architecture/decisions/ADR-0005-mod-loading-and-distribution-route.md) |
 | Authorization required | Creating `src/` and `tests/`; Git initialization (if decided); installing the official toolchain components still missing (Unity Editor, .NET SDK) if TASK-0003 did not already do it; building; deploying to the native local-mods location; launching the game with a **lab city** |
 | Created | 2026-10-18 |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
-> **Why Planned and not Ready:** the definition below is concrete, but the [Definition of Ready](../../agents/DEFINITION_OF_READY.md)
-> for implementation needs a version-control decision, an accepted loading route, and the toolchain evidence from
-> TASK-0003. None of these exists yet. Nothing in this file has been run.
+> **Update 2026-10-19 (owner brief of 2026-10-19 granted execution authority):** the readiness blockers were resolved
+> by owner decisions in that brief (local Git allowed, native route approved: [ADR-0005](../../architecture/decisions/ADR-0005-mod-loading-and-distribution-route.md)
+> Accepted, user-scoped installs allowed, output under `%LOCALAPPDATA%\DriveTheCityII`). The skeleton was built and
+> then extended far beyond this task's scope in [TASK-0005](TASK-0005-implementation-run-2026-10-19.md).
+> Evidence for this task's own objectives: the mod loads natively on 1.6.2f1 and logs its version and build stamp;
+> bounded log `DriveTheCityII.log`; co-load guard ([RUN-0001](../../quality/evidence/RUN-0001/REPORT.md)); activation and
+> unload through the control state machine (TR-01..TR-13 unit-tested; transition cycles 33/33 in game).
+> The original text below is kept as the plan of record.
 
 ## 1. Objective
 

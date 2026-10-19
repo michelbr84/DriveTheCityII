@@ -24,6 +24,8 @@ file wins and the backlog row is corrected.
 | [TASK-0001](TASK-0001-windows-environment-audit.md) | Windows environment audit | PHASE-00 / WP-00-01 (and the read-only part of WP-00-06) |
 | [TASK-0002](TASK-0002-base-mod-source-audit.md) | Base mod source audit | PHASE-00 / WP-00-02 |
 | [TASK-0003](TASK-0003-isolated-baseline-validation.md) | Isolated baseline validation | PHASE-00 / WP-00-03 |
+| [TASK-0004](TASK-0004-native-mod-skeleton.md) | Native mod skeleton | PHASE-01 / WP-01-02 to WP-01-05 |
+| [TASK-0005](TASK-0005-implementation-run-2026-10-19.md) | Implementation run of 2026-10-19 (private build) | PHASE-01 to PHASE-12 (private package; PHASE-13 publishing excluded) |
 
 Statuses are kept in each file and indexed in [BACKLOG](../BACKLOG.md); they are deliberately not repeated here.
 Later-phase work is planned as work packages inside the [phase documents](../phases/README.md) and has no task files

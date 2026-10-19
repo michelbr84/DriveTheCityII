@@ -213,6 +213,13 @@ namespace DriveTheCityII.Core.Career
         public List<PlaceRef> Points = new List<PlaceRef>();
         public bool Running;
         public int NextPoint;
+
+        /// <summary>Running challenge only: true once the timer started (after the start point).</summary>
+        public bool RunStarted;
+
+        /// <summary>Running challenge only: career-clock seconds since the timer started, and penalty seconds so far.</summary>
+        public double RunElapsedSeconds;
+        public double RunPenaltySeconds;
     }
 
     public sealed class HomeView

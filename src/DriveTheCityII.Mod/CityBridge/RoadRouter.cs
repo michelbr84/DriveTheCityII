@@ -308,9 +308,14 @@ namespace DriveTheCityII.CityBridge
             }
             chain.Reverse();
             double dist = 0, time = 0;
+            int junctions = 0;
             for (int i = 0; i < chain.Count; i++)
             {
                 LaneNode n = m_Lanes[chain[i]];
+                if (i > 0 && n.Length < 25f)
+                {
+                    junctions++; // short connecting lanes are intersection movements
+                }
                 float t0 = i == 0 && startT.TryGetValue(chain[i], out float st) ? st : 0f;
                 float t1 = i == chain.Count - 1 ? goalT[chain[i]] : 1f;
                 if (t1 < t0)
@@ -332,7 +337,10 @@ namespace DriveTheCityII.CityBridge
                 }
             }
             res.DistanceMeters = dist;
-            res.TimeSeconds = time;
+            // Free-flow time at the speed limit is unrealistically short for a driver: calibrate for acceleration,
+            // corners and traffic (x1.3) and for slowing down at intersections (3 s each). Observed on 2026-10-19:
+            // the uncalibrated estimate made delivery deadlines expire before an on-route driver could finish.
+            res.TimeSeconds = time * 1.3 + junctions * 3.0;
             res.GoalPoint = res.Polyline.Count > 0 ? res.Polyline[res.Polyline.Count - 1] : to;
             res.Status = RouteStatusCode.Reachable;
             return res;

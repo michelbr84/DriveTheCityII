@@ -96,6 +96,14 @@ namespace DriveTheCityII.Bridge
                 }
                 return new InstantOp(true, $"camera pivot {x},{y},{z}");
             };
+            TestBridge.Handlers["lang"] = a =>
+            {
+                // lang auto|en|pt: sets the mod's own language option (not the game's language).
+                var st = Settings.DriveTheCityIISettings.Instance;
+                string v = a.Length > 1 ? a[1].ToLowerInvariant() : "auto";
+                st.Language = v == "pt" ? Settings.ModLanguage.PortugueseBrazil : v == "en" ? Settings.ModLanguage.English : Settings.ModLanguage.FollowGame;
+                return new InstantOp(true, "mod language " + st.Language);
+            };
             TestBridge.Handlers["track"] = a => new TrackOp(a.Length > 1 ? F(a[1]) : 3f);
             TestBridge.Handlers["cycles"] = a => new TransitionCyclesOp(a.Length > 1 ? int.Parse(a[1], CultureInfo.InvariantCulture) : 10);
             TestBridge.Handlers["perf"] = a =>

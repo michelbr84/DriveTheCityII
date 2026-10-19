@@ -3,17 +3,85 @@
 | Field | Value |
 |---|---|
 | ID | DOC-BUILD-RUN |
-| Document status | Draft |
+| Document status | Draft (section 0 is the verified current procedure) |
 | Release scope | Development workflow (v1.0 and later) |
 | Phases | PHASE-00 (TASK-0003 baseline), PHASE-01 (first own build), all later phases |
 | Responsible role | Coordinator (maintainer); the Implementer executes; the project owner authorizes builds, installs, and launches |
 | Related requirements | REQ-DIAG-001, REQ-REL-001, REQ-REL-004, REQ-COMPAT-001, REQ-SAVE-006 |
 | Related documents | [TOOLCHAIN_MATRIX](TOOLCHAIN_MATRIX.md), [WINDOWS_SETUP](WINDOWS_SETUP.md), [DEPENDENCIES](DEPENDENCIES.md), [BASE_MOD_AUDIT](../research/BASE_MOD_AUDIT.md), [CS2_INTEGRATION_FINDINGS](../research/CS2_INTEGRATION_FINDINGS.md), [TASK-0003](../planning/tasks/TASK-0003-isolated-baseline-validation.md), [PACKAGING_AND_PUBLISHING](../release/PACKAGING_AND_PUBLISHING.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-19 |
 
-> **No build exists.** No project, solution, or source code exists in this repository folder. Nothing has been
-> compiled, deployed, or run. Every procedure below is either documented upstream or a **Proposed procedure
-> (requires validation)**.
+> **Update 2026-10-19:** the project now builds, deploys, and runs. Section 0 is the verified procedure. Sections 2-8
+> are the earlier planning text, kept for history; where they differ, section 0 wins.
+
+## 0. Current procedure (verified on this machine, 2026-10-19)
+
+### 0.1 One-time setup
+
+- **Private .NET SDK** (user-scoped; nothing installed system-wide): the official .NET SDK 10.0.402 zip, SHA-512
+  checked, extracted to `%LOCALAPPDATA%\DriveTheCityII\tools\dotnet`. `tools\env.ps1` puts it on the PATH of the current
+  process only and keeps NuGet packages under `%LOCALAPPDATA%\DriveTheCityII\nuget`.
+- **Game**: Cities: Skylines II from Steam. `tools\env.ps1` finds it through the Steam library folders and sets
+  `CSII_MANAGEDPATH` for the build.
+- No Unity Editor, no official modding toolchain, no loader. The mod compiles directly against the game's own managed
+  assemblies and Mono class libraries (`FrameworkPathOverride`); see ADR-0005 for why this is enough and when it would
+  stop being enough.
+
+### 0.2 Build, test, package
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build.ps1            # unit tests + build + package
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build.ps1 -SkipTests # faster iteration
+```
+
+- Unit tests: `tests\DriveTheCityII.Core.Tests` (xUnit, net10.0) test the engine-free Core, including all career rules.
+- Output: `%LOCALAPPDATA%\DriveTheCityII\build\artifacts` (never inside OneDrive). Packages:
+  `%LOCALAPPDATA%\DriveTheCityII\packages\DriveTheCityII-<version>-<commit>[+dirty]-<UTC stamp>\`, and `LATEST.txt` points to
+  the last good one. A failing build or test never replaces `LATEST.txt`.
+- The mod assembly keeps `AssemblyVersion 1.0.0.0` on purpose (save data is keyed by assembly-qualified type names);
+  the real version and build stamp are in `AssemblyInformationalVersion` / `AssemblyMetadata` and in the log.
+
+### 0.3 Install, inspect, roll back
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Install    # copies LATEST into <user data>\Mods\DriveTheCityII
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Status
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Rollback   # previous install
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Uninstall
+```
+
+The deploy helper refuses to run while the game is open, writes an ownership manifest
+(`%LOCALAPPDATA%\DriveTheCityII\deploy\installed.json`) with file hashes, and keeps every replaced install as a backup.
+
+### 0.4 Test sessions (developer only)
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\test-session.ps1 -Start  # refuses if the game is running
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\bridge.ps1 -Commands "waitmenu 300;benchcity;waitcity 900"
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\test-session.ps1 -Stop
+```
+
+- `-Start` backs up `UserState.coc` and `continue_game.json`, enables the test bridge marker, and launches the game
+  to the main menu (never a save). `-Stop` quits, restores those files, and copies logs to the session folder.
+- With the bridge enabled the mod disables autosave **for that session only** and refuses to quit or automate a
+  non-lab city.
+- Campaign scripts: `tools\campaign-m1.ps1` (M1 loop, real keys), `tools\campaign-career-persist.ps1`,
+  `tools\campaign-careers.ps1`, `tools\career-mission.ps1`, `tools\soak.ps1` (real-time soak). Real keyboard input:
+  `tools\realinput.ps1` (verifies the game window is in front before every key).
+
+### 0.5 Validation checklist status (2026-10-19)
+
+| # | Check | Result |
+|---|---|---|
+| BR-01 | Toolchain recorded | **Passed** (this section; TOOLCHAIN_MATRIX update pending owner review) |
+| BR-02 | Build completes with recorded warnings | **Passed**: 0 errors; 8 warnings (sign-extension and unused-field warnings in bridge code) |
+| BR-03 | Nothing under the game folder created or modified | **Passed**: deployment writes only to `<user data>\Mods\DriveTheCityII` |
+| BR-04 | No game assemblies in the output | **Passed**: package = `DriveTheCityII.dll`, `.pdb`, `.mjs` |
+| BR-05 | Post-processing | Not applicable (no Burst/IL post-processing used; ADR-0005) |
+| BR-06 | Mod loads; log shows version and build ID | **Passed** (`bridge online: mod 0.1.0+<commit> build <stamp>`) |
+| BR-07 | Lab save still loads with the mod removed | See [WORKLOG](../quality/evidence/WORKLOG.md) (run after the career campaign) |
+| BR-08 | Never active together with the original base mod | **Passed**: co-load guard (RUN-0001) |
+| BR-09 | Runs recorded as evidence | **Passed**: RUN-0001, RUN-0002, WORKLOG |
 
 > **Update (TASK-0002, 2026-10-18):** the concrete baseline build plan, its inputs, expected deviations, and the
 > rule not to patch around compile errors are in [BASE_MOD_AUDIT](../research/BASE_MOD_AUDIT.md) §9.13. The baseline needs

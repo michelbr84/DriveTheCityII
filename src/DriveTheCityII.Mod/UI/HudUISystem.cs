@@ -112,6 +112,15 @@ namespace DriveTheCityII.UI
         protected override void OnUpdate()
         {
             string locale = GameManager.instance?.localizationManager?.activeLocaleId;
+            Settings.ModLanguage lang = Settings.DriveTheCityIISettings.Instance?.Language ?? Settings.ModLanguage.FollowGame;
+            if (lang == Settings.ModLanguage.English)
+            {
+                locale = "en-US";
+            }
+            else if (lang == Settings.ModLanguage.PortugueseBrazil)
+            {
+                locale = "pt-BR";
+            }
             if (locale != m_LastLocale)
             {
                 m_LastLocale = locale;

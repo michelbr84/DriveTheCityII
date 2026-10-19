@@ -24,6 +24,10 @@ namespace DriveTheCityII.Careers
             m_Objects?.Update(em, dt, now, paused);
             if (m == null || string.IsNullOrEmpty(m.MissionId))
             {
+                if (ShowRunningChallenge(em, now))
+                {
+                    return;
+                }
                 if (m_LastRouteTarget != null)
                 {
                     MarkerBoard.Clear();
@@ -100,6 +104,59 @@ namespace DriveTheCityII.Careers
                     m_Objects.Alight(key, from + new float3(0.5f, 0f, 0.5f), to, Seed32(m.MissionId), now);
                 }
             }
+        }
+
+        /// <summary>The running challenge, if any (null otherwise).</summary>
+        public ChallengeView RunningChallenge()
+        {
+            if (Service == null)
+            {
+                return null;
+            }
+            foreach (ChallengeView c in Service.GetChallenges())
+            {
+                if (c.Running)
+                {
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>A running challenge: the next checkpoint (and the one after it) are marked and routed like a mission target.</summary>
+        private bool ShowRunningChallenge(EntityManager em, float now)
+        {
+            ChallengeView c = RunningChallenge();
+            if (c == null || c.Points.Count == 0)
+            {
+                return false;
+            }
+            int next = Math.Min(Math.Max(0, c.NextPoint), c.Points.Count - 1);
+            string key = "ch:" + c.Id + ":" + next;
+            if (key == m_LastRouteTarget && now < m_NextRoute)
+            {
+                return true;
+            }
+            m_LastRouteTarget = key;
+            m_NextRoute = now + 3f;
+            MarkerBoard.Clear();
+            float3 target = CareerWorldAdapter.ToF3(c.Points[next].Access);
+            MarkerBoard.Markers.Add(new WorldMarker { Position = target, Style = MarkerStyle.Checkpoint, Radius = 5f });
+            if (next + 1 < c.Points.Count)
+            {
+                MarkerBoard.Markers.Add(new WorldMarker { Position = CareerWorldAdapter.ToF3(c.Points[next + 1].Access), Style = MarkerStyle.Checkpoint, Radius = 2.5f });
+            }
+            if (P.State == PlayerState.Driving && P.Vehicle != null)
+            {
+                float3 from = P.Vehicle.State.Position.ToF3();
+                float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
+                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000);
+                if (r.Status == RouteStatusCode.Reachable)
+                {
+                    MarkerBoard.Route.AddRange(r.Polyline);
+                }
+            }
+            return true;
         }
 
         private readonly System.Collections.Generic.HashSet<string> m_Alighted = new System.Collections.Generic.HashSet<string>();

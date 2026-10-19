@@ -137,6 +137,9 @@ namespace DriveTheCityII.Core.Text
             A("challenges.best", "best {0} s ({1})", "melhor {0} s ({1})");
             A("challenges.noRecord", "no record yet", "sem recorde ainda");
             A("challenges.start", "Start", "Iniciar");
+            A("challenges.checkpoint", "Checkpoint {0} of {1}", "Ponto {0} de {1}");
+            A("challenges.time", "{0} s", "{0} s");
+            A("challenges.toStart", "Drive to the start", "Vá até a largada");
             A("challenges.newNearby", "New challenges near you", "Novos desafios perto de você");
 
             A("profile.wallet", "Wallet {0}", "Carteira {0}");

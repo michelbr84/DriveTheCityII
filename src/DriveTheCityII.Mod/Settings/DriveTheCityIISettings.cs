@@ -20,6 +20,13 @@ namespace DriveTheCityII.Settings
         Mph = 1,
     }
 
+    public enum ModLanguage
+    {
+        FollowGame = 0,
+        English = 1,
+        PortugueseBrazil = 2,
+    }
+
     /// <summary>
     /// Player options in the game's Options menu (SPEC-MODULES 4.9 settings; REQ-INPUT-001 remappable controls). Key
     /// bindings use the game's native rebinding UI; the chosen keys are then read directly from the keyboard by the
@@ -80,6 +87,9 @@ namespace DriveTheCityII.Settings
 
         [SettingsUISection(kGeneralTab, kDisplayGroup)]
         public SpeedUnits Units { get; set; }
+
+        [SettingsUISection(kGeneralTab, kDisplayGroup)]
+        public ModLanguage Language { get; set; }
 
         [SettingsUISlider(min = 75, max = 150, step = 5, unit = Unit.kPercentage)]
         [SettingsUISection(kGeneralTab, kDisplayGroup)]
@@ -162,6 +172,7 @@ namespace DriveTheCityII.Settings
             InvertY = false;
             FieldOfView = 62;
             Units = SpeedUnits.Kmh;
+            Language = ModLanguage.FollowGame;
             HudScale = 100;
             HighContrastHud = false;
             ShowOnboarding = true;
@@ -295,6 +306,12 @@ namespace DriveTheCityII.Settings
                 "Returns to city building, keeps your career data, and stops all Drive the City II gameplay until turned off.",
                 "Volta à construção da cidade, mantém os dados da carreira e para toda a jogabilidade do Drive the City II até ser desligado.");
             Opt(nameof(DriveTheCityIISettings.ResetBindings), "Reset key bindings", "Restaurar teclas", "Restores the default keys.", "Restaura as teclas padrão.");
+            Opt(nameof(DriveTheCityIISettings.Language), "Mod language", "Idioma do mod",
+                "Language of the Drive the City II HUD and panels: the game's language, English, or Brazilian Portuguese.",
+                "Idioma do HUD e dos painéis do Drive the City II: o idioma do jogo, inglês ou português do Brasil.");
+            d[s.GetEnumValueLocaleID(ModLanguage.FollowGame)] = pt ? "Idioma do jogo" : "Game language";
+            d[s.GetEnumValueLocaleID(ModLanguage.English)] = "English";
+            d[s.GetEnumValueLocaleID(ModLanguage.PortugueseBrazil)] = "Português (Brasil)";
             d[s.GetEnumValueLocaleID(SpeedUnits.Kmh)] = "km/h";
             d[s.GetEnumValueLocaleID(SpeedUnits.Mph)] = "mph";
             (string prop, DtcAction a, string en, string ptText)[] keys =

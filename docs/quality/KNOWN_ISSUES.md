@@ -126,6 +126,58 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 - Component: UI
 - Cause: the game defines `1rem = 1px at 1080p`; sizes were divided by 16. Verification: session 20261019-030051.
 
+### ISSUE-007 — One-second freeze when the job board builds taxi offers
+- Severity: Medium
+- Status: Verified fixed
+- Component: Careers (world adapter)
+- Cause: every place query refined the curb-side access point of every candidate place (two lane searches each), and
+  route estimates had only a count budget. Measured: 1,138 ms in place queries for one refresh.
+- Fix: place queries return the road-edge point; refinement happens only for places that are actually route-searched or
+  shown; route searches have a 40 ms per-frame budget (estimates beyond it are retried later, never offered as
+  reachable). Verification: refresh cost 55–80 ms (sessions 20261019-041354, -042215).
+
+### ISSUE-008 — Running challenges were invisible in the world
+- Severity: High
+- Status: Fixed (in-game verification in the career coverage campaign)
+- Component: Careers (presentation)
+- Cause: the challenge rules ran in Core, but the mod drew no checkpoint markers, route, or HUD card for a running
+  challenge.
+- Fix: next and following checkpoints are marked, the route is drawn, and the HUD shows checkpoint N of M, time with
+  penalties, and the best record.
+
+### ISSUE-009 — Router and place index rebuild cause occasional 50–130 ms hitches
+- Severity: Low
+- Status: Open
+- Component: City bridge
+- Detail: when the number of car lanes changes (the live city adds and removes temporary lanes), the road graph
+  (about 50 ms) and the place index (about 110 ms) are rebuilt on the main thread, at most every 2 minutes for
+  version-only changes. Observed in the 2026-10-19 logs. Workaround: none needed; noticeable only as a rare stutter.
+- Next step: incremental updates or spreading the rebuild over several frames.
+
+### ISSUE-010 — Exiting a car stopped mid-lane places the character on the road
+- Severity: Low
+- Status: Open
+- Component: Player (transitions)
+- Detail: exits search for a sidewalk point beside the car; when the car stops in the middle of a wide road the
+  character is placed beside the door on the carriageway (1 of 10 exits reached a sidewalk in the 10-cycle run where the
+  autopilot stopped mid-lane; real-key exits at the curb landed on the sidewalk). AI traffic treats the character like a
+  pedestrian.
+- Workaround: park at the curb before pressing E.
+
+### ISSUE-011 — Career time stops while the game window is not focused
+- Severity: Low (by design, documented)
+- Status: Open (design decision)
+- Component: Player / Careers
+- Detail: an unfocused game window counts as paused, so mission timers and company time stop (protects players who
+  Alt-Tab). Test runs keep the game window in front.
+
+### ISSUE-012 — Not implemented or not testable in this build
+- Severity: Medium
+- Status: Open (limitation)
+- Component: Presentation / input
+- Detail: no vehicle or footstep audio; entering and leaving a car is a short slide, not an animation; gamepad
+  bindings exist but were never tested (no device); night lighting of the character and car not checked.
+
 ## 7. Release use
 
 - Before each phase gate, QA lists the open issues by severity in the gate evidence.
