@@ -772,7 +772,7 @@ namespace DriveTheCityII.Careers
                         Vec2 relT = o.Footprint.Center + o.Velocity * t - (me + fwd * (speed * t));
                         float aT = Vec2.Dot(relT, fwd);
                         float lT = Math.Abs(Vec2.Dot(relT, right));
-                        if (lT < ownHalfW + o.Footprint.HalfWidth + 0.6f && aT > -ownHalf && aT < ownHalf + o.Footprint.HalfLength + 3f)
+                        if (lT < ownHalfW + o.Footprint.HalfWidth + 0.1f && aT > -ownHalf && aT < ownHalf + o.Footprint.HalfLength + 3f)
                         {
                             // Ignore vehicles in our own lane moving the same way (handled by the gap below).
                             bool sameWay = Vec2.Dot(o.Velocity, fwd) > 0.7f * o.Velocity.Length && Math.Abs(Vec2.Dot(rel, right)) < ownHalfW + o.Footprint.HalfWidth + 0.4f;
@@ -790,7 +790,7 @@ namespace DriveTheCityII.Careers
                 }
                 // Bumper-to-bumper clearance (long trucks and buses: center distances alone would overlap the car ahead).
                 float clearance = along - ownHalf - o.Footprint.HalfLength;
-                if (along > 1f && clearance < 40f && Math.Abs(Vec2.Dot(rel, right)) < v.Spec.Width * 0.5f + o.Footprint.HalfWidth + 0.4f && clearance < gap)
+                if (along > 1f && clearance < 40f && Math.Abs(Vec2.Dot(rel, right)) < v.Spec.Width * 0.5f + o.Footprint.HalfWidth - 0.15f && clearance < gap)
                 {
                     gap = Math.Max(0f, clearance);
                     nearestStopped = stopped;
