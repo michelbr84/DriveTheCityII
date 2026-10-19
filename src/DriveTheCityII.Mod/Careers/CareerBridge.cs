@@ -208,6 +208,8 @@ namespace DriveTheCityII.Careers
         private float m_MoveCheckAt;
         private float m_LastRecoverAt = -999f;
         private float m_YieldFor;
+        private float m_BypassUntil;
+        private float m_BypassSide;
         private bool m_KTurn;
         private bool m_KForward;
         private float m_KDir;
@@ -402,6 +404,13 @@ namespace DriveTheCityII.Careers
             }
 
             float3 aim = AimPoint(MarkerBoard.Route, pos, speed, target, out float turnAhead);
+            bool bypassing = now < m_BypassUntil;
+            if (bypassing)
+            {
+                // Going round a stopped vehicle: aim 3.5 m to the chosen side of the route.
+                float3 side = new float3(math.cos(v.State.Yaw), 0f, -math.sin(v.State.Yaw)) * m_BypassSide;
+                aim += side * 3.5f;
+            }
             float desired = math.atan2(aim.x - pos.x, aim.z - pos.z);
             float err = MathX.WrapAngle(desired - v.State.Yaw);
             DtcLog.Throttled("autopilot-pre", now, 3f, string.Format(CultureInfo.InvariantCulture,
@@ -459,7 +468,7 @@ namespace DriveTheCityII.Careers
             {
                 want = Math.Min(want, 4f);
             }
-            bool ignoreStopped = now < m_IgnoreStoppedUntil;
+            bool ignoreStopped = now < m_IgnoreStoppedUntil || bypassing;
             float gap = VehicleAheadGap(p, v, pos, Math.Max(speed, 2f), ignoreStopped, out bool stoppedAhead, out float conflictIn);
             if (gap < 40f)
             {
@@ -468,11 +477,22 @@ namespace DriveTheCityII.Careers
                 // Waiting behind a vehicle that does not move (parked, or waiting itself). Cars try to pass it after 20 s;
                 // trucks and buses keep waiting (a collision would cost the cargo), and the stall watchdog decides.
                 m_BlockedFor = stoppedAhead && Math.Abs(speed) < 0.5f ? m_BlockedFor + dt : 0f;
-                if (m_BlockedFor > 20f && !heavy)
+                if (m_BlockedFor > (heavy ? 30f : 15f) && !bypassing)
                 {
+                    // Go round it carefully on whichever side has room (left first, as in right-hand traffic).
                     m_BlockedFor = 0f;
-                    m_IgnoreStoppedUntil = now + 6f;
-                    m_Log.Add($"pass-stopped-vehicle({now - m_Start:0}s)");
+                    float3 fwd3 = new float3(math.sin(v.State.Yaw), 0f, math.cos(v.State.Yaw));
+                    float3 right3 = new float3(math.cos(v.State.Yaw), 0f, -math.sin(v.State.Yaw));
+                    foreach (float sideSign in new[] { -1f, 1f })
+                    {
+                        if (p.IsFootprintClear(v.Spec, pos + fwd3 * 4f + right3 * (3.5f * sideSign), v.State.Yaw + sideSign * 0.2f))
+                        {
+                            m_BypassSide = sideSign;
+                            m_BypassUntil = now + 14f;
+                            m_Log.Add($"bypass-{(sideSign < 0f ? "left" : "right")}({now - m_Start:0}s)");
+                            break;
+                        }
+                    }
                 }
             }
             else
@@ -490,6 +510,15 @@ namespace DriveTheCityII.Careers
             else
             {
                 m_YieldFor = 0f;
+            }
+            if (bypassing)
+            {
+                // Creep, and stop before anything the footprint would touch.
+                want = Math.Min(want, heavy ? 1.5f : 2.5f);
+                if (!FootprintClearAhead(p, v, pos, 1.2f, Math.Sign(err)))
+                {
+                    want = 0f;
+                }
             }
             var f = new InputFrame { Steer = math.clamp(err * 2f, -1f, 1f) };
             if (speed < want - 0.3f)
