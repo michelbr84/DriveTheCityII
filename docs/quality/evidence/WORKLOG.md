@@ -52,9 +52,15 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 03:50 | Career core merged (93 career unit tests; **143/143 tests pass**); careers compiled into the mod; panel money actions reuse their operation ID for repeated clicks; career clock restored from the save. Commit `46e8b9d`. [Built locally, unit-tested] | `dotnet test` output |
 | 03:52 | **M1 campaign #2 (real keys, career basic rental):** walk 4.0 m; enter (E); accelerate to 9.1 m/s over 20.9 m (W); brake to a stop (S); steer 37° (D/A) with 0 impacts; handbrake, exit to the sidewalk (Space, E); walk; return to Building (F8); save; quit. Relaunch phase: see the campaign report. | sessions 20261019-035050, -035254; `campaigns\m1-*.md` |
 
+| 03:53 | M1 campaign #2 relaunch phase: reload `DTC2-LAB-M1` restored the career (`restored revision 1`, clock 48 s, wallet 300 cr, rental kept); leak check 0; real F8 continue and return. **RUN-0002: 17/17.** | [RUN-0002](RUN-0002/REPORT.md) |
+| 03:55-04:20 | First taxi fares with the test autopilot: two failures by passenger patience (autopilot stuck; career failure path correct), then a full fare: pickup, boarding, drop-off, **49.01 cr, +12 XP**, rental share -12.25 cr. Offer generation measured at 1.1 s in one frame (ISSUE-007), fixed to 55-80 ms. | sessions 20261019-035427, -040328, -041354, -042215 |
+| 04:35 | Career persistence campaign: save mid-fare, reload resumes the same stage, no double payout, older save restores its exact balance (one script check was wrong; data correct). | [RUN-0003](RUN-0003/REPORT.md) §2 |
+| 04:41-05:00 | Career coverage runs: pause stops career time; service point teleport; repair 90 → 100 %; buy, refuel 30 → 100 % charged once (double click refused: "This refuel was already paid"); sell; delivery load, drop-off, parcel destroyed by impact, partial pay; company founded, hired, fleet truck, freight contract. Defects found: freight/bus jobs refused while driving a car; deadlines from free-flow route times; command-result events dropped (provided truck/bus never spawned); challenge routes marked changed (unstable access points). All fixed. | RUN-0003 §3; `campaigns\careers-*` |
+| 05:08-05:38 | Freight in game: truck provided, boarded, loaded; the test autopilot then hit a car at 9.7 m/s and the load was lost (correct rule outcome) in two runs. Bus: line accepted, bus provided and boarded; the autopilot got stuck before the first stop. Completion of freight and bus runs is **not verified in game** (unit-tested). | sessions 20261019-050655, -052326 |
+| 05:39-05:55 | Presentation checks: PT-BR HUD ("A pé", "Nível 10", "$ 7.321,85"); HUD 150 % with high contrast (screenshot); vehicle sound playing through the game's World mixer group while driving (listener RMS 0.18), silent on foot; 10/10 transition cycles with 3 sidewalk exits; home set and "go home" work. **Mod-less load (BR-07): a save with career data loads with `-disableCodeModding`; the Continue pointer was restored.** | session 20261019-053926 (`nomod\`), `campaigns\presentation-*` |
+| 05:58 | Final package `DriveTheCityII-0.1.0-3b7980c-20261019T094752Z` (151 unit tests pass) installed; challenge run and 2-hour real-time soak started on it. | MORNING_REPORT |
+
 ## Known gaps at this point (next work)
 
-- In-game career validation (taxi, delivery, freight, bus, garage, company, challenges, home).
-- Real-time 2-hour soak.
-- Exits rarely land on a sidewalk when the car stops mid-lane (the avatar is placed beside the car on the road).
-- Gamepad untested (no device); no audio; enter/exit is a slide, not an animation.
+- Freight and bus runs completed only in unit tests; the in-game test autopilot could not finish them.
+- Gamepad untested (no device); enter/exit is a slide, not an animation; no footstep sound.

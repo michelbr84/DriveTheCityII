@@ -79,7 +79,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\test-session.ps1 -Stop
 | BR-04 | No game assemblies in the output | **Passed**: package = `DriveTheCityII.dll`, `.pdb`, `.mjs` |
 | BR-05 | Post-processing | Not applicable (no Burst/IL post-processing used; ADR-0005) |
 | BR-06 | Mod loads; log shows version and build ID | **Passed** (`bridge online: mod 0.1.0+<commit> build <stamp>`) |
-| BR-07 | Lab save still loads with the mod removed | See [WORKLOG](../quality/evidence/WORKLOG.md) (run after the career campaign) |
+| BR-07 | Lab save still loads with the mod removed | **Passed**: a save with career data loaded with `-disableCodeModding` ([RUN-0004](../quality/evidence/RUN-0004/REPORT.md) §2, `tools\check-nomod.ps1`) |
 | BR-08 | Never active together with the original base mod | **Passed**: co-load guard (RUN-0001) |
 | BR-09 | Runs recorded as evidence | **Passed**: RUN-0001, RUN-0002, WORKLOG |
 

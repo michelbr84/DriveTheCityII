@@ -175,8 +175,45 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 - Severity: Medium
 - Status: Open (limitation)
 - Component: Presentation / input
-- Detail: no vehicle or footstep audio; entering and leaving a car is a short slide, not an animation; gamepad
-  bindings exist but were never tested (no device); night lighting of the character and car not checked.
+- Detail: no footstep sound (a procedural vehicle sound exists since 2026-10-19); entering and leaving a car is a
+  short slide, not an animation; gamepad bindings exist but were never tested (no device); night lighting of the
+  character and car not checked; nobody has listened to the vehicle sound (verified only by measured output).
+
+### ISSUE-013 — Freight and bus jobs refused while driving a car
+- Severity: High
+- Status: Verified fixed (session 20261019-050655: the truck was provided and boarded)
+- Component: Careers (accept)
+- Cause: the vehicle being driven was passed to the job even when the job provides its own truck or bus, so the
+  career refused it ("This job needs a RigidTruck").
+
+### ISSUE-014 — The employer's truck or bus never appeared after accepting
+- Severity: Critical (freight and bus unplayable)
+- Status: Verified fixed (sessions 20261019-050655, -052326)
+- Component: Careers (event handling)
+- Cause: career commands return their events in the command result; the mod handled only events from the frame
+  update, so "service vehicle provided" from Accept was dropped. All command results now go through the same handler.
+
+### ISSUE-015 — Delivery deadlines expired before an on-route driver could finish
+- Severity: High
+- Status: Verified fixed (delivery completed in session 20261019-044815)
+- Component: City bridge (route estimates)
+- Cause: route times assumed free flow at the speed limit. They are now calibrated (x1.3 plus 3 s per junction).
+
+### ISSUE-016 — Challenge runs voided as "route changed" in a live city
+- Severity: High
+- Status: Fixed; in-game verification in the final challenge run
+- Component: Careers (place access, challenge signature)
+- Cause: the place access point the career saw changed when markers or route searches refined it, and the challenge
+  signature included the computed route length, which varies as the city adds and removes temporary lanes. The
+  career now sees a stable base access point, and route length is not part of the signature.
+
+### ISSUE-017 — Freight and bus runs not completed in game by the test autopilot
+- Severity: Medium (test coverage, not a player defect as far as known)
+- Status: Open
+- Component: Test tooling
+- Detail: the simulated-input autopilot drove the truck into traffic right after loading (load lost: the correct rule
+  outcome) and got the bus stuck before the first stop. Complete freight and bus runs are covered by unit tests only.
+  A human playthrough is needed.
 
 ## 7. Release use
 

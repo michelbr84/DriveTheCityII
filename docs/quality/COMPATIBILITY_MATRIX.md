@@ -36,6 +36,8 @@ row here only after our own run.
 |---|---|---|---|---|---|---|---|---|---|
 | 1.6.2f1 (Steam build 25127643) | Steam, PC; edition not recorded | Not recorded | Beta Test Driving Mod 0.3.54 at `eefd6bb` | Drive the City II (inert by co-load guard) | Load, takeover, drive, handback, co-load guard (TEST-COMPAT-101/102 partial) | Passed (reload not run) | [RUN-0001](evidence/RUN-0001/REPORT.md) | 2026-10-19 | Base mod declares 1.5.\*; works for the steps run. Both mods default to F8. |
 | 1.6.2f1 (Steam build 25127643) | Steam, PC; edition not recorded | Not recorded | Drive the City II 0.1.0 development builds `dfcfea1`…`08ceb62` | None | Mod load, lab city save/load, character mode, driving, save while driving, traffic queueing, transition cycles (33 in total), performance | Passed for the scope run | [WORKLOG](evidence/WORKLOG.md), sessions under `%LOCALAPPDATA%\DriveTheCityII\test\sessions\` | 2026-10-19 | Development runs; the release-candidate run will be recorded separately. |
+| 1.6.2f1 (Steam build 25127643) | Steam, PC; edition not recorded | Not recorded | Drive the City II 0.1.0 development builds `46e8b9d`…`29ec438` | None | M1 loop with real keys (RUN-0002), careers (RUN-0003), presentation and mod-less load (RUN-0004) | Passed for the scope run; freight, bus and challenge completion not observed | RUN-0002, RUN-0003, RUN-0004 | 2026-10-19 | Simulated driving labelled in each record |
+| 1.6.2f1 (Steam build 25127643) | Steam, PC; edition not recorded | Not recorded | Drive the City II **0.1.0-3b7980c** (final private package) | None | Real-time 2-hour soak (RUN-0004 §3) | See RUN-0004 §3 | RUN-0004 | 2026-10-19 | Private package; not published |
 
 **Column rules:**
 

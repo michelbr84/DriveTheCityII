@@ -89,6 +89,8 @@ See [MORNING_REPORT](MORNING_REPORT.md) for exactly what is verified in game and
 
 - Stuck or in a strange place: **Backspace** (recovery), or **F8** to return to city building.
 - The mod can be stopped for the session without uninstalling: Options → Drive the City II → Safety → Safe-disable.
+- Language, HUD size, high contrast and vehicle sounds: Options → Drive the City II → General → Display. "Mod language"
+  can be the game's language, English, or Português (Brasil).
 - Logs: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs\DriveTheCityII.log`.
 - Career backups: `...\Cities Skylines II\ModsData\DriveTheCityII\` (one file per save revision; invalid data is copied to
   `quarantine\`, never deleted).

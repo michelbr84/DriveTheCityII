@@ -69,6 +69,14 @@ evidence; full records are in [WORKLOG](docs/quality/evidence/WORKLOG.md) and th
   coverage campaign: see the WORKLOG and MORNING_REPORT.
 - **Test tooling:** `track` measurement op, test autopilot for missions and challenges (simulated input, labelled in
   every result), campaign scripts, a mod-less load check, and a real-time soak script.
+- **More fixes from the career runs:**
+  - events returned by career commands were dropped, so the employer's truck or bus never appeared (ISSUE-014);
+  - challenge runs were voided as "route changed" in a live city (ISSUE-016);
+  - the mod never reported recoveries to the career, so deadlines did not account for them.
+- **Portuguese:** 174 of 222 career message keys translated (8 new unit tests; 151 in total); payout lines and job
+  titles formatted in Portuguese by the mod.
+- **Validation:** presentation checks and the mod-less load check passed ([RUN-0004](docs/quality/evidence/RUN-0004/REPORT.md));
+  career coverage in [RUN-0003](docs/quality/evidence/RUN-0003/REPORT.md); final package `0.1.0-3b7980c`.
 
 ### Changed — 2026-10-18 — PHASE-00 audits (TASK-0001, TASK-0002) and Melty check
 

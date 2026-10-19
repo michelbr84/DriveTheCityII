@@ -39,4 +39,22 @@ Report: `%LOCALAPPDATA%\DriveTheCityII\test\campaigns\career-persist-20261019-04
 
 ## 3. Career coverage (`tools\campaign-careers.ps1`)
 
-PENDING: filled in from the career coverage reports at the end of the run.
+Reports and raw outputs: `%LOCALAPPDATA%\DriveTheCityII\test\campaigns\careers-*` (several runs; defects found in a run
+were fixed and the affected sections re-run on the next build).
+
+| Area | Result | Evidence and detail |
+|---|---|---|
+| Career clock while paused | **Passed** | Game paused for 8 s of real time: career clock 238 → 238 |
+| Service point, repair | **Passed** | Rental called to service point '390 Robin Street'; repaired 90 % → 100 % |
+| Buy a vehicle | **Passed** | `car.used` bought (test-seeded money) |
+| Refuel, exactly once | **Passed** | Tank 30 % → 100 % (test-seeded level), one ledger entry (-42.00 cr). The second, simultaneous click was refused: "This refuel was already paid." |
+| Sell a vehicle | **Passed** | +351.00 cr |
+| Delivery | **Passed** | Load at 1215 Elm Street, drop-off at 156 Birdsong Street; the last parcel was destroyed in a collision, so the job completed with pay for the delivered parcel (22.22 cr, +25 XP). A first attempt failed its hard deadline after 3 minutes; this exposed the route-time defect (ISSUE-015), which is now fixed. |
+| Freight | **Partly verified** | Offer (test-seeded unlock), accept, **shipper's truck provided** (after the ISSUE-013/014 fixes), boarded, cargo loaded ("Payload affects braking and acceleration"). In two runs the test autopilot then hit a car at 9.7 m/s and the load was lost, so the job failed with 0 cr and reputation -5, the correct rule outcome. A completed delivery of freight was **not observed in game**. |
+| Bus | **Partly verified** | Bus shift on line 1 (14 stops) accepted, **operator's bus provided** and boarded. The test autopilot got stuck before the first stop. A served stop was **not observed in game**. |
+| Challenges | **Partly verified** | Challenges generated (time trial, checkpoint route, parking). Start arms the run; checkpoint markers, route and HUD card are drawn. A completed run was **not observed**: the runs were voided first by the route-change defect (ISSUE-016, fixed), then by an autopilot recovery (a recovery voids a run by design). |
+| Home | **Passed** | Home set at the nearest house; "Go home" worked |
+| Company | **Passed** (setup) | Company founded (test-seeded gates), driver hired, fleet rigid truck bought, freight contract accepted, driver assigned, state saved. Period settlements are observed in the soak (see RUN-0004). |
+| Save with all careers' state | **Passed** | `DTC2-LAB-CAREERS`, `-F`, `-G` |
+
+Test-seeded profile: yes for this city (XP, reputation, money and one fuel level were seeded).
