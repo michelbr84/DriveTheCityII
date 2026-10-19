@@ -388,6 +388,9 @@ namespace DriveTheCityII.Careers
             float3 aim = AimPoint(MarkerBoard.Route, pos, speed, target, out float turnAhead);
             float desired = math.atan2(aim.x - pos.x, aim.z - pos.z);
             float err = MathX.WrapAngle(desired - v.State.Yaw);
+            DtcLog.Throttled("autopilot-pre", now, 3f, string.Format(CultureInfo.InvariantCulture,
+                "autopilot-pre: leg={0} dist={1:0} err={2:0.00} speed={3:0.0} routePts={4} aim=({5:0},{6:0}) pos=({7:0},{8:0}) target=({9:0},{10:0}) gear={11} ground={12}",
+                legIndex, dist, err, speed, MarkerBoard.Route.Count, aim.x, aim.z, pos.x, pos.z, target.x, target.z, v.State.Gear, v.State.GroundKind));
 
             // Route starts behind the car: three-point turn (reverse on the opposite lock), as on a narrow street.
             if (Math.Abs(err) > 1.9f && speed < 2.5f)

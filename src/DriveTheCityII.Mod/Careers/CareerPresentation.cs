@@ -53,10 +53,21 @@ namespace DriveTheCityII.Careers
                 {
                     float3 from = P.Vehicle.State.Position.ToF3();
                     float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, P.Vehicle.Spec.Length > 7f ? 600f : 30f);
+                    float wrongWay = P.Vehicle.Spec.Length > 7f ? 600f : 30f;
+                    // End the route on a lane right at the target (docks and bus stops have 8 m arrival radii); widen only
+                    // if no lane is that close.
+                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay);
+                    if (r.Status != RouteStatusCode.Reachable)
+                    {
+                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay);
+                    }
                     if (r.Status == RouteStatusCode.Reachable)
                     {
                         MarkerBoard.Route.AddRange(r.Polyline);
+                    }
+                    else
+                    {
+                        Diagnostics.DtcLog.Throttled("guidance-route", now, 10f, $"Guidance route {r.Status} from {from} to {target} (expansions {r.Expansions})", warn: true);
                     }
                 }
                 else if (m.VehicleId != null)

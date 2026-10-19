@@ -49,8 +49,10 @@ namespace DriveTheCityII.CityBridge
         public float3 RoadAccess;
 
         /// <summary>
-        /// The unrefined road-edge point at the building's connection. It never changes while the building and road exist,
-        /// so Career uses it as the place's location (stored in missions and challenge signatures).
+        /// The place's stable location for Career: the point on the car lane of the building's road edge that is closest
+        /// to the building (the curb-side lane), next to the building's connection. It is computed from the edge's own
+        /// lanes when the index is built, so it does not change while the building and road exist, and it lies on a
+        /// drivable lane (arrival radii are as small as 8 m for freight docks and bus stops).
         /// </summary>
         public float3 BaseAccess;
 
@@ -210,7 +212,7 @@ namespace DriveTheCityII.CityBridge
                     {
                         Bezier4x3 edge = em.GetComponentData<Game.Net.Curve>(b.m_RoadEdge).m_Bezier;
                         place.RoadAccess = MathUtils.Position(edge, b.m_CurvePosition);
-                        place.BaseAccess = place.RoadAccess;
+                        place.BaseAccess = CurbAccess(em, b.m_RoadEdge, place.RoadAccess, tr.m_Position);
                         place.WalkAccess = place.RoadAccess;
                     }
                     m_Places.Add(place);
@@ -240,6 +242,47 @@ namespace DriveTheCityII.CityBridge
             {
                 p.WalkAccess = walk;
             }
+        }
+
+        /// <summary>
+        /// Closest point to the building on the car lanes of its road edge, near the edge connection point (individual
+        /// lanes, not master lanes; unsafe, side-connection, runway and forbidden lanes are skipped). Falls back to the
+        /// edge point when the edge has no usable car lane.
+        /// </summary>
+        private static float3 CurbAccess(EntityManager em, Entity edge, float3 edgePoint, float3 buildingPos)
+        {
+            if (!em.HasBuffer<Game.Net.SubLane>(edge))
+            {
+                return edgePoint;
+            }
+            DynamicBuffer<Game.Net.SubLane> subs = em.GetBuffer<Game.Net.SubLane>(edge, true);
+            const Game.Net.CarLaneFlags bad = Game.Net.CarLaneFlags.Unsafe | Game.Net.CarLaneFlags.SideConnection |
+                                               Game.Net.CarLaneFlags.Runway | Game.Net.CarLaneFlags.Forbidden;
+            float best = float.MaxValue;
+            float3 result = edgePoint;
+            for (int i = 0; i < subs.Length; i++)
+            {
+                Entity lane = subs[i].m_SubLane;
+                if (!em.HasComponent<Game.Net.CarLane>(lane) || em.HasComponent<Game.Net.MasterLane>(lane) ||
+                    em.HasComponent<Game.Net.ConnectionLane>(lane) || !em.HasComponent<Game.Net.Curve>(lane))
+                {
+                    continue;
+                }
+                if ((em.GetComponentData<Game.Net.CarLane>(lane).m_Flags & bad) != 0)
+                {
+                    continue;
+                }
+                Bezier4x3 curve = em.GetComponentData<Game.Net.Curve>(lane).m_Bezier;
+                MathUtils.Distance(curve, edgePoint, out float t);
+                float3 p = MathUtils.Position(curve, math.clamp(t, 0.05f, 0.95f));
+                float d = math.distancesq(p.xz, buildingPos.xz);
+                if (d < best)
+                {
+                    best = d;
+                    result = p;
+                }
+            }
+            return result;
         }
 
         private static string Address(EntityManager em, NameSystem names, Entity building)
