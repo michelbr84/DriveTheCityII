@@ -19,7 +19,7 @@ New-Item -ItemType Directory -Force $outDir | Out-Null
 $memCsv = Join-Path $outDir "soak-$stamp-memory.csv"
 $stopFlag = Join-Path $outDir "soak-$stamp.stop"
 $events = New-Object System.Collections.Generic.List[string]
-$counts = @{ missions = 0; missionFailures = 0; exits = 0; returns = 0; saves = 0; saveFailures = 0; loads = 0; loadFailures = 0; errors = 0 }
+$counts = @{ missions = 0; missionsPaid = 0; missionFailures = 0; exits = 0; returns = 0; saves = 0; saveFailures = 0; loads = 0; loadFailures = 0; errors = 0; repairs = 0 }
 
 function Bridge([string]$cmds, [int]$timeout = 120) {
     $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'bridge.ps1') -Commands $cmds -TimeoutSeconds $timeout 2>&1
@@ -36,6 +36,27 @@ function VehicleId() {
     if ($s -match '(V-[A-Za-z0-9]+):car\.basic:') { return $Matches[1] }
     if ($s -match 'vehicles=\[(V-[A-Za-z0-9]+):') { return $Matches[1] }
     return $null
+}
+function Maintain() {
+    # Like a player: when the rental is badly worn or broken down, walk to a service point, call it there and repair it
+    # (repairs of the basic rental are free).
+    $s = Bridge 'career status'
+    if ($s -match '(V-[A-Za-z0-9]+):car\.basic:BasicRental:(\w+):fuel\d+:cond(\d+)') {
+        $vid = $Matches[1]; $state = $Matches[2]; $cond = [int]$Matches[3]
+        if ($state -eq 'Immobilized' -or $cond -lt 50) {
+            Bridge 'input brake=1 t=2;input hand=1 t=1;player exit;waitstate OnFoot 15' | Out-Null
+            if ((Bridge 'player state') -notmatch 'player=OnFoot') { Bridge 'player enter;waitstate OnFoot 15' | Out-Null }
+            $r = Bridge "career goplace ServicePoint;wait 1;career ui garage:call:$vid;wait 2;career ui garage:repair:$vid;wait 1;career status"
+            $after = if ($r -match "${vid}:car\.basic:BasicRental:(\w+):fuel\d+:cond(\d+)") { "$($Matches[1]) cond $($Matches[2])" } else { '?' }
+            if ($after -match 'Immobilized') {
+                # Still broken down: take the free replacement rental offered by the recovery options.
+                $r = Bridge 'career ui garage:recover:TakeBasicRental:;wait 2;career status'
+                $after += ' -> replacement: ' + ((($r -split "`n") | Where-Object { $_ -match 'career status' } | Select-Object -Last 1) -replace '^.*vehicles=', 'vehicles=')
+            }
+            $counts.repairs++
+            Log "maintenance: rental $vid was $state cond $cond -> $after"
+        }
+    }
 }
 function EnsureDriving() {
     $st = Bridge 'player state'
@@ -78,6 +99,7 @@ try {
         # Career time stops while the game window is unfocused (treated as paused); keep the game in front.
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'realinput.ps1') -Steps 'focus' | Out-Null
         try {
+            Maintain
             if (-not (EnsureDriving)) { $counts.errors++; Log "iteration ${iter}: could not get into a vehicle"; Bridge 'player building;wait 2' | Out-Null; continue }
             $o = Bridge 'career offers Taxi'
             $best = -1; $bestM = [double]::MaxValue
@@ -86,7 +108,12 @@ try {
                 $a = Bridge "career accept $best Taxi"
                 if ($a -match 'accept .*: Ok') {
                     $d = Bridge 'career drive 900' 1000
-                    if ($d -match 'mission finished') { $counts.missions++; Log "taxi mission $($counts.missions) done" }
+                    if ($d -match 'mission finished') {
+                        $counts.missions++
+                        $paid = $d -match 'last=\[MissionSettlement:([1-9]\d*)|last=\[RentalCharge:-\d+; MissionSettlement:([1-9]\d*)'
+                        if ($paid) { $counts.missionsPaid++ }
+                        Log ("taxi mission {0} ended ({1})" -f $counts.missions, $(if ($paid) { 'paid' } else { 'not paid: ' + (($d -split ' :: ')[-1] -replace '^.*last=', 'last=') }))
+                    }
                     else { $counts.missionFailures++; Log ("taxi mission not finished: " + (($d -split "`n" | Select-String 'career drive') -join ' ')); Bridge 'career cancel' | Out-Null }
                 }
             }
