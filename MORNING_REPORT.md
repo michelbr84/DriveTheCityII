@@ -11,8 +11,9 @@
 **Summary.** A private, playable native CS2 mod exists and is installed. You can leave city building, walk, take a
 car, drive it through real traffic, take jobs, earn and spend money, and go back to building. Your career is saved
 inside each city save. The core loop (M1) passed with real keyboard input, 17 of 17 steps. Taxi, delivery, garage,
-home, company setup, persistence and Portuguese were verified in game. Freight, bus and challenge runs started in game
-but were not completed there. They are covered by unit tests and need your playtest. Nothing was published or uploaded.
+home, company, persistence and Portuguese were verified in game, and a 2-hour real-time soak ran without a crash.
+Freight, bus and challenge runs started in game but were not completed there. They are covered by unit tests and
+need your playtest. Nothing was published or uploaded.
 
 How to read the columns:
 
@@ -58,7 +59,7 @@ How to read the columns:
 | Garage: basic rental, rent, buy, sell, refuel, repair, upgrades, roadside help, tow | Yes | Yes | 13 unit tests | **Rental, buy, sell, refuel, repair: yes.** Upgrades, roadside help and tow: not run in game | Try upgrades and roadside help |
 | Progression: XP per career, levels, reputation, unlocks | Yes | Yes | Unit tests | XP and reputation changes seen; unlocks exercised with test seeding | Balance needs playtesting |
 | Home and service points (CS2 has no fuel stations) | Yes | Yes | Unit tests | **Yes**: set home, go home, service point markers and actions | — |
-| Company (managed, simulated operations) | Yes | Yes | 7 unit tests | **Setup yes**: founded, hired, fleet truck bought, contract accepted. Period settlements: see the soak (§3) | — |
+| Company (managed, simulated operations) | Yes | Yes | 7 unit tests | **Yes**: founded, hired, fleet truck bought, contract accepted; 12 period settlements during the 2-hour soak | Company balance needs playtesting (it lost money in the soak) |
 | Challenges (time trial, checkpoints, parking) | Yes | Yes | Unit tests | **Partly**: generated, armed, markers, route and HUD card drawn | A finished run with a medal was not seen in game |
 | City changes (demolished places, cut roads, changed lines) | Yes | Yes | Unit tests | Not run in game | Try demolishing a job destination mid-job |
 | HUD, Tab panel, onboarding help | Yes | Yes | — | **Yes** (screenshots) | — |
@@ -67,7 +68,7 @@ How to read the columns:
 | English and Brazilian Portuguese | Yes | Yes | 8 localization unit tests | **Yes**: Portuguese HUD and panel | 48 of 222 career messages stay English (their values are not passed separately) |
 | Vehicle sound (procedural engine, rolling noise, impact) | Yes | Yes | — | **Measured**: plays through the game's mixer while driving, silent on foot | Nobody has listened to it; no footstep sound |
 | Gamepad | Bindings only | Yes | — | Not run (no device) | Test with a controller |
-| Performance | — | — | — | 30–37 fps in the benchmark city; job board 55–80 ms; soak results in §3 | 50–130 ms hitches when the road graph rebuilds (ISSUE-009) |
+| Performance and stability | — | — | 2-hour real-time soak | **Yes**: 30 fps average over 2 hours (p95 41 ms), no crash; job board 55–80 ms | 50–130 ms hitches when the road graph rebuilds (ISSUE-009); whole-game memory grew about 1 GB without a mod-off comparison |
 | Packaging, install, rollback | Yes | Yes | — | **Yes**: used for every build | — |
 
 ## 3. Test evidence
@@ -78,7 +79,7 @@ How to read the columns:
 | [RUN-0001](docs/quality/evidence/RUN-0001/REPORT.md) upstream baseline | Passed (load, takeover, drive, handback; co-load guard) |
 | [RUN-0002](docs/quality/evidence/RUN-0002/REPORT.md) M1 loop, real keys | **17/17**, repeated **17/17 on the final package** |
 | [RUN-0003](docs/quality/evidence/RUN-0003/REPORT.md) careers in game | Taxi, persistence, garage, delivery, home, company: passed; freight, bus, challenges: partly |
-| [RUN-0004](docs/quality/evidence/RUN-0004/REPORT.md) presentation, mod-less load, soak | Presentation and mod-less load passed; soak: SOAK_RESULT |
+| [RUN-0004](docs/quality/evidence/RUN-0004/REPORT.md) presentation, mod-less load, soak | Presentation and mod-less load passed; **2-hour real-time soak passed for stability**: no crash, 30 fps average, 5 saves and 2 reloads without failure, leak check 0, managed heap steady (whole-game memory +1 GB, flattening; no mod-off comparison) |
 | Transition cycles | 20/20, 10/10, 3/3, 10/10, 0 failures |
 | [WORKLOG](docs/quality/evidence/WORKLOG.md) | Timeline with session folders |
 | Raw evidence | `%LOCALAPPDATA%\DriveTheCityII\test\sessions\` (logs, screenshots) and `test\campaigns\` (reports) |
