@@ -19,6 +19,13 @@ namespace DriveTheCityII.Careers
     {
         public static string Of(string key, string english, string[] args = null)
         {
+            // Settlement lines carry raw cents in Args; format them here so Portuguese shows real money values.
+            if (Loc.Locale == Loc.Portuguese && key == "DTC.Mission.Settled" && args != null && args.Length >= 3 &&
+                long.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out long net) &&
+                int.TryParse(args[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int rep))
+            {
+                return Loc.T("career.settledLine", Loc.Money(net), args[1], (rep >= 0 ? "+" : string.Empty) + rep.ToString(CultureInfo.InvariantCulture));
+            }
             if (Loc.Locale == Loc.Portuguese && !string.IsNullOrEmpty(key) && Loc.PortugueseTable.ContainsKey(key))
             {
                 return Loc.T(key, args ?? Array.Empty<object>());
@@ -27,6 +34,36 @@ namespace DriveTheCityII.Careers
         }
 
         public static string Result(CareerResult r) => r == null ? string.Empty : Of(r.Key, r.Text);
+
+        /// <summary>Offer title in the active language (Core builds English titles by concatenation).</summary>
+        public static string OfferTitle(MissionOffer o)
+        {
+            if (o == null)
+            {
+                return string.Empty;
+            }
+            if (Loc.Locale != Loc.Portuguese)
+            {
+                return o.Title ?? string.Empty;
+            }
+            int drops = o.Legs.Count(l => l.Kind == LegKind.Dropoff || l.Kind == LegKind.Unload);
+            switch (o.Career)
+            {
+                case CareerKind.Taxi:
+                {
+                    MissionLeg last = o.Legs.LastOrDefault(l => l.Kind == LegKind.Dropoff);
+                    return last?.Place != null ? Loc.T("offer.taxi", last.Place.Name) : o.Title;
+                }
+                case CareerKind.Delivery:
+                    return Loc.T("offer.delivery", Loc.T("delivery." + o.DeliveryType.ToString().ToLowerInvariant()), o.ParcelCount, drops);
+                case CareerKind.Freight:
+                    return Loc.T("offer.freight", Loc.T("cargo." + o.Cargo.ToString().ToLowerInvariant()), o.MassTonnes.ToString("0.0", CultureInfo.InvariantCulture), drops);
+                case CareerKind.Bus:
+                    return Loc.T("offer.bus", o.LineName ?? string.Empty, o.StopCount);
+                default:
+                    return o.Title ?? string.Empty;
+            }
+        }
 
         public static string CareerName(CareerKind k)
         {
@@ -302,7 +339,7 @@ namespace DriveTheCityII.Careers
                     sub += " · " + CareerText.Of(o.IneligibleKey, o.IneligibleText);
                 }
                 string pay = o.PayMinCents == o.PayMaxCents ? Loc.Money(o.PayMinCents) : Loc.Money(o.PayMinCents) + "–" + Loc.Money(o.PayMaxCents);
-                rows.Add(new PanelRow { Id = o.Id, Title = CareerText.Of(o.TitleKey, o.Title), Subtitle = sub, Right = pay + " · +" + o.XpPreview + " XP" }
+                rows.Add(new PanelRow { Id = o.Id, Title = CareerText.OfferTitle(o), Subtitle = sub, Right = pay + " · +" + o.XpPreview + " XP" }
                     .Action("jobs:accept:" + o.Id, Loc.T("jobs.accept"), o.Eligible));
             }
             rows.Add(new PanelRow { Id = "refresh", Title = Loc.T("jobs.refreshHint") }.Action("jobs:refresh", Loc.T("jobs.refresh")));

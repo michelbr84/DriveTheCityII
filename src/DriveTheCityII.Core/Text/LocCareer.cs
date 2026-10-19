@@ -21,6 +21,18 @@ namespace DriveTheCityII.Core.Text
             A("career.disabled", "Career unavailable in this city", "Carreira indisponível nesta cidade");
             A("career.disabledShort", "Career unavailable", "Carreira indisponível");
             A("career.noRoadNearby", "No road lane nearby to place the vehicle. Walk closer to a street.", "Nenhuma faixa de rua por perto para colocar o veículo. Chegue mais perto de uma rua.");
+            A("career.settledLine", "Settled: {0}, +{1} XP, reputation {2}.", "Acerto: {0}, +{1} XP, reputação {2}.");
+            A("offer.taxi", "Fare to {0}", "Corrida até {0}");
+            A("offer.delivery", "{0} delivery: {1} parcel(s), {2} stop(s)", "Entrega {0}: {1} volume(s), {2} parada(s)");
+            A("offer.freight", "{0} freight, {1} t, {2} drop(s)", "Frete {0}, {1} t, {2} entrega(s)");
+            A("offer.bus", "Bus shift on line {0} ({1} stops)", "Turno de ônibus na linha {0} ({1} paradas)");
+            A("delivery.courier", "Courier", "padrão");
+            A("delivery.route", "Route", "em rota");
+            A("delivery.express", "Express", "expressa");
+            A("delivery.fragile", "Fragile", "frágil");
+            A("cargo.general", "General", "geral");
+            A("cargo.bulk", "Bulk", "a granel");
+            A("cargo.heavy", "Heavy", "pesado");
             A("career.serviceVehicleReady", "{0} is waiting for you at the marked spot.", "{0} está esperando por você no local marcado.");
 
             A("class.car", "Car", "Carro");
@@ -153,6 +165,7 @@ namespace DriveTheCityII.Core.Text
             A("profile.setGarage", "Set this service point as garage", "Definir este ponto como garagem");
             A("profile.goHome", "Go home", "Ir para casa");
             A("profile.noResidentialNearby", "No residential building within 80 m.", "Nenhum prédio residencial a 80 m.");
+            LocCareerMessages.Register();
         }
     }
 }

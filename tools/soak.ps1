@@ -110,6 +110,8 @@ try {
             }
             if ((Get-Date) -ge $nextPerf) {
                 Log ('perf :: ' + ((Bridge 'perf') -split "`n" | Select-String '< OK' | Select-Object -Last 1))
+                $co = ((Bridge 'career company') -split "`n" | Select-String '< OK' | Select-Object -Last 1)
+                if ($co -match 'company=(\S+).*?cash=(-?\d+).*?lastPeriod=(-?\d+).*?jobs=(\d+)') { Log ("company {0}: cash {1}, last settled period {2}, simulated jobs {3}" -f $Matches[1], $Matches[2], $Matches[3], $Matches[4]) }
                 $nextPerf = (Get-Date).AddMinutes(10)
             }
         }
@@ -120,7 +122,7 @@ try {
     }
     $elapsed = ((Get-Date) - $start).TotalMinutes
     if (Alive) {
-        $final = Bridge 'perf;player building;wait 2;leakcheck;career status;status'
+        $final = Bridge 'perf;career company;player building;wait 2;leakcheck;career status;status'
         Log ('final :: ' + (($final -split "`n" | Select-String '< (OK|ERR)') -join "`n    "))
     }
 }

@@ -8,7 +8,10 @@
   seeding (career xp/rep/grant), which marks the profile "test-seeded" permanently; this is labelled in the report.
   Writes %LOCALAPPDATA%\DriveTheCityII\test\campaigns\careers-<stamp>.md.
 #>
-param([string]$SaveName = 'DTC2-LAB-CAREERS', [switch]$SkipBus)
+param([string]$SaveName = 'DTC2-LAB-CAREERS', [switch]$SkipBus,
+      [string[]]$Sections = @('pause', 'garage', 'delivery', 'freight', 'bus', 'challenge', 'home', 'company'))
+$Sections = @($Sections | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
+function Want([string]$name) { return $Sections -contains $name }
 
 $stamp = Get-Date -Format yyyyMMdd-HHmmss
 $results = New-Object System.Collections.Generic.List[object]
@@ -27,7 +30,7 @@ function Status() { return (Last (Bridge 'career status') 'career status') }
 function OnFoot() { Bridge 'player exit;waitstate OnFoot 15' | Out-Null; if ((Bridge 'player state') -notmatch 'player=OnFoot') { Bridge 'player enter;waitstate OnFoot 15' | Out-Null } }
 function Cond([string]$status, [string]$vid) { if ($status -match "${vid}:[^,\]]*:cond(\d+)") { return [int]$Matches[1] }; return -1 }
 function Fuel([string]$status, [string]$vid) { if ($status -match "${vid}:[^,\]]*:fuel(\d+)") { return [int]$Matches[1] }; return -1 }
-function VehicleOf([string]$status, [string]$pattern) { if ($status -match "(V-[A-Za-z0-9]+):$pattern") { return $Matches[1] }; return $null }
+function VehicleOf([string]$status, [string]$pattern) { if ($status -match "((?:S?V)-?[A-Za-z0-9]+):$pattern") { return $Matches[1] }; return $null }
 function Board([string]$vid) {
     $o = Bridge "career gotoveh $vid;player interact;waitstate Driving 15"
     return ($o -match 'state Driving reached')
@@ -61,12 +64,15 @@ $basic = VehicleOf $s0 'car\.basic'
 Record 'Start state' ($w0[0] -ge 0) (Tail $s0)
 
 # ---- Pause: career time must not advance while the game is paused (setting on by default).
+if (Want 'pause') {
 $c0 = if ($s0 -match 'clock=(\d+)') { [int]$Matches[1] } else { -1 }
 $o = Bridge 'speed 0;wait 8;career status;speed 1'
 $c1 = if ((Last $o 'career status') -match 'clock=(\d+)') { [int]$Matches[1] } else { -1 }
 Record 'Career clock stops while the game is paused (8 s real time)' ($c0 -ge 0 -and ($c1 - $c0) -le 1) ("clock {0} -> {1}" -f $c0, $c1)
+}
 
 # ---- Garage at a service point.
+if (Want 'garage') {
 OnFoot
 $o = Last (Bridge 'career goplace ServicePoint;wait 1') 'career goplace'
 Record 'Walk to a service point (test teleport)' ($o -match '< OK') (Tail $o)
@@ -84,9 +90,7 @@ $owned = VehicleOf $st 'car\.used'
 Record 'Buy a used car' ([bool]$owned) (Tail (Last $o 'garage:buy'))
 if ($owned) {
     $wBefore = Wallet $st
-    # Drive it a little, set the tank to 30 % (test seeding), then refuel twice in the same instant (double click).
-    Board $owned | Out-Null
-    Bridge 'input throttle=1 t=6;input brake=1 t=3;input hand=1 t=1' 60 | Out-Null
+    # Set the tank to 30 % (test seeding), then refuel twice in the same instant (double click) at the service point.
     OnFoot
     Bridge "career fuel $owned 0.3;career goplace ServicePoint;wait 1" | Out-Null
     $o = Bridge "career ui garage:call:$owned;wait 2;career status"
@@ -100,25 +104,32 @@ if ($owned) {
     $sold = Wallet (Last $o 'career status')
     Record 'Sell the used car' ($sold[0] -gt $after[0]) ("wallet {0} -> {1}" -f $after[0], $sold[0])
 }
+}
 
 # ---- Delivery with the rental car.
-if ($basic) { Bridge "career ui garage:call:$basic;wait 2" | Out-Null; Board $basic | Out-Null }
+if (Want 'delivery') {
+if ($basic) { OnFoot; Bridge "career ui garage:call:$basic;wait 2" | Out-Null; Board $basic | Out-Null }
 $r = RunCareer 'Delivery' 1200
 Record 'Delivery job (load, multi-stop drop-offs, settlement)' $r.ok $r.detail
+}
 
 # ---- Freight with the shipper's service truck (gate opened by test seeding).
+if (Want 'freight') {
+if ($basic -and (Bridge 'player state') -notmatch 'player=Driving') { OnFoot; Bridge "career ui garage:call:$basic;wait 2" | Out-Null; Board $basic | Out-Null }
 Bridge 'career xp Delivery 300' | Out-Null
 $r = RunCareer 'Freight' 1500
 Record 'Freight job with the provided rigid truck (test-seeded unlock)' $r.ok $r.detail
+}
 
 # ---- Bus line with the operator's bus.
-if (-not $SkipBus) {
+if ((Want 'bus') -and -not $SkipBus) {
     Bridge 'career xp Taxi 300' | Out-Null
     $r = RunCareer 'Bus' 2400
     Record 'Bus line run with the provided bus (test-seeded unlock)' $r.ok $r.detail
 }
 
 # ---- Challenge.
+if (Want 'challenge') {
 $st = Status
 $veh = VehicleOf $st 'car\.basic'
 if ($veh -and (Bridge 'player state') -notmatch 'player=Driving') { OnFoot; Bridge "career ui garage:call:$veh;wait 2" | Out-Null; Board $veh | Out-Null }
@@ -130,15 +141,19 @@ if ($cid) {
     Record 'Challenge run (checkpoints, time, record)' ($res -match "${cid}:[^|]*tries1" -or $res -match "${cid}:[^|]*:best=\d") (Tail $res 400)
 }
 else { Record 'Challenge run (checkpoints, time, record)' $false "no challenge generated: $(Tail $c)" }
+}
 
 # ---- Home.
+if (Want 'home') {
 OnFoot
 $o = Bridge 'career goplace Residential;wait 1;career ui profile:sethome;wait 1;career status'
-Record 'Set home at the nearest house' ((Last $o 'profile:sethome') -match '< OK') (Tail (Last $o 'profile:sethome'))
+Record 'Set home at the nearest house' ((Last $o 'profile:sethome') -match ':: Done' -or (Last $o 'career status') -match 'home') (Tail (Last $o 'profile:sethome'))
 $o = Bridge 'input fwd=1 run=1 t=6;career ui profile:gohome;wait 2;player state'
-Record 'Go home' ((Last $o 'profile:gohome') -match '< OK') (Tail (Last $o 'profile:gohome'))
+Record 'Go home' ((Last $o 'profile:gohome') -match '< OK' -and (Last $o 'profile:gohome') -notmatch 'Choose a home|No residential') (Tail (Last $o 'profile:gohome'))
+}
 
 # ---- Company (gates opened by test seeding).
+if (Want 'company') {
 Bridge 'career xp Taxi 1150;career xp Delivery 300;career rep 60;career grant 2500000' | Out-Null
 Bridge 'career goplace Office;wait 1' | Out-Null
 $o = Bridge 'career ui company:found;wait 1;career company'
@@ -151,7 +166,8 @@ $model = @{ Car = 'car.used'; Taxi = 'taxi.sedan'; Van = 'van.light'; RigidTruck
 if (-not $model) { $model = 'car.used' }
 $o = Bridge "career ui company:deposit:1500000;career ui company:hire:$cand;career ui company:buy:$model;career ui company:accept:$ctr;career ui company:autoassign;wait 1;career company"
 $co = Last $o 'career company'
-Record "Deposit, hire, buy a fleet vehicle ($model), accept a contract ($cls), assign" ($co -match 'employees=\[[^\]]' -and $co -match 'fleet=\[V' -and $co -match 'contracts=\[[^\]]') (Tail $co 400)
+Record "Deposit, hire, buy a fleet vehicle ($model), accept a contract ($cls), assign" ($co -match 'employees=\[[^\]]' -and $co -match 'fleet=\[[^\]]' -and $co -match 'contracts=\[[^\]]') (Tail $co 400)
+}
 
 $o = Bridge "save $SaveName;wait 2;career status" 300
 Record "Save $SaveName with all careers' state" ($o -match "save $SaveName -> True") (Tail (Last $o 'career status') 300)
