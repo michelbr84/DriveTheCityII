@@ -58,3 +58,15 @@
   were never written into the city save.
 - Not covered by this run: gamepad (no device), audio (none implemented), night lighting, low-FPS conditions. See
   [KNOWN_ISSUES](../../KNOWN_ISSUES.md).
+
+## Re-run on package `0.1.0-af308eb` (2026-10-19, 23:40-23:56)
+
+The evening's freight and bus fixes changed ground following, contacts and routing, so M1 was run again with real keys
+on the new final package.
+
+- First run (`campaigns\m1-20261019-234049.md`): **16/17**. "Brake to a stop" failed because the real-key sequence
+  started about 3.7 s after the in-game measurement began (`firstMoveAt=3.74`), so S was held for only the last 0.3 s of
+  the 7 s window; the car braked to a stop normally in the next window (`stoppedAt=3.11`). A harness timing fault, not
+  a braking change.
+- Second run (`campaigns\m1-20261019-235132.md`): **17/17** (stopped 5.61 s into the brake window).
+- The 2-hour real-time soak was not repeated on this package.

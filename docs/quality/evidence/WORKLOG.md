@@ -75,6 +75,7 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 18:35 | **Bus stops served in game**: Line 1 shift, 3 stops served, 23 passengers on board; the shift then looped through a waterfront hairpin and recoveries (ISSUE-031). | session 20261019-175926 |
 | 18:55-20:46 | Bus shifts held in standing queues on the depot's exit routes (20+ min). A creep limit that turned the whole 14 m footprint made the bus crawl and was replaced by a bumper-zone check; blocker chains traced to a native vehicle stopped with no blocker (ISSUE-033). Guidance now avoids standing queues; prison van excluded from buses (ISSUE-032). | sessions 20261019-185358 … -203611 |
 | 21:23-23:38 | **Bus shift completed and paid in game**: city run at 3× for 10 min (night), Line 1, 14 of 14 stops served, +222.50 cr, +47 XP. Harness steps: 9 m forward to a junction once; one 90 s return to city building (queue test: the queue flowed again) and the bus brought back with "Bring here". [simulated input via test autopilot] | session 20261019-212310; [bus-shift-events](RUN-0003/bus-shift-events.md) |
+| 23:40-23:56 | Final package `0.1.0-af308eb` (code identical to the bus-shift build) installed. M1 with real keys: 16/17 (key-timing fault of the script: keys started 3.7 s late), rerun **17/17**. | `campaigns\m1-20261019-234049.md`, `m1-20261019-235132.md`; [RUN-0002](RUN-0002/REPORT.md) |
 
 ## Known gaps at this point (next work)
 
