@@ -49,6 +49,9 @@ its SHA-256 in the notes. Afterwards, download the asset again and compare its S
 - **Published 2026-10-20:** mod id **164157**, <https://mods.paradoxplaza.com/mods/164157/Windows>, version 0.1.0
   (first upload Private, then `Update` to Public) [RUN-0006](../quality/evidence/RUN-0006/REPORT.md). The id is
   stored in `ModId`; later builds use `NewVersion` with a new `ModVersion` and `ChangeLog`.
+- **Version 0.2.0, 2026-10-20:** `NewVersion` with the installed release package `0.2.0-2994688`; two attempts failed
+  on the server side ("Game is not found", then an SSL connection error), the third identical attempt published it, and
+  the page showed "pending publication" while Paradox processed it ([RUN-0007](../quality/evidence/RUN-0007/REPORT.md) §4).
 - Installing the subscribed copy in game is **Not run** yet (needs the owner's Paradox login in the game).
 
 ## 1. Purpose

@@ -95,6 +95,11 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 12:00-12:07 | Tag `v0.1.0` pushed. GitHub release: the owner published the empty form; the agent completed it (title, notes, archive). API and anonymous download match the package. | RUN-0006 §3 |
 | 12:08-12:16 | Paradox Mods: the game's ModPublisher (automatic login, no password handled) published id **164157** Private, then `Update` to Public; public page checked logged out. Subscribed copy not loaded in game (needs the owner's login). | RUN-0006 §4 |
 
+| 12:20-12:50 | ISSUE-035 and ISSUE-040 implemented (unpark like `ActivateParkedCar`; `SmallProp`, `PassesSmallProps`, `VehicleController.Blocks`); 176 unit tests. In game: parked pickup borrowed, driven, left (re-parked by the game 3–4 s later); lamp A/B (bus stopped with the switch off, passed with it on; a car still stops). | sessions 20261020-123308, -124859; RUN-0007 §1, §3.1 |
+| 12:38-12:59 | ISSUE-041 found while saving with a borrowed car: the saved copy stayed excluded from the AI for good (the game never releases a source-less `TripSource`). Fixed (hand back for the saved copy, re-exclude after the save; repair on load) and verified both ways. | sessions -124859, -125702; RUN-0007 §2 |
+| 13:00-14:08 | Bus shift in `DTC2-LAB-CAREERS-H`: depot turnaround and parked vehicles hold the test autopilot (ISSUE-042); prop rule extended to road furniture up to 3 m by owner; from the RUN-0005 harness pose the shift ran to the end: 14 stops served and paid (225.60 cr). ISSUE-043 (invisible garage vehicles as obstacles) found at 13:41 and fixed; resumed from a save. | sessions -125702, -131240, -134529; RUN-0007 §3.3, §3.4 |
+| 14:09-14:30 | Release 0.2.0: commit `2994688`, build in a fresh clone, archive (SHA-256 `a6bc27d8…`), installed from the archive (version line, persistence 11/11, parked motorbike borrowed and re-parked), tag `v0.2.0`, GitHub release checked by API and anonymous download, Paradox Mods `NewVersion` (third attempt published; "pending publication"). | session -141036; RUN-0007 §4 |
+
 ## Known gaps at this point (next work)
 
 - Freight (partial delivery) and a whole bus shift completed and paid in game once each (simulated input); no whole

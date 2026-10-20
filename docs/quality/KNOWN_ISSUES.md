@@ -401,17 +401,24 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-035 — Parked cars cannot be entered in sandbox mode
 - Severity: High (the first thing a new player tries; 168 key presses failed in the first human session)
-- Status: Open
-- Component: Player (sandbox borrowing)
+- Status: Verified fixed (2026-10-20, [RUN-0007](evidence/RUN-0007/REPORT.md) §1; simulated input)
+- Component: Player (sandbox borrowing), CityBridge (actors)
 - First observed: the owner's own session on 2026-10-20 (00:13–00:55, own city, mod `0.1.0-af308eb`), from the mod log
 - Observed: "No vehicle close enough. Walk up to a car door and press E." 168 times, often several times a second;
   the four native cars that could be entered were in traffic.
-- Cause: only native cars that are moving traffic, momentarily stopped (at a light or in a queue) and within 4 m can be
-  borrowed (`IsBorrowable` requires the game's motion data). Parked cars at the kerb or in car parks never qualify, and
-  the message suggests the player is simply too far away.
-- Workaround: use the career's basic rental (Tab → Garage → basic rental, free) or step up to a car waiting at a light.
-- Next step: let parked cars be borrowed (they use the game's parked-car form, so this needs a conversion), or at least
-  say why a parked car cannot be used.
+- Cause: only native cars that are moving traffic, momentarily stopped (at a light or in a queue) and within 4 m could be
+  borrowed (`IsBorrowable` required the game's motion data). Parked cars at the kerb or in car parks never qualified.
+- Fix: parked household cars can be borrowed too (street parking spaces and car parks; not cars inside garages, which
+  are invisible, and not parked through-traffic or delivery vans). On entry the car is unparked the way the game does
+  when a resident drives off (`ResidentAISystem.ActivateParkedCar`: `ParkedCar` and `Stopped` removed, the moving set
+  added, `CarCurrentLane` on the parking place), in the same step that takes it out of the traffic AI. When the player
+  gets out, it is handed back with no destination, and the game's own car AI parks it on a valid space
+  (`PersonalCarAISystem.ParkCar` with `FixParkingLocation`).
+- Verification (lab city, sandbox): a pickup in a street parking space was entered (`player interact`), driven forward
+  and in reverse, and left: 3 s later the game had parked it in the same space. Driven 90 m and left on the road: parked
+  on the kerbside parking lane where it stood. Saved while driving and reloaded: an ordinary parked car (ISSUE-041).
+  `leakcheck` 0 after every step; cars in garages are refused.
+- Not verified: a human session with real keys; a car park inside a building lot (connection lane).
 
 ### ISSUE-036 — Three recoveries on foot within a minute end character mode
 - Severity: Medium
@@ -450,16 +457,77 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-040 — A 12.7 m bus clips corner props in narrow junctions
 - Severity: Medium
-- Status: Open
-- Component: Core (vehicle motion)
+- Status: Verified fixed (2026-10-20, [RUN-0007](evidence/RUN-0007/REPORT.md) §3; simulated input)
+- Component: Core (vehicle motion), CityBridge (obstacle classes)
 - First observed: 2026-10-20 (sessions 20261020-011700 to -023545, test autopilot)
-- Detail: our vehicles turn about the centre of the body (kinematic bicycle model with the reference point at the
-  centre), so both ends of a long vehicle swing outward in a turn: about 0.2 m for a car, 0.9 m for an 8.5 m truck and
-  1.8 m for a 12.7 m bus in a 10 m turn. In the lab city's narrow downtown junctions the bus hit poles and street
-  furniture on the corners; the test autopilot needed 20+ recoveries on one leg and two harness steps. A human driver
-  meets the same geometry. A real bus turns about its rear axle (the front swings wide, the rear cuts in), which is not
-  easier in these junctions either: the game's own buses follow lane curves without colliding with props.
-- Next step: decide between a rear-axle pivot for long vehicles and softer contacts with small props for buses.
+- Detail: in the lab city's narrow downtown junctions the bus stopped against poles, signs and posts on the corners
+  (`stepdiag`: ground supported, contact with a 0.16–0.3 m static object). The game's own buses sweep over the same
+  props when they follow those lanes, because nothing is solid for them.
+- Decision: the rear-axle pivot considered first was not adopted. It is how a real bus moves, but for the same path it
+  sweeps a wider area (a 12.7 m bus in a 10 m turn: about 5.7 m against 4.2 m), so it would not have helped here.
+- Fix: small props (`ObstacleKind.SmallProp`: any static object up to 0.9 m half-extent, and furniture placed by a road
+  or junction up to 3 m, for example a stop bench) no longer block vehicles of 7 m or more
+  (`VehicleSpec.PassesSmallProps`). Cars, people, buildings, objects placed by buildings, and parked vehicles are
+  unchanged. One rule, `VehicleController.Blocks`, is used by the collision response, the placement checks and the test
+  autopilot. Test switch: `softprops on|off`.
+- Verification: same 5 m street lamp, bus driven at it: switch off, stopped at the lamp; switch on, drove past it; a
+  car on the same course still stopped at it ("Impact 3.5 m/s with SmallProp"). Bus shift from the RUN-0005 harness pose
+  past the downtown junction, switch on: the whole remaining shift was driven to the end, 14 stops served and the job paid (225.60 cr, +52 XP),
+  in about 50 minutes of autopilot driving with 9 recoveries (queues, a deadlock with a stopped vehicle, an invisible
+  garage motorbike: ISSUE-043) and no contact with a small prop. In RUN-0005 both runs from that pose stayed on the first leg for
+  15 minutes (3 and 4 recoveries).
+- Remaining: vehicles parked at the kerb and the depot turnaround still hold the test autopilot (ISSUE-042).
+
+### ISSUE-041 — A borrowed car saved while driven stood in the road for good after that save was loaded
+- Severity: High (a lasting change to the player's city: the car never moves again, and native traffic can queue
+  behind it)
+- Status: Verified fixed (2026-10-20, [RUN-0007](evidence/RUN-0007/REPORT.md) §2)
+- Component: CityBridge (actors, save)
+- First observed: 2026-10-20 (session `20261020-124859`), while verifying ISSUE-035. The cause dates from the first
+  save-while-driving support (2026-10-19) and affects every borrowed native car, not only parked ones.
+- Cause: the saved copy kept the mod's AI exclusion (a `TripSource` without a source) with a shortened timer, on the
+  assumption that the game would release it after a load. The game never releases a vehicle whose `TripSource` has no
+  source (`VehicleSpawnSystem` starts its spawn groups after the null source), so the car stayed out of the AI for good.
+  The leak check counted only the full-length timer and missed it.
+- Fix: for a save, a borrowed car is handed back for the saved copy (exclusion removed, lane and path marked obsolete)
+  and takes its exclusion back right after the save, inside the same save call, so the player keeps driving it. When a
+  city loads, cars with a source-less `TripSource` and no mod tag (from saves written before the fix; the game never
+  creates such trip sources) are handed back to the AI. `leakcheck` now counts any source-less exclusion without a mod
+  tag.
+- Verification: a lab save written before the fix, whose car was still excluded 90 s after loading: on load the log
+  said "1 city car(s) … handed back" and the car parked itself on a valid space. A new save while driving: the player
+  kept driving after the save; after loading it, the car was an ordinary parked car, `leakcheck` 0, nothing to repair.
+- Owner's saves: a city saved while driving a borrowed car before this fix contains such a car; version 0.2.0 releases
+  it automatically when that city is loaded.
+
+### ISSUE-042 — The test autopilot cannot take a 12.7 m bus out of the lab depot, or past vehicles parked at the kerb
+- Severity: Medium (test tooling: no whole bus shift with the autopilot since `0.1.0-af308eb`); players are not blocked
+  (a human driver can reverse, pick another way, or press Backspace)
+- Status: Open
+- Component: Test autopilot (`CareerBridge`), guidance route
+- First observed: 2026-10-20 (RUN-0005: every run stayed on the first leg; RUN-0007)
+- Detail:
+  1. In `DTC2-LAB-CAREERS-H` the guidance route from the depot to the first stop starts south and turns back by about
+     135° at (−270, −4565), between parked cars. The autopilot creeps, tries three-point turns and needs recoveries at the
+     same place in every run (RUN-0005 at 68 s; RUN-0007 at 63 s).
+  2. Downtown, cars and motorbikes parked at the kerb (`Motorbike01`, `Car02`, …) hold the bus's front corner where its
+     path runs close to the parking lane, for example next to the stop near (−639, −4249). Parked vehicles are solid
+     for every vehicle, by design.
+- Next step: let the router avoid turnarounds a 12.7 m vehicle cannot make, and let the autopilot keep a lane-width
+  clearance from the parking lane.
+
+### ISSUE-043 — Invisible vehicles stored in garages were solid obstacles
+- Severity: High (an invisible wall: a bus hit one at 12.2 m/s on a straight road, then needed three recoveries in a
+  row; it affects every vehicle and the avatar where a garage meets the street)
+- Status: Verified fixed (2026-10-20, [RUN-0007](evidence/RUN-0007/REPORT.md) §3.4)
+- Component: CityBridge (`CityWorldProbe` obstacles)
+- First observed: 2026-10-20 (session `20261020-131240`, bus shift in `DTC2-LAB-CAREERS-H`)
+- Cause: vehicles stored in a garage are `Unspawned` (not drawn, not in the street), but the probe still returned them
+  as obstacles. A `Motorbike01` in a garage beside the street, 1.6–2.8 m above the road, was inside a 3.2 m bus's height
+  range.
+- Fix: the probe ignores unspawned objects, both static and moving.
+- Verification: at the same place, before: `cars` and `props` listed the garage motorbikes as `StaticObject`; after:
+  0 static objects within 6 m (only the street lamp, a small prop), and the bus shift continued past that spot.
 
 ## 7. Release use
 

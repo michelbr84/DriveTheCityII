@@ -6,7 +6,16 @@
 | Date | 2026-10-19 (updated 2026-10-20) |
 | Prepared by | Claude Code agent (autonomous run under the owner brief of 2026-10-19; follow-up request of 2026-10-20) |
 | Game | Cities: Skylines II 1.6.2f1 (Steam), Windows 11 |
-| Final package | `DriveTheCityII-0.1.0-36ec810-20261020T065957Z` (installed 2026-10-20; replaces `0.1.0-af308eb` after the standing-queue and bus turn-round fixes) |
+| Final package | `DriveTheCityII-0.2.0-2994688-20261020T180952Z` (release 0.2.0, installed 2026-10-20; GitHub `v0.2.0` and Paradox Mods 164157) |
+
+**Update 2026-10-20, afternoon — releases.** 0.1.0 and then 0.2.0 are published on
+[GitHub Releases](https://github.com/michelbr84/DriveTheCityII/releases/latest) and
+[Paradox Mods](https://mods.paradoxplaza.com/mods/164157/Windows). 0.2.0: parked city cars can be entered in sandbox
+mode (the game parks them again when you get out); buses and trucks no longer stop on small street props; a borrowed
+car saved while driven no longer stays frozen in the road after loading (older saves are repaired on load); vehicles
+stored in garages are no longer invisible walls. On the release code a whole 14-stop bus shift was completed and paid
+with the test autopilot (simulated input). Details: [RUN-0006](docs/quality/evidence/RUN-0006/REPORT.md),
+[RUN-0007](docs/quality/evidence/RUN-0007/REPORT.md).
 
 **Update 2026-10-20.** Your own session (00:13–00:55) was read from the mod log: no errors; its problems are recorded as
 ISSUE-035 to ISSUE-039 (the main one: parked cars cannot be entered in sandbox mode — 168 key presses failed). The

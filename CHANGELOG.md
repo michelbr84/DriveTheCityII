@@ -12,6 +12,36 @@ mark real releases ([PACKAGING_AND_PUBLISHING](docs/release/PACKAGING_AND_PUBLIS
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-20
+
+Released from commit `2994688` on [GitHub](https://github.com/michelbr84/DriveTheCityII/releases/tag/v0.2.0) and as a new version of [Paradox Mods 164157](https://mods.paradoxplaza.com/mods/164157/Windows).
+Evidence: [RUN-0007](docs/quality/evidence/RUN-0007/REPORT.md). Driving in these tests is simulated input.
+
+### Fixed
+
+- **Parked city cars can be entered in sandbox mode (ISSUE-035).** Only cars stopped in traffic could be borrowed;
+  168 presses of E failed in the owner's first session. A parked household car is now unparked the way the game does
+  when a resident drives off, in the same step that takes it out of the traffic AI. When the player gets out, the game's
+  own car AI parks it on a valid space. Verified: entered, driven and left in a parking space (parked again 3 s later)
+  and on the road (parked on the kerbside lane 4 s later); `leakcheck` 0.
+- **Buses and trucks no longer stop on small street props (ISSUE-040).** Poles, signs, lamps, posts, hydrants and
+  furniture placed by the road (up to 3 m, for example a stop bench) no longer block vehicles of 7 m or more, as the game's
+  own buses and trucks sweep over them when they follow the lanes; cars, people, buildings, lot furniture and parked
+  vehicles are unchanged. One rule (`VehicleController.Blocks`) serves collisions, placement checks and the test
+  autopilot. Same lamp, switch off and on: the bus stopped at it / drove past it; a car still stops at it.
+- **A borrowed car saved while driven no longer stays frozen in the road after loading (ISSUE-041).** The saved copy
+  kept the mod's AI exclusion, which the game never releases; it is now saved as ordinary traffic and the player keeps
+  driving. Cars left that way by older saves are released when the city loads ("handed back (ISSUE-041)" in the log).
+  `leakcheck` now counts any such car.
+- **Invisible vehicles in garages are no longer obstacles (ISSUE-043).** Vehicles stored in a garage are not in the street,
+  but the probe still treated them as solid; a motorbike in a garage beside the road stopped a bus at 12 m/s on a
+  straight road. Unspawned objects are now ignored.
+
+### Added
+
+- Test bridge: `parked`, `gotoparked`, `cars`, `carinfo`, `props` (with model and owner), `softprops on|off`.
+- Unit tests: 176 (small props for buses and cars, the switch).
+
 ## [0.1.0] — 2026-10-20
 
 First public release, 2026-10-20: a manual-install archive on

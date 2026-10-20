@@ -6,7 +6,7 @@ experience, rent or buy vehicles, found a small transport company, and go back t
 
 | | |
 |---|---|
-| Version | 0.1.0 (development build) |
+| Version | 0.2.0 (development build) |
 | Game | Cities: Skylines II **1.6.2f1** (Steam, Windows 11). Other game versions are untested. |
 | Download | [Paradox Mods](https://mods.paradoxplaza.com/mods/164157/Windows) (install from the game), or the archive attached to each [GitHub release](https://github.com/michelbr84/DriveTheCityII/releases/latest) (manual install). |
 | Status | Playable in disposable test cities. Validation is in progress: see [PROJECT_STATUS](docs/PROJECT_STATUS.md) and [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md). |
@@ -18,8 +18,10 @@ Verified in game on the development machine, mostly with simulated input from th
 loop was also run with real keyboard input. The per-feature table is in [MORNING_REPORT](MORNING_REPORT.md).
 
 - **Character mode:** walk and run on the sidewalks of your own city, with third- and first-person cameras.
-- **Driving:** enter a rental car, one of your own vehicles, or (in sandbox mode) a city car stopped in traffic. City
-  traffic, buildings, and poles are solid; traffic stops behind you and steers around a vehicle you leave parked.
+- **Driving:** enter a rental car, one of your own vehicles, or (in sandbox mode) a parked city car or one stopped in
+  traffic; the game parks a borrowed car again when you get out. City traffic, buildings, and poles are solid; traffic
+  stops behind you and steers around a vehicle you leave parked. Buses and trucks drive through small street props
+  (poles, signs, lamps), as the game's own buses and trucks do.
 - **Careers:** taxi fares, urban deliveries, rigid-truck freight, and bus shifts on the city's own bus lines, with pay,
   XP, reputation, and unlocks.
 - **Garage and life:** rent, buy, and sell vehicles; fuel and wear; roadside help and towing; a home and a garage;
@@ -28,8 +30,9 @@ loop was also run with real keyboard input. The per-feature table is in [MORNING
   and a save still loads with the mod removed.
 - **Languages:** English and Português (Brasil).
 
-Known limitations include: parked city cars cannot be entered yet, long buses clip corner props in narrow junctions,
-and gamepad bindings exist but are untested. See [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md).
+Known limitations include: vehicles parked at the kerb are solid, so a long bus can get stuck where its path runs close
+to the parking lane; the game counts an unfocused window as paused; and gamepad bindings exist but are untested. See
+[KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md).
 
 ## Install a release
 

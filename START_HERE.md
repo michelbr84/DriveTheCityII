@@ -73,7 +73,7 @@ city as `DTC2-LAB-...`. Stop with `tools\test-session.ps1 -Stop` (restores the "
 | A / D | Walk left / right | Steer |
 | Shift | Run | — |
 | Mouse | Look around | Look around (camera returns behind the car) |
-| **E** | Enter the vehicle you stand next to: one of your career vehicles, or in sandbox mode a city car waiting in traffic (parked city cars cannot be used yet) | Get out (stop first) |
+| **E** | Enter the vehicle you stand next to: one of your career vehicles, or in sandbox mode a parked city car or one waiting in traffic (the game parks it again when you get out) | Get out (stop first) |
 | V | Third-person / first-person | Chase / hood camera |
 | Space | — | Handbrake |
 | Tab | Jobs, garage, company, challenges, profile panel (frees the mouse) | same |

@@ -54,7 +54,7 @@ Unofficial fan project, not affiliated with or endorsed by Paradox Interactive o
 	<Tag Value="Code Mod" />
 	<ModVersion Value="0.2.0" />
 	<GameVersion Value="1.6.*" />
-	<ChangeLog Value="0.2.0: parked city cars can be borrowed in sandbox mode (the game parks them again afterwards); buses and trucks no longer stop on small street props in narrow junctions; a borrowed car saved while driven no longer stays frozen in the road after loading (older saves are repaired on load)." />
+	<ChangeLog Value="0.2.0: parked city cars can be borrowed in sandbox mode (the game parks them again afterwards); buses and trucks no longer stop on small street props in narrow junctions; a borrowed car saved while driven no longer stays frozen in the road after loading (older saves are repaired on load); vehicles stored in garages are no longer invisible walls." />
 	<ExternalLink Type="github" Url="https://github.com/michelbr84/DriveTheCityII" />
 	<!--Public | Private | Unlisted (case-sensitive). The first upload (2026-10-20) was Private, then switched to Public with Update.-->
 	<AccessLevel Value="Public" />
