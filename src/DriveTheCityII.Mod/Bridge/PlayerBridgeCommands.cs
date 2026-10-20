@@ -28,6 +28,65 @@ namespace DriveTheCityII.Bridge
             TestBridge.Handlers["waitstate"] = WaitState;
             TestBridge.Handlers["probe"] = Probe;
             TestBridge.Handlers["netsat"] = a => new InstantOp(true, P.Probe.DescribeNetsAt(F(a[1]), F(a[2])));
+            TestBridge.Handlers["tpav"] = a =>
+            {
+                // tpav x z: test setup, puts the avatar (on foot) on the sidewalk nearest to (x, z).
+                if (P.State != PlayerState.OnFoot)
+                {
+                    return new InstantOp(false, "not on foot");
+                }
+                float x = F(a[1]), z = F(a[2]);
+                var terrain = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Game.Simulation.TerrainSystem>();
+                var hd = terrain.GetHeightData();
+                float y = Game.Simulation.TerrainUtils.SampleHeight(ref hd, new float3(x, 0f, z));
+                if (!P.Probe.FindNearestLanePoint(new float3(x, y, z), 40f, CityWorldProbe.LaneKind.Sidewalk, out float3 walk, out _, out _))
+                {
+                    return new InstantOp(false, "no sidewalk near " + x + "," + z);
+                }
+                P.TeleportAvatar(walk + new float3(0f, 0.5f, 0f));
+                return new InstantOp(true, $"avatar at {walk}");
+            };
+            TestBridge.Handlers["blockchain"] = a =>
+            {
+                // blockchain: from the nearest native vehicle ahead of the player's vehicle, follow "blocked by" links to the
+                // root of the queue and print each link (position relative to us, type, speed). Diagnostics for jams.
+                ControlledVehicle v = P.Vehicle ?? P.ParkedVehicles.FirstOrDefault();
+                if (v == null)
+                {
+                    return new InstantOp(false, "no vehicle");
+                }
+                var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+                var obs = new List<Obstacle>();
+                P.Probe.QueryObstacles(v.State.Position.XZ, 40f, obs);
+                Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
+                Obstacle start = obs.Where(o => o.Kind == ObstacleKind.Vehicle && Vec2.Dot(o.Footprint.Center - v.State.Position.XZ, fwd) > 2f
+                    && Math.Abs(Vec2.Dot(o.Footprint.Center - v.State.Position.XZ, fwd.RightPerp)) < 2.5f)
+                    .OrderBy(o => Vec2.Distance(o.Footprint.Center, v.State.Position.XZ)).FirstOrDefault();
+                if (start.SourceId == 0)
+                {
+                    return new InstantOp(false, "no vehicle ahead");
+                }
+                var cur = new Unity.Entities.Entity { Index = (int)(start.SourceId & 0xffffffffL), Version = (int)(start.SourceId >> 32) };
+                var parts = new List<string>();
+                var seen = new HashSet<int>();
+                for (int hop = 0; hop < 60 && cur != Unity.Entities.Entity.Null && em.Exists(cur) && seen.Add(cur.Index); hop++)
+                {
+                    float3 pos = em.HasComponent<Game.Objects.Transform>(cur) ? em.GetComponentData<Game.Objects.Transform>(cur).m_Position : float3.zero;
+                    float spd = em.HasComponent<Game.Objects.Moving>(cur) ? math.length(em.GetComponentData<Game.Objects.Moving>(cur).m_Velocity) : -1f;
+                    string type = "none";
+                    Unity.Entities.Entity next = Unity.Entities.Entity.Null;
+                    if (em.HasComponent<Game.Vehicles.Blocker>(cur))
+                    {
+                        Game.Vehicles.Blocker b = em.GetComponentData<Game.Vehicles.Blocker>(cur);
+                        type = b.m_Type.ToString();
+                        next = b.m_Blocker;
+                    }
+                    string who = cur == v.Entity ? "ME" : em.HasComponent<DtcActor>(cur) ? "MOD" : cur.Index.ToString(CultureInfo.InvariantCulture);
+                    parts.Add(string.Format(CultureInfo.InvariantCulture, "{0}@({1:0},{2:0}) v{3:0.0} {4}", who, pos.x, pos.z, spd, type));
+                    cur = next;
+                }
+                return new InstantOp(true, $"{parts.Count} links: {string.Join(" > ", parts)}");
+            };
             TestBridge.Handlers["blockers"] = a =>
             {
                 // blockers [radius]: which native vehicles wait for what (Game.Vehicles.Blocker), and how many blocker chains

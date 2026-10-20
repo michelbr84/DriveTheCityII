@@ -6,7 +6,7 @@
   Requires the mod installed. Starts its own test session, loads -City, and stops the session at the end.
   Results: %LOCALAPPDATA%\DriveTheCityII\test\campaigns\freight-bus-<stamp>.md
 #>
-param([string]$City = 'DTC2-LAB-CAREERS-H', [int]$FreightAttempts = 4, [int]$BusAttempts = 3, [switch]$SkipFreight, [switch]$SkipBus, [switch]$NoDrive)
+param([string]$City = 'DTC2-LAB-CAREERS-H', [int]$FreightAttempts = 4, [int]$BusAttempts = 3, [switch]$SkipFreight, [switch]$SkipBus, [switch]$NoDrive, [string]$BusStartNear = '')
 
 . (Join-Path $PSScriptRoot 'env.ps1')
 $stamp = Get-Date -Format yyyyMMdd-HHmmss
@@ -32,6 +32,12 @@ function OwnCar() {
     Bridge "career ui garage:call:$vid;wait 2;career gotoveh $vid;player interact;waitstate Driving 15" | Out-Null
 }
 function Attempt([string]$career, [int]$seconds) {
+    if ($career -eq 'Bus' -and $BusStartNear) {
+        # TEST SETUP: start the shift near the line's first stop (the employer's bus is provided near the player).
+        OnFoot
+        $t = Last (Bridge "tpav $BusStartNear;wait 2") 'tpav'
+        Note "Bus start: $(($t -split ' :: ')[-1])"
+    }
     OwnCar
     $offers = Last (Bridge "career offers $career") 'career offers'
     if ($offers -notmatch 'eligible=True' -and $career -eq 'Freight') {
