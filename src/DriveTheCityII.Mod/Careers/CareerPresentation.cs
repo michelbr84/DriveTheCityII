@@ -60,10 +60,10 @@ namespace DriveTheCityII.Careers
                     // if no lane is that close.
                     var gk = P.Vehicle.State.GroundKind;
                     bool onRoad = gk == Core.World.SurfaceKind.Road || gk == Core.World.SurfaceKind.Elevated || gk == Core.World.SurfaceKind.Tunnel;
-                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay, onRoad);
+                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay, onRoad, avoidJams: true);
                     if (r.Status != RouteStatusCode.Reachable)
                     {
-                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay, onRoad);
+                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay, onRoad, avoidJams: true);
                     }
                     if (r.Status == RouteStatusCode.Reachable)
                     {

@@ -55,6 +55,8 @@ namespace DriveTheCityII.CityBridge
             public bool Forbidden;
             /// <summary>For a master lane: the curves of the lanes vehicles actually drive in (null otherwise).</summary>
             public Bezier4x3[] Slaves;
+            /// <summary>The lane entities vehicles register on (the slaves of a master lane, or the lane itself).</summary>
+            public Entity[] TrafficLanes;
         }
 
         private const float Cell = 64f;
@@ -126,7 +128,8 @@ namespace DriveTheCityII.CityBridge
                         Speed = math.max(5f, cl.m_SpeedLimit),
                         Curve = curves[i].m_Bezier,
                         Forbidden = (cl.m_Flags & CarLaneFlags.Forbidden) != 0,
-                        Slaves = SlaveCurves(em, ents[i]),
+                        Slaves = SlaveCurves(em, ents[i], out Entity[] trafficLanes),
+                        TrafficLanes = trafficLanes,
                     };
                     int idx = m_Lanes.Count;
                     m_Lanes.Add(node);
@@ -149,8 +152,20 @@ namespace DriveTheCityII.CityBridge
         }
 
         /// <summary>The curves of a master lane's slave lanes (its sub-lane index range in the owner, same group).</summary>
-        private static Bezier4x3[] SlaveCurves(EntityManager em, Entity lane)
+        private static Bezier4x3[] SlaveCurves(EntityManager em, Entity lane, out Entity[] trafficLanes)
         {
+            trafficLanes = new[] { lane };
+            Bezier4x3[] curves = SlaveCurves(em, lane, out List<Entity> slaves);
+            if (slaves != null && slaves.Count > 0)
+            {
+                trafficLanes = slaves.ToArray();
+            }
+            return curves;
+        }
+
+        private static Bezier4x3[] SlaveCurves(EntityManager em, Entity lane, out List<Entity> slaves)
+        {
+            slaves = null;
             if (!em.HasComponent<Game.Net.MasterLane>(lane) || !em.HasComponent<Owner>(lane))
             {
                 return null;
@@ -175,6 +190,7 @@ namespace DriveTheCityII.CityBridge
                     continue;
                 }
                 list.Add(em.GetComponentData<Curve>(s).m_Bezier);
+                (slaves ?? (slaves = new List<Entity>(4))).Add(s);
             }
             return list.Count > 1 ? list.ToArray() : null;
         }
@@ -238,7 +254,38 @@ namespace DriveTheCityII.CityBridge
         /// passing within <paramref name="goalRadius"/> of <paramref name="to"/>. Unknown is returned when the search budget
         /// runs out, never a guess (REQ-CAREER-002).
         /// </summary>
-        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f, bool onRoadSurface = false)
+        /// <summary>
+        /// Extra seconds for a lane from the native vehicles standing on it (about 6 s each, at most 120 s): the guidance
+        /// avoids a standing queue when there is another way. Observed in game on 2026-10-19: a bus spent 20+ minutes in a
+        /// queue held by one stopped car while a parallel street was free.
+        /// </summary>
+        private static float JamSeconds(EntityManager em, LaneNode n)
+        {
+            if (n.TrafficLanes == null)
+            {
+                return 0f;
+            }
+            int stopped = 0;
+            foreach (Entity l in n.TrafficLanes)
+            {
+                if (!em.Exists(l) || !em.HasBuffer<LaneObject>(l))
+                {
+                    continue;
+                }
+                DynamicBuffer<LaneObject> objs = em.GetBuffer<LaneObject>(l, true);
+                for (int k = 0; k < objs.Length; k++)
+                {
+                    Entity o = objs[k].m_LaneObject;
+                    if (em.Exists(o) && em.HasComponent<Game.Objects.Moving>(o) && math.lengthsq(em.GetComponentData<Game.Objects.Moving>(o).m_Velocity) < 1f)
+                    {
+                        stopped++;
+                    }
+                }
+            }
+            return math.min(120f, stopped * 6f);
+        }
+
+        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f, bool onRoadSurface = false, bool avoidJams = false)
         {
             EnsureBuilt(em);
             var res = new RouteResult();
@@ -335,6 +382,10 @@ namespace DriveTheCityII.CityBridge
                     }
                     LaneNode nn = m_Lanes[nx];
                     float step = nn.Length / nn.Speed * (nn.Forbidden ? 5f : 1f);
+                    if (avoidJams && math.distancesq(nn.Curve.a.xz, from.xz) < 1500f * 1500f)
+                    {
+                        step += JamSeconds(em, nn);
+                    }
                     float cand = gc + step;
                     if (!gScore.TryGetValue(nx, out float old) || cand < old)
                     {
