@@ -71,6 +71,7 @@ namespace DriveTheCityII.CityBridge
         private ComponentLookup<ConnectionLane> m_ConnectionLane;
         private ComponentLookup<MasterLane> m_MasterLane;
         private ComponentLookup<Owner> m_Owner;
+        private ComponentLookup<Unspawned> m_Unspawned;
         private ComponentLookup<Edge> m_EdgeData;
 
         private TerrainHeightData m_Height;
@@ -128,6 +129,7 @@ namespace DriveTheCityII.CityBridge
             m_ConnectionLane = system.GetComponentLookup<ConnectionLane>(true);
             m_MasterLane = system.GetComponentLookup<MasterLane>(true);
             m_Owner = system.GetComponentLookup<Owner>(true);
+            m_Unspawned = system.GetComponentLookup<Unspawned>(true);
             m_EdgeData = system.GetComponentLookup<Edge>(true);
         }
 
@@ -178,6 +180,7 @@ namespace DriveTheCityII.CityBridge
             m_ConnectionLane.Update(m_System);
             m_MasterLane.Update(m_System);
             m_Owner.Update(m_System);
+            m_Unspawned.Update(m_System);
             m_EdgeData.Update(m_System);
 
             m_Height = m_Terrain.GetHeightData();
@@ -483,7 +486,9 @@ namespace DriveTheCityII.CityBridge
 
         private void AddMovingObstacle(Entity e, Vec2 center, float radius, List<Obstacle> results)
         {
-            if (!m_Seen.Add(e) || IgnoreEntities.Contains(e) || m_Deleted.HasComponent(e))
+            // Unspawned objects are not in the world for the player: vehicles stored in garages, cars waiting to spawn. A
+            // motorbike in a garage above a kerb stopped a bus at 12 m/s on a straight road (observed in game on 2026-10-20).
+            if (!m_Seen.Add(e) || IgnoreEntities.Contains(e) || m_Deleted.HasComponent(e) || m_Unspawned.HasComponent(e))
             {
                 return;
             }
@@ -544,7 +549,7 @@ namespace DriveTheCityII.CityBridge
 
         private void AddStaticObstacles(Entity e, List<Obstacle> results)
         {
-            if (IgnoreEntities.Contains(e) || m_Deleted.HasComponent(e))
+            if (IgnoreEntities.Contains(e) || m_Deleted.HasComponent(e) || m_Unspawned.HasComponent(e))
             {
                 return;
             }
