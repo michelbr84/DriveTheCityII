@@ -259,12 +259,31 @@ namespace DriveTheCityII.CityBridge
         /// avoids a standing queue when there is another way. Observed in game on 2026-10-19: a bus spent 20+ minutes in a
         /// queue held by one stopped car while a parallel street was free.
         /// </summary>
+        private static readonly Dictionary<Entity, (float at, float cost)> s_JamCache = new Dictionary<Entity, (float, float)>(4096);
+
         private static float JamSeconds(EntityManager em, LaneNode n)
         {
             if (n.TrafficLanes == null)
             {
                 return 0f;
             }
+            // Re-read each lane at most every 20 s, so the guidance does not flip between two ways as queues shuffle.
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            if (s_JamCache.TryGetValue(n.Lane, out (float at, float cost) c) && now - c.at < 20f)
+            {
+                return c.cost;
+            }
+            float cost = JamSecondsNow(em, n);
+            if (s_JamCache.Count > 50000)
+            {
+                s_JamCache.Clear();
+            }
+            s_JamCache[n.Lane] = (now, cost);
+            return cost;
+        }
+
+        private static float JamSecondsNow(EntityManager em, LaneNode n)
+        {
             int stopped = 0;
             foreach (Entity l in n.TrafficLanes)
             {

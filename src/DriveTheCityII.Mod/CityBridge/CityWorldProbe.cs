@@ -521,12 +521,15 @@ namespace DriveTheCityII.CityBridge
             float3 c = pos + math.mul(rot, MathUtils.Center(geo.m_Bounds));
             // Vehicle prefab bounds include the mirrors; contacts use the body width (see VehicleBodyWidthFactor).
             float bodyFactor = vehicle ? VehicleBodyWidthFactor : 1f;
+            // A vehicle without motion data is parked: solid like any static object, but never traffic to queue behind
+            // (a bus waited behind a car parked beside its lane, observed in game on 2026-10-19).
+            bool parked = vehicle && !m_Moving.HasComponent(e);
             results.Add(new Obstacle
             {
                 Footprint = new Obb2(new Vec2(c.x, c.z), new Vec2(fwd.x, fwd.z), math.max(0.2f, (geo.m_Bounds.max.x - geo.m_Bounds.min.x) * 0.5f * bodyFactor), math.max(0.2f, (geo.m_Bounds.max.z - geo.m_Bounds.min.z) * 0.5f)),
                 YMin = pos.y + geo.m_Bounds.min.y,
                 YMax = pos.y + math.max(geo.m_Bounds.max.y, 1f),
-                Kind = vehicle ? ObstacleKind.Vehicle : ObstacleKind.Creature,
+                Kind = parked ? ObstacleKind.StaticObject : vehicle ? ObstacleKind.Vehicle : ObstacleKind.Creature,
                 SourceId = e.Index | ((long)e.Version << 32),
                 Velocity = vel,
             });
