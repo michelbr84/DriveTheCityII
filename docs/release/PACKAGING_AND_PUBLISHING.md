@@ -51,7 +51,8 @@ its SHA-256 in the notes. Afterwards, download the asset again and compare its S
   stored in `ModId`; later builds use `NewVersion` with a new `ModVersion` and `ChangeLog`.
 - **Version 0.2.0, 2026-10-20:** `NewVersion` with the installed release package `0.2.0-2994688`; two attempts failed
   on the server side ("Game is not found", then an SSL connection error), the third identical attempt published it, and
-  the page showed "pending publication" while Paradox processed it ([RUN-0007](../quality/evidence/RUN-0007/REPORT.md) §4).
+  the page showed "pending publication" while Paradox processed it, then version 0.2.0 with the new description and
+  changelog (checked logged out, 2026-10-20) ([RUN-0007](../quality/evidence/RUN-0007/REPORT.md) §4).
 - Installing the subscribed copy in game is **Not run** yet (needs the owner's Paradox login in the game).
 
 ## 1. Purpose

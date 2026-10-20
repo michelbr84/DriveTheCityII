@@ -88,7 +88,7 @@ autopilot log reported "Impact 12.2 m/s with StaticObject … size=0.6x2.2". Aft
 | Career persistence campaign | **Passed 11/11** (`career-persist-20261020-141734.md`) |
 | Parked vehicle borrowed on the release build | **Passed**: a parked motorbike ridden 3.9 m/s and left; parked again by the game; `leakcheck` 0 |
 | GitHub release `v0.2.0` | **Passed**: API shows one asset with the same digest, `releases/latest` → `v0.2.0`; anonymous download identical to the package |
-| Paradox Mods `NewVersion` | Two failed attempts ("Game is not found", then an SSL connection error), the third identical attempt "New mod version published"; the page then said "pending publication" |
+| Paradox Mods `NewVersion` | Two failed attempts ("Game is not found", then an SSL connection error), the third identical attempt "New mod version published"; the page said "pending publication" for a while, then (checked logged out) mod version **0.2.0**, size 304.41 KB, the new description and the v0.2.0 changelog |
 
 ## 5. Limits of this run
 
