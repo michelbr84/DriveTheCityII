@@ -70,6 +70,8 @@ namespace DriveTheCityII.CityBridge
         private ComponentLookup<EdgeLane> m_EdgeLane;
         private ComponentLookup<ConnectionLane> m_ConnectionLane;
         private ComponentLookup<MasterLane> m_MasterLane;
+        private ComponentLookup<Owner> m_Owner;
+        private ComponentLookup<Edge> m_EdgeData;
 
         private TerrainHeightData m_Height;
         private WaterSurfaceData<SurfaceWater> m_WaterData;
@@ -125,6 +127,8 @@ namespace DriveTheCityII.CityBridge
             m_EdgeLane = system.GetComponentLookup<EdgeLane>(true);
             m_ConnectionLane = system.GetComponentLookup<ConnectionLane>(true);
             m_MasterLane = system.GetComponentLookup<MasterLane>(true);
+            m_Owner = system.GetComponentLookup<Owner>(true);
+            m_EdgeData = system.GetComponentLookup<Edge>(true);
         }
 
         public bool IsReady => m_Ready;
@@ -173,6 +177,8 @@ namespace DriveTheCityII.CityBridge
             m_EdgeLane.Update(m_System);
             m_ConnectionLane.Update(m_System);
             m_MasterLane.Update(m_System);
+            m_Owner.Update(m_System);
+            m_EdgeData.Update(m_System);
 
             m_Height = m_Terrain.GetHeightData();
             m_TerrainBounds = TerrainUtils.GetBounds(ref m_Height);
@@ -578,12 +584,14 @@ namespace DriveTheCityII.CityBridge
             {
                 // Poles and similar: the leg is the obstacle at walking height; the upper body is overhead.
                 float3 lc = tr.m_Position + math.mul(tr.m_Rotation, new float3(geo.m_LegOffset.x, 0f, geo.m_LegOffset.y));
+                float lhx = math.max(0.08f, geo.m_LegSize.x * 0.5f);
+                float lhz = math.max(0.08f, geo.m_LegSize.z * 0.5f);
                 results.Add(new Obstacle
                 {
-                    Footprint = new Obb2(new Vec2(lc.x, lc.z), new Vec2(fwd.x, fwd.z), math.max(0.08f, geo.m_LegSize.x * 0.5f), math.max(0.08f, geo.m_LegSize.z * 0.5f)),
+                    Footprint = new Obb2(new Vec2(lc.x, lc.z), new Vec2(fwd.x, fwd.z), lhx, lhz),
                     YMin = tr.m_Position.y,
                     YMax = tr.m_Position.y + geo.m_LegSize.y,
-                    Kind = ObstacleKind.StaticObject,
+                    Kind = IsSmallProp(e, math.max(lhx, lhz)) ? ObstacleKind.SmallProp : ObstacleKind.StaticObject,
                     SourceId = sid,
                 });
                 return;
@@ -602,14 +610,64 @@ namespace DriveTheCityII.CityBridge
                 hx = r;
                 hz = r;
             }
+            bool small = IsSmallProp(e, math.max(hx, hz));
             results.Add(new Obstacle
             {
                 Footprint = new Obb2(new Vec2(center.x, center.z), new Vec2(fwd.x, fwd.z), math.max(0.08f, hx), math.max(0.08f, hz)),
                 YMin = tr.m_Position.y + geo.m_Bounds.min.y,
                 YMax = tr.m_Position.y + geo.m_Bounds.max.y,
-                Kind = ObstacleKind.StaticObject,
+                Kind = small ? ObstacleKind.SmallProp : ObstacleKind.StaticObject,
                 SourceId = sid,
             });
+        }
+
+        /// <summary>
+        /// Largest half-extent (m) of a static object that counts as a small prop wherever it stands: poles, posts, signs,
+        /// hydrants, bins and bollards (ISSUE-040).
+        /// </summary>
+        public const float SmallPropMaxHalfExtent = 0.9f;
+
+        /// <summary>
+        /// Largest half-extent (m) of street furniture placed by a road or junction (lamps, signals, signs, stop benches)
+        /// that still counts as a small prop. A 0.6 x 2.2 m bench at a stop held a 12.7 m bus in a narrow junction
+        /// (observed in game on 2026-10-20). Objects placed by buildings (lot fences, garden furniture) never qualify.
+        /// </summary>
+        public const float RoadFurnitureMaxHalfExtent = 3f;
+
+        /// <summary>What placed a static object: "road" (an edge or junction), "building", "object", or "none".</summary>
+        public string OwnerKind(Entity e)
+        {
+            Entity cur = e;
+            for (int depth = 0; depth < 4 && m_Owner.TryGetComponent(cur, out Owner owner) && owner.m_Owner != Entity.Null; depth++)
+            {
+                cur = owner.m_Owner;
+                if (m_Building.HasComponent(cur))
+                {
+                    return "building";
+                }
+                if (m_EdgeData.HasComponent(cur) || m_Node.HasComponent(cur))
+                {
+                    return "road";
+                }
+            }
+            return cur == e ? "none" : "object";
+        }
+
+        /// <summary>
+        /// Small props are passed by long vehicles (ISSUE-040): anything this small, or road furniture up to
+        /// <see cref="RoadFurnitureMaxHalfExtent"/>. Vehicles in the static tree (parked cars) never are.
+        /// </summary>
+        private bool IsSmallProp(Entity e, float maxHalfExtent)
+        {
+            if (m_Vehicle.HasComponent(e))
+            {
+                return false;
+            }
+            if (maxHalfExtent <= SmallPropMaxHalfExtent)
+            {
+                return true;
+            }
+            return maxHalfExtent <= RoadFurnitureMaxHalfExtent && OwnerKind(e) == "road";
         }
 
         /// <summary>One box per non-decal building mesh taller than 0.6 m, in world space.</summary>
@@ -916,16 +974,19 @@ namespace DriveTheCityII.CityBridge
             return moving > 0;
         }
 
-        /// <summary>Counts cars carrying the mod's AI-exclusion signature (leak check after a reload).</summary>
+        /// <summary>
+        /// Counts cars that carry the mod's AI exclusion (a source-less TripSource, which the game never creates) without
+        /// being under the mod's control (no DtcActor): leak check after a hand-back or a reload (ISSUE-041).
+        /// </summary>
         public int CountForeignExcludedCars(EntityManager em)
         {
-            using (EntityQuery q = em.CreateEntityQuery(ComponentType.ReadOnly<TripSource>(), ComponentType.ReadOnly<Game.Vehicles.Car>()))
+            using (EntityQuery q = em.CreateEntityQuery(ComponentType.ReadOnly<TripSource>(), ComponentType.ReadOnly<Game.Vehicles.Car>(), ComponentType.Exclude<DtcActor>()))
             using (Unity.Collections.NativeArray<TripSource> arr = q.ToComponentDataArray<TripSource>(Unity.Collections.Allocator.Temp))
             {
                 int n = 0;
                 foreach (TripSource ts in arr)
                 {
-                    if (ts.m_Timer > 1000000)
+                    if (ts.m_Timer > 1000000 || ts.m_Source == Entity.Null)
                     {
                         n++;
                     }

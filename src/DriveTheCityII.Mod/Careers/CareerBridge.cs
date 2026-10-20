@@ -782,7 +782,7 @@ namespace DriveTheCityII.Careers
             float3 front = pos + fwd * (v.Spec.Length * 0.5f);
             float3 zoneFwd = new float3(math.sin(zoneYaw), 0f, math.cos(zoneYaw));
             float3 center = front + zoneFwd * (depth * 0.5f);
-            return p.IsBoxClear(center, zoneYaw, v.Spec.Width * 0.5f + 0.05f, depth * 0.5f, pos.y, v.Spec.Height);
+            return p.IsBoxClear(center, zoneYaw, v.Spec.Width * 0.5f + 0.05f, depth * 0.5f, pos.y, v.Spec.Height, v.Spec);
         }
 
         /// <summary>True when the vehicle's footprint moved by <paramref name="along"/> metres (and slightly turned) is clear.</summary>

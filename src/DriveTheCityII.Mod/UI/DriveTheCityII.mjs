@@ -2,7 +2,7 @@
  * Cities: Skylines II UI Module
  * Id: DriveTheCityII
  * Author: Drive the City II (private project)
- * Version: 0.1.0
+ * Version: 0.2.0
  * Dependencies:
  */
 // In-game HUD and panels for Drive the City II. All text arrives already localized (English / PT-BR) in the

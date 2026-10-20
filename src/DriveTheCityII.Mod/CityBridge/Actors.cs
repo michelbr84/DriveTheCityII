@@ -262,6 +262,18 @@ namespace DriveTheCityII.CityBridge
 
         protected override void OnUpdate()
         {
+            if (m_RepairPending)
+            {
+                m_RepairPending = false;
+                try
+                {
+                    ReleaseStrandedCars();
+                }
+                catch (Exception ex)
+                {
+                    DtcLog.Error("Releasing stranded cars failed", ex);
+                }
+            }
             int guard = 0;
             while (s_Ops.Count > 0 && guard++ < 64)
             {
@@ -278,18 +290,24 @@ namespace DriveTheCityII.CityBridge
         }
 
         private readonly List<Entity> m_HiddenForSave = new List<Entity>();
+        private readonly List<Entity> m_ReexcludeAfterSave = new List<Entity>();
+        private bool m_RepairPending;
 
         /// <summary>
         /// Runs in the Serialize phase before the game's SerializerSystem. Mod actors are tagged Temp, which the save
         /// query excludes, so no mod entity is ever written into a save. They are untagged again by
         /// <see cref="ActorPostSerializeSystem"/> inside the same save call, so they stay alive with all their
         /// references (deleting them here would bypass the game's reference cleanup; observed crash on 2026-10-19).
-        /// Borrowed native cars stay in the save as ordinary city traffic; only their AI-exclusion timer is shortened
-        /// for the saved copy, so a later load returns them to the AI.
+        /// Borrowed native cars stay in the save as ordinary city traffic, handed back for the saved copy: AI exclusion
+        /// removed, lane and path marked obsolete. A shorter exclusion timer is not enough: the game never releases a
+        /// vehicle whose TripSource has no source (VehicleSpawnSystem starts its groups after the null source), so a car
+        /// saved that way stood in the road for good after a load (ISSUE-041, observed 2026-10-20). The live car gets its
+        /// exclusion back in <see cref="RestoreAfterSave"/>, in the same save call, so the AI never sees it in between.
         /// </summary>
         public void PreSerialize(Colossal.Serialization.Entities.Context context)
         {
             m_HiddenForSave.Clear();
+            m_ReexcludeAfterSave.Clear();
             using (NativeArray<Entity> all = m_Actors.ToEntityArray(Allocator.Temp))
             {
                 foreach (Entity e in all)
@@ -297,7 +315,8 @@ namespace DriveTheCityII.CityBridge
                     DtcActor a = EntityManager.GetComponentData<DtcActor>(e);
                     if (a.Kind == ActorKind.BorrowedNativeVehicle)
                     {
-                        EntityManager.SetComponentData(e, new TripSource(Entity.Null) { m_Timer = 64 });
+                        ActorWriter.HandBackNative(EntityManager, e, 0f, keepTag: true);
+                        m_ReexcludeAfterSave.Add(e);
                         continue;
                     }
                     if (!EntityManager.HasComponent<Temp>(e))
@@ -326,9 +345,52 @@ namespace DriveTheCityII.CityBridge
                 }
             }
             m_HiddenForSave.Clear();
-            if (n > 0)
+            int b = 0;
+            foreach (Entity e in m_ReexcludeAfterSave)
             {
-                DtcLog.Info($"Save: {n} mod actor(s) restored after serialization");
+                if (EntityManager.Exists(e) && EntityManager.HasComponent<DtcActor>(e))
+                {
+                    ActorWriter.RefreshTripSource(EntityManager, e);
+                    b++;
+                }
+            }
+            m_ReexcludeAfterSave.Clear();
+            if (n > 0 || b > 0)
+            {
+                DtcLog.Info($"Save: {n} mod actor(s) restored after serialization; {b} borrowed car(s) saved as city traffic and taken back");
+            }
+        }
+
+        /// <summary>After a city loads, cars left excluded from the AI by an earlier save are released (ISSUE-041).</summary>
+        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGameLoadingComplete(purpose, mode);
+            m_RepairPending = mode == GameMode.Game;
+        }
+
+        /// <summary>
+        /// Repairs saves written before the ISSUE-041 fix: a car with a source-less TripSource and no mod tag is a borrowed car
+        /// saved while driven. The game never creates source-less trip sources and never releases them, so it would stand
+        /// there for good; it is handed back to the AI like a car the player left.
+        /// </summary>
+        private void ReleaseStrandedCars()
+        {
+            using (EntityQuery q = EntityManager.CreateEntityQuery(ComponentType.ReadOnly<TripSource>(), ComponentType.ReadOnly<Car>(), ComponentType.Exclude<DtcActor>(), ComponentType.Exclude<Deleted>()))
+            using (NativeArray<Entity> cars = q.ToEntityArray(Allocator.Temp))
+            {
+                int n = 0;
+                foreach (Entity e in cars)
+                {
+                    if (EntityManager.GetComponentData<TripSource>(e).m_Source == Entity.Null)
+                    {
+                        ActorWriter.HandBackNative(EntityManager, e, 0f);
+                        n++;
+                    }
+                }
+                if (n > 0)
+                {
+                    DtcLog.Info($"Load: {n} city car(s) left out of the traffic AI by an earlier save were handed back (ISSUE-041)");
+                }
             }
         }
 
@@ -468,6 +530,66 @@ namespace DriveTheCityII.CityBridge
             em.AddComponentData(car, new DtcActor { Kind = ActorKind.BorrowedNativeVehicle, RecordId = recordId });
         }
 
+        /// <summary>
+        /// Turns a parked native car into a moving one before it is borrowed (ISSUE-035), the way the game does when a
+        /// resident drives off (ResidentAISystem.ActivateParkedCar): ParkedCar and Stopped removed, the moving set added,
+        /// CarCurrentLane on the parking place (EndReached, ParkingSpace, FixedLane, plus Connection or Area for building
+        /// lots), and the parking lane's pathfinding refreshed. The car gets no target: when it is handed back, the game's
+        /// car AI finds none and parks it on a valid space (PersonalCarAISystem.ParkCar with FixParkingLocation).
+        /// Returns false (and changes nothing) when the car is no longer parked.
+        /// </summary>
+        public static bool UnparkNative(EntityManager em, Entity car)
+        {
+            if (!em.Exists(car) || !em.HasComponent<ParkedCar>(car) || em.HasComponent<Deleted>(car))
+            {
+                return false;
+            }
+            ParkedCar parked = em.GetComponentData<ParkedCar>(car);
+            Transform t = em.GetComponentData<Transform>(car);
+            Game.Vehicles.CarLaneFlags flags = Game.Vehicles.CarLaneFlags.EndReached | Game.Vehicles.CarLaneFlags.ParkingSpace | Game.Vehicles.CarLaneFlags.FixedLane;
+            if (parked.m_Lane != Entity.Null && em.HasComponent<Game.Net.ConnectionLane>(parked.m_Lane))
+            {
+                bool area = (em.GetComponentData<Game.Net.ConnectionLane>(parked.m_Lane).m_Flags & Game.Net.ConnectionLaneFlags.Area) != 0;
+                flags |= area ? Game.Vehicles.CarLaneFlags.Area : Game.Vehicles.CarLaneFlags.Connection;
+            }
+            em.RemoveComponent<ParkedCar>(car);
+            if (em.HasComponent<Stopped>(car))
+            {
+                em.RemoveComponent<Stopped>(car);
+            }
+            AddIfMissing<Moving>(em, car);
+            AddIfMissing<TransformFrame>(em, car);
+            AddIfMissing<Game.Rendering.InterpolatedTransform>(em, car);
+            AddIfMissing<CarNavigation>(em, car);
+            AddIfMissing<CarNavigationLane>(em, car);
+            AddIfMissing<CarCurrentLane>(em, car);
+            AddIfMissing<Game.Pathfind.PathOwner>(em, car);
+            AddIfMissing<Target>(em, car);
+            AddIfMissing<Blocker>(em, car);
+            AddIfMissing<Game.Pathfind.PathElement>(em, car);
+            AddIfMissing<Game.Rendering.Swaying>(em, car);
+            AddIfMissing<Updated>(em, car);
+            em.SetComponentData(car, new CarCurrentLane(parked, flags));
+            em.SetComponentData(car, new Game.Rendering.InterpolatedTransform(t));
+            em.SetComponentData(car, new CarNavigation { m_TargetPosition = t.m_Position, m_TargetRotation = t.m_Rotation, m_MaxSpeed = 0f });
+            if (parked.m_Lane != Entity.Null && em.Exists(parked.m_Lane) &&
+                (em.HasComponent<Game.Net.ParkingLane>(parked.m_Lane) || em.HasComponent<Game.Net.GarageLane>(parked.m_Lane)) &&
+                !em.HasComponent<PathfindUpdated>(parked.m_Lane))
+            {
+                em.AddComponent<PathfindUpdated>(parked.m_Lane);
+            }
+            return true;
+        }
+
+        private static void AddIfMissing<T>(EntityManager em, Entity e)
+        {
+            var type = ComponentType.ReadWrite<T>();
+            if (!em.HasComponent(e, type))
+            {
+                em.AddComponent(e, type);
+            }
+        }
+
         /// <summary>Removes a car's lane-object entries on its lane-change lane and blocked lanes (not its current lane).</summary>
         public static int ClearExtraLaneRegistrations(EntityManager em, Entity car)
         {
@@ -553,7 +675,7 @@ namespace DriveTheCityII.CityBridge
         /// Hand back a borrowed native car to the AI: lane marked obsolete so navigation re-finds a lane and re-paths,
         /// velocity and target set, TripSource and our tag removed (refcache note 04 §3c).
         /// </summary>
-        public static void HandBackNative(EntityManager em, Entity car, float speed)
+        public static void HandBackNative(EntityManager em, Entity car, float speed, bool keepTag = false)
         {
             if (!em.Exists(car))
             {
@@ -595,7 +717,7 @@ namespace DriveTheCityII.CityBridge
             {
                 em.RemoveComponent<TripSource>(car);
             }
-            if (em.HasComponent<DtcActor>(car))
+            if (!keepTag && em.HasComponent<DtcActor>(car))
             {
                 em.RemoveComponent<DtcActor>(car);
             }
@@ -688,11 +810,21 @@ namespace DriveTheCityII.CityBridge
         /// <summary>Removes the lane registration (call before deleting or handing back a car).</summary>
         public static void ClearLanePresence(EntityManager em, Entity car) => UpdateLanePresence(em, car, Entity.Null, 0f);
 
+        /// <summary>Keeps a mod-controlled car out of the traffic AI; adds the exclusion back if anything removed it.</summary>
         public static void RefreshTripSource(EntityManager em, Entity car)
         {
+            if (!em.Exists(car) || em.HasComponent<Deleted>(car))
+            {
+                return;
+            }
+            var excluded = new TripSource(Entity.Null) { m_Timer = int.MaxValue };
             if (em.HasComponent<TripSource>(car))
             {
-                em.SetComponentData(car, new TripSource(Entity.Null) { m_Timer = int.MaxValue });
+                em.SetComponentData(car, excluded);
+            }
+            else
+            {
+                em.AddComponentData(car, excluded);
             }
         }
     }

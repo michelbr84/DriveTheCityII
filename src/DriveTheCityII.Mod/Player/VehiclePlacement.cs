@@ -21,8 +21,11 @@ namespace DriveTheCityII.Player
         /// <summary>True when a vehicle footprint at a position and heading overlaps no building, static object or vehicle.</summary>
         public bool IsFootprintClear(VehicleSpec spec, float3 pos, float yaw) => IsFootprintClear(spec, pos, yaw, 0.15f, 0.3f);
 
-        /// <summary>True when a box (centre, heading, half sizes) between two heights overlaps no building, static object or vehicle.</summary>
-        public bool IsBoxClear(float3 center, float yaw, float halfWidth, float halfLength, float baseY, float height)
+        /// <summary>
+        /// True when a box (centre, heading, half sizes) between two heights overlaps no building, static object or vehicle.
+        /// With <paramref name="spec"/>, obstacles that do not block that vehicle (small props for long vehicles) are ignored.
+        /// </summary>
+        public bool IsBoxClear(float3 center, float yaw, float halfWidth, float halfLength, float baseY, float height, VehicleSpec spec = null)
         {
             var c = new Vec2(center.x, center.z);
             var box = new Obb2(c, Vec2.FromYaw(yaw), halfWidth, halfLength);
@@ -30,7 +33,7 @@ namespace DriveTheCityII.Player
             m_Probe.QueryObstacles(c, halfLength + halfWidth + 3f, m_PlaceScratch);
             foreach (Obstacle o in m_PlaceScratch)
             {
-                if (o.Kind == ObstacleKind.Creature || o.Kind == ObstacleKind.Proxy)
+                if (o.Kind == ObstacleKind.Creature || o.Kind == ObstacleKind.Proxy || !VehicleController.Blocks(o, spec))
                 {
                     continue;
                 }
@@ -59,7 +62,8 @@ namespace DriveTheCityII.Player
             m_Probe.QueryObstacles(c, spec.Length * 0.5f + 4f, m_PlaceScratch);
             foreach (Obstacle o in m_PlaceScratch)
             {
-                if (o.Kind == ObstacleKind.Creature || o.Kind == ObstacleKind.Proxy)
+                // A long vehicle placed over a lamppost can drive away (ISSUE-040), so small props do not block its spot.
+                if (o.Kind == ObstacleKind.Creature || o.Kind == ObstacleKind.Proxy || !VehicleController.Blocks(o, spec))
                 {
                     continue;
                 }

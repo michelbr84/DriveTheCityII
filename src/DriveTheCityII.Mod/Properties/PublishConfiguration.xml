@@ -11,7 +11,7 @@ Drive the City II lets you leave city building and live inside the city you buil
 
 ## What you can do
 * Walk and run on the sidewalks of your own city, with third- and first-person cameras.
-* Drive a rental, your own vehicles, or (sandbox mode) a city car stopped in traffic. City traffic, buildings and poles are solid, and traffic stops behind you.
+* Drive a rental, your own vehicles, or (sandbox mode) any parked city car or one stopped in traffic; the game parks it again when you get out. City traffic, buildings and poles are solid, and traffic stops behind you. Buses and trucks drive through small street props (poles, signs, posts) like the game's own buses and trucks.
 * Careers: taxi fares, urban deliveries, rigid-truck freight, and bus shifts on your city's own bus lines. Pay, XP, reputation and unlocks per career.
 * Garage: rent, buy and sell vehicles; fuel and wear; roadside help and towing at service points (parking facilities and depots).
 * A home and a garage, timed checkpoint and parking challenges, and a simulated transport company with drivers and contracts.
@@ -31,9 +31,8 @@ Load a city and press **F8** (or the "Drive the City" button, top left). Press *
 * Do not use it together with the Beta Test Driving Mod: Drive the City II detects it and stays inactive.
 
 ## Known issues
-* Parked city cars cannot be entered yet. Use the Garage to rent a car.
-* Long buses can clip corner props in narrow junctions.
 * An unfocused game window counts as paused, so character mode cannot start then.
+* Very tight turns (hairpins) are hard work for a 12.7 m bus; reverse to straighten up, or press Backspace.
 
 ## Source code and bug reports
 Open source under the MIT License: https://github.com/michelbr84/DriveTheCityII . Please report bugs as GitHub issues. Most of the code was written with AI coding agents (Claude Code) under the author's direction; every "tested" claim in the project points to a recorded test run.
@@ -53,9 +52,9 @@ Unofficial fan project, not affiliated with or endorsed by Paradox Interactive o
 	<Screenshot Value="Properties/Screenshots/07-bus-at-night.jpg" />
 	<Screenshot Value="Properties/Screenshots/08-jobs-panel-ptbr.jpg" />
 	<Tag Value="Code Mod" />
-	<ModVersion Value="0.1.0" />
+	<ModVersion Value="0.2.0" />
 	<GameVersion Value="1.6.*" />
-	<ChangeLog Value="First release (0.1.0): character mode, driving, taxi, delivery, freight and bus careers, garage, home, challenges, company; English and Portuguese." />
+	<ChangeLog Value="0.2.0: parked city cars can be borrowed in sandbox mode (the game parks them again afterwards); buses and trucks no longer stop on small street props in narrow junctions; a borrowed car saved while driven no longer stays frozen in the road after loading (older saves are repaired on load)." />
 	<ExternalLink Type="github" Url="https://github.com/michelbr84/DriveTheCityII" />
 	<!--Public | Private | Unlisted (case-sensitive). The first upload (2026-10-20) was Private, then switched to Public with Update.-->
 	<AccessLevel Value="Public" />

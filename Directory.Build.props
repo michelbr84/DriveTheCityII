@@ -15,7 +15,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Company>Drive the City II (private project)</Company>
     <Product>Drive the City II</Product>
-    <DtcVersion>0.1.0</DtcVersion>
+    <DtcVersion>0.2.0</DtcVersion>
     <Version>$(DtcVersion)</Version>
   </PropertyGroup>
 </Project>

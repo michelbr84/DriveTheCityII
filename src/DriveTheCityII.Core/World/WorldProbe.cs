@@ -42,6 +42,12 @@ namespace DriveTheCityII.Core.World
         Creature = 3,
         Proxy = 4,
         MapEdge = 5,
+
+        /// <summary>
+        /// Street furniture with a small footprint: poles, posts, signs, hydrants, bins. Solid for people and cars, but
+        /// passed by long vehicles (see <see cref="Motion.VehicleSpec.PassesSmallProps"/>; ISSUE-040).
+        /// </summary>
+        SmallProp = 6,
     }
 
     /// <summary>A solid volume: an oriented footprint and a vertical range.</summary>

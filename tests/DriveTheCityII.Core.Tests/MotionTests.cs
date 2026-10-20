@@ -290,6 +290,81 @@ namespace DriveTheCityII.Core.Tests
             Assert.True(s.Position.Z + c.Spec.Length / 2 <= 27.05f, $"car inside building: {s.Position}");
         }
 
+        private static Obstacle Pole(float x, float z, ObstacleKind kind = ObstacleKind.SmallProp) => new Obstacle
+        {
+            Footprint = Obb2.FromYaw(new Vec2(x, z), 0f, 0.12f, 0.12f),
+            YMin = 0f,
+            YMax = 6f,
+            Kind = kind,
+            SourceId = 77,
+        };
+
+        private static VehicleSpec Bus() => new VehicleSpec { Name = "bus", Length = 12.7f, Width = 2.55f, Height = 3.2f, WheelBase = 7.6f, PassesSmallProps = true };
+
+        [Fact]
+        public void BusDrivesThroughASmallPropWithoutImpact()
+        {
+            // ISSUE-040: a pole on the corner a 12.7 m bus sweeps over when it follows its lane.
+            var w = new FakeWorld();
+            w.Obstacles.Add(Pole(0.6f, 14f));
+            var c = new VehicleController(Bus());
+            var s = Spawn();
+            s.Speed = 6f;
+            var r = Drive(c, w, ref s, new VehicleInput { Throttle = 0.3f }, 4f);
+            Assert.Equal(0f, r.ImpactSpeed);
+            Assert.True(s.Position.Z > 20f, $"bus stopped at {s.Position}");
+        }
+
+        [Fact]
+        public void CarIsStillStoppedByTheSameSmallProp()
+        {
+            var w = new FakeWorld();
+            w.Obstacles.Add(Pole(0.3f, 10f));
+            var c = new VehicleController(new VehicleSpec());
+            var s = Spawn();
+            s.Speed = 8f;
+            var r = Drive(c, w, ref s, new VehicleInput { Throttle = 0.3f }, 3f);
+            Assert.True(r.ImpactSpeed > 3f, $"impact {r.ImpactSpeed}");
+            Assert.Equal(ObstacleKind.SmallProp, r.ImpactKind);
+            Assert.True(s.Position.Z < 10f, $"car passed the pole: {s.Position}");
+        }
+
+        [Fact]
+        public void BusIsStillStoppedByBuildingsAndLargerStaticObjects()
+        {
+            foreach (ObstacleKind kind in new[] { ObstacleKind.StaticObject, ObstacleKind.Building })
+            {
+                var w = new FakeWorld();
+                w.Obstacles.Add(new Obstacle { Footprint = Obb2.FromYaw(new Vec2(0f, 14f), 0f, 1.2f, 2.2f), YMin = 0f, YMax = 3f, Kind = kind, SourceId = 9 });
+                var c = new VehicleController(Bus());
+                var s = Spawn();
+                s.Speed = 6f;
+                var r = Drive(c, w, ref s, new VehicleInput { Throttle = 0.3f }, 4f);
+                Assert.True(r.ImpactSpeed > 2f, $"{kind}: impact {r.ImpactSpeed}");
+                Assert.True(s.Position.Z + c.Spec.Length * 0.5f < 12.05f, $"{kind}: bus inside the obstacle at {s.Position}");
+            }
+        }
+
+        [Fact]
+        public void SoftSmallPropsSwitchOffMakesPropsSolidForBusesAgain()
+        {
+            bool before = VehicleController.SoftSmallProps;
+            try
+            {
+                VehicleController.SoftSmallProps = false;
+                Assert.True(VehicleController.Blocks(Pole(0f, 0f), Bus()));
+                VehicleController.SoftSmallProps = true;
+                Assert.False(VehicleController.Blocks(Pole(0f, 0f), Bus()));
+                Assert.True(VehicleController.Blocks(Pole(0f, 0f), new VehicleSpec()));
+                Assert.True(VehicleController.Blocks(Pole(0f, 0f, ObstacleKind.StaticObject), Bus()));
+                Assert.True(VehicleController.Blocks(Pole(0f, 0f), null));
+            }
+            finally
+            {
+                VehicleController.SoftSmallProps = before;
+            }
+        }
+
         private static Obstacle MovingCar(float z, float speedZ) => new Obstacle
         {
             Footprint = Obb2.FromYaw(new Vec2(0f, z), 0f, 0.9f, 2.2f),

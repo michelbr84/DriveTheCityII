@@ -41,6 +41,16 @@ namespace DriveTheCityII.Core.Motion
         /// <summary>Seconds the brake must be held at a standstill before reverse engages.</summary>
         public float ReverseEngageDelay = 0.35f;
 
+        /// <summary>
+        /// Long vehicles (trucks and buses) drive through small street props instead of being stopped by them (ISSUE-040).
+        /// The game's own buses and trucks follow lane curves that sweep over corner poles and signs in narrow junctions,
+        /// so a 12.7 m bus driven well along its lane still met them. Buildings, vehicles and people stay solid.
+        /// </summary>
+        public bool PassesSmallProps;
+
+        /// <summary>Length from which a vehicle counts as long (trucks and buses; the same limit as the route penalties).</summary>
+        public const float LongVehicleLength = 7f;
+
         public VehicleSpec Clone() => (VehicleSpec)MemberwiseClone();
     }
 
@@ -137,6 +147,18 @@ namespace DriveTheCityII.Core.Motion
         }
 
         public static bool IsStationary(in VehicleState s, VehicleSpec spec) => Math.Abs(s.Speed) < spec.StationaryThreshold;
+
+        /// <summary>Test switch for the ISSUE-040 rule (on by default). Off: small props block every vehicle again.</summary>
+        public static bool SoftSmallProps = true;
+
+        /// <summary>
+        /// The one rule for whether an obstacle blocks a vehicle with this spec: everything does, except small props for
+        /// long vehicles. Collision response, placement checks and the test autopilot all use it, so they agree.
+        /// </summary>
+        public static bool Blocks(in Obstacle o, VehicleSpec spec)
+        {
+            return !(SoftSmallProps && o.Kind == ObstacleKind.SmallProp && spec != null && spec.PassesSmallProps);
+        }
 
         public VehicleStepReport Step(IWorldProbe probe, ref VehicleState s, VehicleInput input, float dt)
         {
@@ -330,6 +352,10 @@ namespace DriveTheCityII.Core.Motion
                 {
                     Obstacle o = m_Obstacles[i];
                     if (IgnoreSourceId != 0 && o.SourceId == IgnoreSourceId)
+                    {
+                        continue;
+                    }
+                    if (!Blocks(o, spec))
                     {
                         continue;
                     }

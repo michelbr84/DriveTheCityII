@@ -53,6 +53,9 @@ namespace DriveTheCityII.Player
 
         /// <summary>A change of the vehicle's motion data (parked or driven) is queued for the actor-ops system.</summary>
         public bool MovingChangePending;
+
+        /// <summary>A borrowed native car that was parked (ISSUE-035): it is unparked on entry; the game re-parks it after.</summary>
+        public bool FromParked;
     }
 
     /// <summary>
@@ -857,9 +860,11 @@ namespace DriveTheCityII.Player
             m_Probe.QueryObstacles(new Vec2(me.x, me.z), 8f, obstacles);
             m_Probe.IncludeCreatures = prev;
             Entity bestE = Entity.Null;
+            bool bestParked = false;
             foreach (Obstacle o in obstacles)
             {
-                if (o.Kind != ObstacleKind.Vehicle)
+                // Traffic is Vehicle; parked cars come as StaticObject (no motion data), see CityWorldProbe.
+                if (o.Kind != ObstacleKind.Vehicle && o.Kind != ObstacleKind.StaticObject)
                 {
                     continue;
                 }
@@ -869,12 +874,13 @@ namespace DriveTheCityII.Player
                     continue;
                 }
                 var e = new Entity { Index = (int)(o.SourceId & 0xffffffff), Version = (int)(o.SourceId >> 32) };
-                if (!IsBorrowable(e))
+                if (!IsBorrowable(e, out bool parked))
                 {
                     continue;
                 }
                 bestD = d;
                 bestE = e;
+                bestParked = parked;
             }
             if (bestE == Entity.Null)
             {
@@ -895,18 +901,32 @@ namespace DriveTheCityII.Player
                 Prefab = info,
                 Spec = VehicleSpecs.FromPrefab(info),
                 State = new VehicleState { Position = new Vec3(t.m_Position.x, t.m_Position.y, t.m_Position.z), Yaw = math.atan2(fwd.x, fwd.z), Grounded = true },
+                FromParked = bestParked,
             };
         }
 
-        /// <summary>Sandbox borrowable classes: private cars and light delivery vehicles only (SPEC-CONTROL §11).</summary>
-        private bool IsBorrowable(Entity e)
+        /// <summary>Diagnostics (test bridge): whether sandbox mode could borrow this native car, and whether it is parked.</summary>
+        public bool CanBorrow(Entity e, out bool parked) => IsBorrowable(e, out parked);
+
+        /// <summary>
+        /// Sandbox borrowable classes: private cars and light delivery vehicles stopped in traffic, and parked private cars
+        /// (ISSUE-035; SPEC-CONTROL §11). <paramref name="parked"/> tells which.
+        /// </summary>
+        private bool IsBorrowable(Entity e, out bool parked)
         {
+            parked = false;
             EntityManager em = EntityManager;
-            if (!em.Exists(e) || em.HasComponent<DtcActor>(e) || em.HasComponent<Game.Objects.Unspawned>(e))
+            if (!em.Exists(e) || em.HasComponent<DtcActor>(e) || em.HasComponent<Game.Objects.Unspawned>(e) || em.HasComponent<Deleted>(e))
             {
                 return false;
             }
-            if (!em.HasComponent<Game.Vehicles.Car>(e) || !em.HasComponent<Moving>(e) || !em.HasBuffer<TransformFrame>(e))
+            if (!em.HasComponent<Game.Vehicles.Car>(e))
+            {
+                return false;
+            }
+            bool moving = em.HasComponent<Moving>(e) && em.HasBuffer<TransformFrame>(e);
+            parked = !moving && em.HasComponent<Game.Vehicles.ParkedCar>(e);
+            if (!moving && !parked)
             {
                 return false;
             }
@@ -921,6 +941,13 @@ namespace DriveTheCityII.Player
             if (em.HasBuffer<Game.Vehicles.LayoutElement>(e) && em.GetBuffer<Game.Vehicles.LayoutElement>(e).Length > 1)
             {
                 return false;
+            }
+            if (parked)
+            {
+                // Parked: household cars only (the game's car AI re-parks them when handed back); dummy traffic is deleted
+                // by that AI instead, so it is left alone.
+                return em.HasComponent<Game.Vehicles.PersonalCar>(e) &&
+                    (em.GetComponentData<Game.Vehicles.PersonalCar>(e).m_State & Game.Vehicles.PersonalCarFlags.DummyTraffic) == 0;
             }
             return em.HasComponent<Game.Vehicles.PersonalCar>(e) || em.HasComponent<Game.Vehicles.DeliveryTruck>(e);
         }
@@ -941,8 +968,18 @@ namespace DriveTheCityII.Player
             {
                 Entity e = v.Entity;
                 int rid = v.RecordId;
-                ActorOpsSystem.Enqueue(em => ActorWriter.BorrowNative(em, e, rid));
-                DtcLog.Info($"Sandbox: borrowing native vehicle {e}");
+                bool fromParked = v.FromParked;
+                ActorOpsSystem.Enqueue(em =>
+                {
+                    // One operation: a parked car is unparked and excluded from the AI in the same step, so no game system
+                    // sees it moving without the exclusion.
+                    if (fromParked && !ActorWriter.UnparkNative(em, e))
+                    {
+                        DtcLog.Warn($"Sandbox: parked car {e} was no longer parked when borrowed");
+                    }
+                    ActorWriter.BorrowNative(em, e, rid);
+                });
+                DtcLog.Info($"Sandbox: borrowing native vehicle {e}{(fromParked ? " (parked)" : string.Empty)}");
             }
             else
             {
@@ -1767,6 +1804,7 @@ namespace DriveTheCityII.Player
                 Length = math.clamp(info.Size.z, 3f, 18f),
             };
             s.WheelBase = s.Length * 0.6f;
+            s.PassesSmallProps = s.Length >= VehicleSpec.LongVehicleLength;
             switch (info.Category)
             {
                 case "bus":

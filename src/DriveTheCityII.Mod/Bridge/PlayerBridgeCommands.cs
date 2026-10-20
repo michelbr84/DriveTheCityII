@@ -469,6 +469,49 @@ namespace DriveTheCityII.Bridge
             {
                 return new InstantOp(true, "view " + P.ActiveView);
             };
+            TestBridge.Handlers["softprops"] = a =>
+            {
+                // softprops on|off: test switch for the ISSUE-040 rule (long vehicles pass small props).
+                if (a.Length > 1)
+                {
+                    Core.Motion.VehicleController.SoftSmallProps = a[1] == "on";
+                }
+                ControlledVehicle v = P.Vehicle;
+                string veh = v == null ? "no vehicle" : string.Format(CultureInfo.InvariantCulture, "{0} {1:0.0} m passesSmallProps={2}", v.Prefab?.Category, v.Spec.Length, v.Spec.PassesSmallProps);
+                return new InstantOp(true, $"softSmallProps={Core.Motion.VehicleController.SoftSmallProps} {veh}");
+            };
+            TestBridge.Handlers["props"] = a =>
+            {
+                // props [radius]: small props and other static obstacles near the vehicle or avatar, nearest first.
+                float radius = a.Length > 1 ? F(a[1]) : 25f;
+                Vec2 c = P.Vehicle != null ? P.Vehicle.State.Position.XZ : new Vec2(P.Avatar.Position.X, P.Avatar.Position.Z);
+                var list = new List<Obstacle>();
+                P.Probe.QueryObstacles(c, radius, list);
+                Unity.Entities.World world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
+                Unity.Entities.EntityManager em = world.EntityManager;
+                var prefabs = world.GetExistingSystemManaged<Game.Prefabs.PrefabSystem>();
+                string Name(long sid)
+                {
+                    var e = new Unity.Entities.Entity { Index = (int)(sid & 0xffffffff), Version = (int)(sid >> 32) };
+                    if (!em.Exists(e) || !em.HasComponent<Game.Prefabs.PrefabRef>(e))
+                    {
+                        return "?";
+                    }
+                    Unity.Entities.Entity prefab = em.GetComponentData<Game.Prefabs.PrefabRef>(e).m_Prefab;
+                    string n = prefabs != null && em.HasComponent<Game.Prefabs.PrefabData>(prefab) &&
+                        prefabs.TryGetPrefab(em.GetComponentData<Game.Prefabs.PrefabData>(prefab), out Game.Prefabs.PrefabBase pb) ? pb.name : "p" + prefab.Index;
+                    return n + "/" + P.Probe.OwnerKind(e);
+                }
+                var rows = list.Where(o => o.Kind == ObstacleKind.SmallProp || o.Kind == ObstacleKind.StaticObject)
+                    .OrderBy(o => Vec2.Distance(o.Footprint.Center, c)).Take(12)
+                    .Select(o => string.Format(CultureInfo.InvariantCulture, "{0} #{1} {9} at ({2:0.0},{3:0.0}) y={4:0.0}..{5:0.0} size={6:0.00}x{7:0.00} d={8:0.0}",
+                        o.Kind, o.SourceId & 0xffffffff, o.Footprint.Center.X, o.Footprint.Center.Z, o.YMin, o.YMax, o.Footprint.HalfWidth * 2f, o.Footprint.HalfLength * 2f, Vec2.Distance(o.Footprint.Center, c), Name(o.SourceId)));
+                return new InstantOp(true, $"smallProps={list.Count(o => o.Kind == ObstacleKind.SmallProp)} staticObjects={list.Count(o => o.Kind == ObstacleKind.StaticObject)} :: " + string.Join(" | ", rows));
+            };
+            TestBridge.Handlers["parked"] = a => ParkedCars(a, teleport: false);
+            TestBridge.Handlers["gotoparked"] = a => ParkedCars(a, teleport: true);
+            TestBridge.Handlers["carinfo"] = CarInfo;
+            TestBridge.Handlers["cars"] = Cars;
             TestStatus.Register();
         }
 
@@ -606,6 +649,214 @@ namespace DriveTheCityII.Bridge
             Vec2 side = v.State.Position.XZ - fwd.RightPerp * (v.Spec.Width * 0.5f + 0.9f);
             P.TeleportAvatar(new float3(side.X, v.State.Position.Y, side.Z));
             return new InstantOp(true, "avatar at " + P.Avatar.Position);
+        }
+
+        /// <summary>
+        /// parked [radius] / gotoparked [radius]: native parked cars near the avatar (entity, distance, whether sandbox can
+        /// borrow it, parking lane). gotoparked also puts the avatar on the sidewalk beside the nearest borrowable one
+        /// (test setup only; ISSUE-035).
+        /// </summary>
+        private static IBridgeOp ParkedCars(string[] a, bool teleport)
+        {
+            Unity.Entities.EntityManager em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+            float radius = a.Length > 1 ? F(a[1]) : (teleport ? 150f : 60f);
+            float3 me = P.Avatar.Position.ToF3();
+            var found = new List<(Unity.Entities.Entity e, float d, bool ok, Game.Vehicles.ParkedCar pc, float3 pos)>();
+            Unity.Entities.EntityQuery q = em.CreateEntityQuery(
+                Unity.Entities.ComponentType.ReadOnly<Game.Vehicles.ParkedCar>(),
+                Unity.Entities.ComponentType.ReadOnly<Game.Vehicles.Car>(),
+                Unity.Entities.ComponentType.ReadOnly<Game.Objects.Transform>());
+            try
+            {
+                using (Unity.Collections.NativeArray<Unity.Entities.Entity> all = q.ToEntityArray(Unity.Collections.Allocator.Temp))
+                {
+                    foreach (Unity.Entities.Entity e in all)
+                    {
+                        float3 pos = em.GetComponentData<Game.Objects.Transform>(e).m_Position;
+                        float d = math.distance(pos.xz, me.xz);
+                        if (d > radius)
+                        {
+                            continue;
+                        }
+                        bool ok = P.CanBorrow(e, out bool parked) && parked;
+                        found.Add((e, d, ok, em.GetComponentData<Game.Vehicles.ParkedCar>(e), pos));
+                    }
+                }
+            }
+            finally
+            {
+                q.Dispose();
+            }
+            found.Sort((x, y) => x.d.CompareTo(y.d));
+            string Describe((Unity.Entities.Entity e, float d, bool ok, Game.Vehicles.ParkedCar pc, float3 pos) c)
+            {
+                string lane = c.pc.m_Lane == Unity.Entities.Entity.Null ? "none"
+                    : em.HasComponent<Game.Net.ParkingLane>(c.pc.m_Lane) ? "parking"
+                    : em.HasComponent<Game.Net.GarageLane>(c.pc.m_Lane) ? "garage"
+                    : em.HasComponent<Game.Net.ConnectionLane>(c.pc.m_Lane) ? "connection" : "other";
+                return string.Format(CultureInfo.InvariantCulture, "{0}:{1} d={2:0.0} borrowable={3} lane={4}", c.e.Index, c.e.Version, c.d, c.ok, lane);
+            }
+            int borrowable = found.Count(c => c.ok);
+            if (!teleport)
+            {
+                return new InstantOp(true, $"{found.Count} parked cars within {radius:0} m, {borrowable} borrowable :: " + string.Join(" | ", found.Take(10).Select(Describe)));
+            }
+            if (P.State != PlayerState.OnFoot)
+            {
+                return new InstantOp(false, "not on foot");
+            }
+            foreach (var c in found.Where(c => c.ok))
+            {
+                Game.Prefabs.PrefabRef pr = em.GetComponentData<Game.Prefabs.PrefabRef>(c.e);
+                if (!em.HasComponent<Game.Prefabs.ObjectGeometryData>(pr.m_Prefab))
+                {
+                    continue;
+                }
+                float3 size = em.GetComponentData<Game.Prefabs.ObjectGeometryData>(pr.m_Prefab).m_Size;
+                quaternion rot = em.GetComponentData<Game.Objects.Transform>(c.e).m_Rotation;
+                float3 fwd = math.mul(rot, new float3(0f, 0f, 1f));
+                var box = new Obb2(new Vec2(c.pos.x, c.pos.z), new Vec2(fwd.x, fwd.z), size.x * 0.5f, size.z * 0.5f);
+                // Candidate spots: the nearest sidewalk point, then both sides of the car at the doors, front and back.
+                // The avatar placement refuses a spot inside an obstacle (a post on the sidewalk), so each one is checked.
+                var spots = new List<float3>();
+                if (P.Probe.FindNearestLanePoint(c.pos, 8f, CityWorldProbe.LaneKind.Sidewalk, out float3 walk, out _, out _) &&
+                    Vec2.Distance(box.ClosestPoint(new Vec2(walk.x, walk.z)), new Vec2(walk.x, walk.z)) < 3.2f)
+                {
+                    spots.Add(walk);
+                }
+                Vec2 f2 = new Vec2(fwd.x, fwd.z);
+                Vec2 center2 = new Vec2(c.pos.x, c.pos.z);
+                foreach (float sideSign in new[] { -1f, 1f })
+                {
+                    foreach (float along in new[] { 0f, size.z * 0.3f, -size.z * 0.3f })
+                    {
+                        Vec2 s2 = center2 + f2 * along + f2.RightPerp * (sideSign * (size.x * 0.5f + 0.9f));
+                        spots.Add(new float3(s2.X, c.pos.y, s2.Z));
+                    }
+                }
+                foreach (float3 spot in spots)
+                {
+                    P.TeleportAvatar(spot + new float3(0f, 0.5f, 0f));
+                    float3 now = P.Avatar.Position.ToF3();
+                    if (math.distance(now.xz, spot.xz) < 1.5f)
+                    {
+                        return new InstantOp(true, $"avatar beside parked car {Describe(c)} at {now} [test setup]");
+                    }
+                }
+            }
+            return new InstantOp(false, $"no borrowable parked car within {radius:0} m where the avatar could stand ({found.Count} parked)");
+        }
+
+        /// <summary>
+        /// cars [radius] [x z]: every car (moving or parked, visible or not) near a point, nearest first, with its model and
+        /// state. Entity numbers change when a save is loaded, so a car is found again by model and place (ISSUE-035).
+        /// </summary>
+        private static IBridgeOp Cars(string[] a)
+        {
+            Unity.Entities.World world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
+            Unity.Entities.EntityManager em = world.EntityManager;
+            var prefabs = world.GetExistingSystemManaged<Game.Prefabs.PrefabSystem>();
+            float radius = a.Length > 1 ? F(a[1]) : 40f;
+            float2 c = a.Length > 3 ? new float2(F(a[2]), F(a[3]))
+                : P.Vehicle != null ? new float2(P.Vehicle.State.Position.X, P.Vehicle.State.Position.Z)
+                : new float2(P.Avatar.Position.X, P.Avatar.Position.Z);
+            var rows = new List<(float d, string text)>();
+            Unity.Entities.EntityQuery q = em.CreateEntityQuery(
+                Unity.Entities.ComponentType.ReadOnly<Game.Vehicles.Car>(),
+                Unity.Entities.ComponentType.ReadOnly<Game.Objects.Transform>(),
+                Unity.Entities.ComponentType.ReadOnly<Game.Prefabs.PrefabRef>());
+            try
+            {
+                using (Unity.Collections.NativeArray<Unity.Entities.Entity> all = q.ToEntityArray(Unity.Collections.Allocator.Temp))
+                {
+                    foreach (Unity.Entities.Entity e in all)
+                    {
+                        float3 pos = em.GetComponentData<Game.Objects.Transform>(e).m_Position;
+                        float d = math.distance(pos.xz, c);
+                        if (d > radius)
+                        {
+                            continue;
+                        }
+                        Unity.Entities.Entity prefab = em.GetComponentData<Game.Prefabs.PrefabRef>(e).m_Prefab;
+                        string name = prefabs != null && em.HasComponent<Game.Prefabs.PrefabData>(prefab) &&
+                            prefabs.TryGetPrefab(em.GetComponentData<Game.Prefabs.PrefabData>(prefab), out Game.Prefabs.PrefabBase pb) ? pb.name : "p" + prefab.Index;
+                        string state;
+                        if (em.HasComponent<Game.Vehicles.ParkedCar>(e))
+                        {
+                            Unity.Entities.Entity lane = em.GetComponentData<Game.Vehicles.ParkedCar>(e).m_Lane;
+                            state = "parked:" + (lane == Unity.Entities.Entity.Null ? "noLane"
+                                : em.HasComponent<Game.Net.ParkingLane>(lane) ? "parking"
+                                : em.HasComponent<Game.Net.GarageLane>(lane) ? "garage"
+                                : em.HasComponent<Game.Net.ConnectionLane>(lane) ? "connection" : "otherLane");
+                        }
+                        else
+                        {
+                            state = em.HasComponent<Game.Objects.Moving>(e) ? "moving" : "stopped";
+                        }
+                        if (em.HasComponent<Game.Objects.Unspawned>(e)) state += "+unspawned";
+                        if (em.HasComponent<Game.Objects.TripSource>(e)) state += "+tripSource";
+                        if (em.HasComponent<DtcActor>(e)) state += "+dtcActor";
+                        if (em.HasComponent<Game.Vehicles.FixParkingLocation>(e)) state += "+fixParking";
+                        if (em.HasComponent<Game.Vehicles.PersonalCar>(e)) state += "+personal";
+                        rows.Add((d, string.Format(CultureInfo.InvariantCulture, "{0}:{1} {2} {3} at ({4:0.0},{5:0.0}) d={6:0.0}", e.Index, e.Version, name, state, pos.x, pos.z, d)));
+                    }
+                }
+            }
+            finally
+            {
+                q.Dispose();
+            }
+            rows.Sort((x, y) => x.d.CompareTo(y.d));
+            return new InstantOp(true, string.Format(CultureInfo.InvariantCulture, "{0} cars within {1:0} m of ({2:0.0},{3:0.0}) :: {4}", rows.Count, radius, c.x, c.y, string.Join(" | ", rows.Take(15).Select(r => r.text))));
+        }
+
+        /// <summary>carinfo index:version: a car's state (parked or moving, AI exclusion, mod tag, lane, re-parking).</summary>
+        private static IBridgeOp CarInfo(string[] a)
+        {
+            Unity.Entities.EntityManager em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+            string[] parts = (a.Length > 1 ? a[1] : string.Empty).Split(':');
+            if (parts.Length != 2 || !int.TryParse(parts[0], out int index) || !int.TryParse(parts[1], out int version))
+            {
+                return new InstantOp(false, "usage: carinfo index:version");
+            }
+            var e = new Unity.Entities.Entity { Index = index, Version = version };
+            if (!em.Exists(e))
+            {
+                return new InstantOp(true, $"{index}:{version} does not exist");
+            }
+            var sb = new System.Text.StringBuilder();
+            sb.Append(index).Append(':').Append(version);
+            float3 pos = em.HasComponent<Game.Objects.Transform>(e) ? em.GetComponentData<Game.Objects.Transform>(e).m_Position : float3.zero;
+            sb.AppendFormat(CultureInfo.InvariantCulture, " at ({0:0.0},{1:0.0},{2:0.0})", pos.x, pos.y, pos.z);
+            if (em.HasComponent<Game.Vehicles.ParkedCar>(e))
+            {
+                Game.Vehicles.ParkedCar pc = em.GetComponentData<Game.Vehicles.ParkedCar>(e);
+                sb.Append(" parked(lane=").Append(pc.m_Lane.Index).Append(')');
+            }
+            void Flag<T>(string name)
+            {
+                if (em.HasComponent(e, Unity.Entities.ComponentType.ReadOnly<T>()))
+                {
+                    sb.Append(' ').Append(name);
+                }
+            }
+            Flag<Game.Objects.Moving>("moving");
+            Flag<Game.Objects.Stopped>("stopped");
+            Flag<Game.Objects.TripSource>("tripSource");
+            Flag<DtcActor>("dtcActor");
+            Flag<Game.Objects.Unspawned>("unspawned");
+            Flag<Game.Common.Deleted>("deleted");
+            Flag<Game.Vehicles.FixParkingLocation>("fixParking");
+            if (em.HasComponent<Game.Vehicles.CarCurrentLane>(e))
+            {
+                Game.Vehicles.CarCurrentLane cl = em.GetComponentData<Game.Vehicles.CarCurrentLane>(e);
+                sb.Append(" currentLane=").Append(cl.m_Lane.Index).Append(" flags=").Append(cl.m_LaneFlags);
+            }
+            if (em.HasComponent<Game.Vehicles.PersonalCar>(e))
+            {
+                sb.Append(" personalCar=").Append(em.GetComponentData<Game.Vehicles.PersonalCar>(e).m_State);
+            }
+            return new InstantOp(true, sb.ToString());
         }
 
         /// <summary>gotowalk x z: places the avatar on the ground at x,z (test setup only).</summary>
