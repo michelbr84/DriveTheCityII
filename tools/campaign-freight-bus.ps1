@@ -6,7 +6,7 @@
   Requires the mod installed. Starts its own test session, loads -City, and stops the session at the end.
   Results: %LOCALAPPDATA%\DriveTheCityII\test\campaigns\freight-bus-<stamp>.md
 #>
-param([string]$City = 'DTC2-LAB-CAREERS-H', [int]$FreightAttempts = 4, [int]$BusAttempts = 3, [switch]$SkipFreight, [switch]$SkipBus, [switch]$NoDrive, [string]$BusStartNear = '')
+param([string]$City = 'DTC2-LAB-CAREERS-H', [int]$FreightAttempts = 4, [int]$BusAttempts = 3, [switch]$SkipFreight, [switch]$SkipBus, [switch]$NoDrive, [string]$BusStartNear = '', [int]$WarpMinutes = 0)
 
 . (Join-Path $PSScriptRoot 'env.ps1')
 $stamp = Get-Date -Format yyyyMMdd-HHmmss
@@ -81,6 +81,12 @@ try {
     $o = Bridge "waitmenu 300;load $City;waitcity 900;wait 4" 1200
     if ($o -notmatch "load $City -> True") { throw "could not load $City" }
     Note "loaded $City :: $(((Status) -split ' :: ')[-1])"
+    if ($WarpMinutes -gt 0) {
+        # TEST SETUP: run the city at 3x for a while first (the lab city's downtown is jammed in the evening rush hour;
+        # the night is quieter). Career time follows the game clock as for any player waiting.
+        $w = Bridge "speed 3;wait $($WarpMinutes * 60);speed 1" ($WarpMinutes * 60 + 120)
+        Note "warped $WarpMinutes min at 3x :: $(((Status) -split ' :: ')[-1])"
+    }
     $freightOk = $false; $busOk = $false
     if (-not $SkipFreight) {
         for ($i = 1; $i -le $FreightAttempts -and -not $freightOk; $i++) { Note "freight attempt $i"; $freightOk = Attempt 'Freight' 3000 }

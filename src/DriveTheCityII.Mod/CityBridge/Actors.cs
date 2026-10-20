@@ -128,7 +128,10 @@ namespace DriveTheCityII.CityBridge
                     else if (em.HasComponent<PublicTransportVehicleData>(c))
                     {
                         PublicTransportVehicleData pt = em.GetComponentData<PublicTransportVehicleData>(c);
-                        if (pt.m_TransportType == TransportType.Bus)
+                        // Line buses only: prison vans and evacuation buses are "bus" transport too (a prison van was handed
+                        // out as the operator's bus, observed in game on 2026-10-19).
+                        if (pt.m_TransportType == TransportType.Bus && (pt.m_PurposeMask & PublicTransportPurpose.TransportLine) != 0
+                            && (pt.m_PurposeMask & PublicTransportPurpose.PrisonerTransport) == 0)
                         {
                             category = "bus";
                             capacity = pt.m_PassengerCapacity;
