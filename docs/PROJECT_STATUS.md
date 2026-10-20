@@ -17,7 +17,8 @@
 > - All four careers, garage, progression, home, company, and challenges are implemented and unit-tested (172
 >   tests). In-game coverage per feature is in section 0 and in [MORNING_REPORT](../MORNING_REPORT.md).
 > - The source is hosted at <https://github.com/michelbr84/DriveTheCityII> under the MIT License (owner decisions,
->   2026-10-20). No mod package is published on any platform; the deliverable is a local package built from source.
+>   2026-10-20). **Version 0.1.0 is released** (2026-10-20): GitHub release `v0.1.0` and Paradox Mods id 164157
+>   ([RUN-0006](quality/evidence/RUN-0006/REPORT.md)).
 
 ## 0. Current execution state (keep this section current)
 
@@ -139,3 +140,4 @@ the sense that its first two work packages have been executed.
 | 2026-10-18 | TASK-0001 (Windows environment discovery) and TASK-0002 (base-mod source audit at the pinned commit) executed read-only and moved to In review. Melty inspected read-only through its connection. ADR-0005 proposed. M1 refined. TASK-0004 planned. | [TASK-0001](planning/tasks/TASK-0001-windows-environment-audit.md), [TASK-0002](planning/tasks/TASK-0002-base-mod-source-audit.md), [MELTY_EVALUATION](research/MELTY_EVALUATION.md) §9 |
 | 2026-10-20 | First human session (the owner, own city) read from the mod log: no errors; ISSUE-035 to ISSUE-039 recorded. ISSUE-033 (standing queues: parked player vehicle; deadlocks through the driven vehicle) and ISSUE-034 (bus junction U-turns) fixed and verified with the fixes switched off and on in game; final package `0.1.0-36ec810`. | [RUN-0005](quality/evidence/RUN-0005/REPORT.md), [WORKLOG](quality/evidence/WORKLOG.md) |
 | 2026-10-20 | Public-repository preparation (owner request): every file version in the history (252 paths, 486 blobs, 60 commits) scanned for secrets, tokens, email addresses, account and machine identifiers: none found; commit identities use the GitHub `noreply` address. No game files, decompiled code, saves, or third-party code in the repository. MIT `LICENSE` added; README rewritten (it described pre-development and had UTF-16 text appended by the "first commit" `d91bd26`); `chat.md` moved unchanged to `docs/archive/`; entry documents brought up to date. Switching the repository to public is left to the owner. | [CHANGELOG](../CHANGELOG.md) 2026-10-20 |
+| 2026-10-20 | **Release 0.1.0** (commit `59399fd`, tag `v0.1.0`): archive made by `tools\release.ps1`, installed from the zip as a player would, career persistence 11/11; GitHub release with the archive (anonymous download identical); Paradox Mods id 164157 published with the game's ModPublisher (automatic login), Private then Public; public page checked. Installing the subscribed copy in game: Not run. | [RUN-0006](quality/evidence/RUN-0006/REPORT.md) |

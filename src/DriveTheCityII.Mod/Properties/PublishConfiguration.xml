@@ -1,7 +1,7 @@
 <Publish>
 	<!--Paradox Mods listing. Published with tools\publish-paradox.ps1 (see docs/release/PACKAGING_AND_PUBLISHING.md section 0.3).-->
 	<!--Id must be set in order to update an existing mod; empty only for the first publication.-->
-	<ModId Value="" />
+	<ModId Value="164157" />
 	<DisplayName Value="Drive the City II" />
 	<ShortDescription Value="Leave city building and live in your city: walk, drive through your own traffic, and work as a taxi, delivery, freight or bus driver. Earn money, buy vehicles, run a company." />
 	<LongDescription>
@@ -57,6 +57,6 @@ Unofficial fan project, not affiliated with or endorsed by Paradox Interactive o
 	<GameVersion Value="1.6.*" />
 	<ChangeLog Value="First release (0.1.0): character mode, driving, taxi, delivery, freight and bus careers, garage, home, challenges, company; English and Portuguese." />
 	<ExternalLink Type="github" Url="https://github.com/michelbr84/DriveTheCityII" />
-	<!--Private for the first upload and its install test; switched to Public with the Update command afterwards.-->
-	<AccessLevel Value="Private" />
+	<!--Public | Private | Unlisted (case-sensitive). The first upload (2026-10-20) was Private, then switched to Public with Update.-->
+	<AccessLevel Value="Public" />
 </Publish>

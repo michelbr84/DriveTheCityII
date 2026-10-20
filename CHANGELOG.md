@@ -14,9 +14,12 @@ mark real releases ([PACKAGING_AND_PUBLISHING](docs/release/PACKAGING_AND_PUBLIS
 
 ## [0.1.0] — 2026-10-20
 
-First public release: a manual-install archive on
-[GitHub Releases](https://github.com/michelbr84/DriveTheCityII/releases/tag/v0.1.0). Everything below this heading
-is part of 0.1.0. Release tooling: `tools\release.ps1` (archive with install notes, checksum, manifest).
+First public release, 2026-10-20: a manual-install archive on
+[GitHub Releases](https://github.com/michelbr84/DriveTheCityII/releases/tag/v0.1.0) and the listing
+[Paradox Mods 164157](https://mods.paradoxplaza.com/mods/164157/Windows), both from commit `59399fd`
+([RUN-0006](docs/quality/evidence/RUN-0006/REPORT.md): archive installed as a player would, career persistence 11/11).
+Everything below this heading is part of 0.1.0. Release tooling: `tools\release.ps1` (archive with install notes,
+checksum, manifest) and `tools\publish-paradox.ps1` (the game's ModPublisher with its automatic login).
 
 ### Changed — 2026-10-20 — Repository prepared for public visibility
 

@@ -8,7 +8,7 @@ experience, rent or buy vehicles, found a small transport company, and go back t
 |---|---|
 | Version | 0.1.0 (development build) |
 | Game | Cities: Skylines II **1.6.2f1** (Steam, Windows 11). Other game versions are untested. |
-| Download | A ready-to-install archive is attached to each [GitHub release](https://github.com/michelbr84/DriveTheCityII/releases/latest). The mod is not on any mod platform yet; Paradox Mods is planned. |
+| Download | [Paradox Mods](https://mods.paradoxplaza.com/mods/164157/Windows) (install from the game), or the archive attached to each [GitHub release](https://github.com/michelbr84/DriveTheCityII/releases/latest) (manual install). |
 | Status | Playable in disposable test cities. Validation is in progress: see [PROJECT_STATUS](docs/PROJECT_STATUS.md) and [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md). |
 | License | [MIT](LICENSE) |
 
@@ -32,6 +32,12 @@ Known limitations include: parked city cars cannot be entered yet, long buses cl
 and gamepad bindings exist but are untested. See [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md).
 
 ## Install a release
+
+**From Paradox Mods:** open the [Drive the City II page](https://mods.paradoxplaza.com/mods/164157/Windows) or search for
+"Drive the City II" in the game's Paradox Mods browser, and add it to your playset. Use either this or the manual
+archive below, not both at the same time.
+
+**Manual install from GitHub:**
 
 1. Close the game and back up your saves.
 2. Download `DriveTheCityII-<version>.zip` from the [latest release](https://github.com/michelbr84/DriveTheCityII/releases/latest).

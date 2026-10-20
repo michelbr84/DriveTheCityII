@@ -42,7 +42,14 @@ its SHA-256 in the notes. Afterwards, download the asset again and compare its S
   `ModPublisher <command> <PublishConfiguration.xml> -c <content folder> -v` [Source-inspected, 2026-10-20].
 - Login: by default it logs in automatically with the Paradox account the game is signed in to. Its email and password
   options are never used by agents ([SECURITY.md](../../SECURITY.md)).
-- The exact configuration and the first-publication record are added here when they exist.
+- Configuration: `src/DriveTheCityII.Mod/Properties/PublishConfiguration.xml` (listing text, `Thumbnail.jpg`, 8
+  screenshots, tag "Code Mod", game version `1.6.*`, GitHub link, `AccessLevel`). Script: `tools\publish-paradox.ps1
+  -Command Publish|NewVersion|Update`. It uploads the installed package from `<user data>\Mods\DriveTheCityII` after
+  checking it against the install record.
+- **Published 2026-10-20:** mod id **164157**, <https://mods.paradoxplaza.com/mods/164157/Windows>, version 0.1.0
+  (first upload Private, then `Update` to Public) [RUN-0006](../quality/evidence/RUN-0006/REPORT.md). The id is
+  stored in `ModId`; later builds use `NewVersion` with a new `ModVersion` and `ChangeLog`.
+- Installing the subscribed copy in game is **Not run** yet (needs the owner's Paradox login in the game).
 
 ## 1. Purpose
 

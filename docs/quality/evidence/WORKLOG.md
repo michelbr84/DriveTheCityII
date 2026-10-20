@@ -90,6 +90,11 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 10:44 | The owner created the GitHub repository `michelbr84/DriveTheCityII` (private), added it as `origin`, and pushed `main` with a "first commit" `d91bd26`. That commit appended `# DriveTheCityII` to `README.md` in UTF-16, so Git treated the README as binary. **Owner action.** | `git log` |
 | 10:50-11:20 | Public-repository preparation at the owner's request: all 486 file versions of the 252 paths in the 60 commits scanned for secrets, tokens, email addresses, user-profile paths, machine and account identifiers: no secrets or identifiers; only the documented project root path. Source checked for network and process calls (none). Owner decisions: MIT license; `chat.md` moved unchanged to `docs/archive/`. README rewritten; entry documents (AGENTS, CLAUDE, CONTRIBUTING, SECURITY, THIRD_PARTY_NOTICES, START_HERE, INDEX) updated. Unit tests and mod build rerun; links checked. Pushed to `origin` (fast-forward). Visibility left to the owner. | [CHANGELOG](../../../CHANGELOG.md) 2026-10-20 |
 
+| 11:25-11:40 | Owner request: GitHub Releases first, then Paradox Mods, then fix ISSUE-035 and ISSUE-040 and release again; no Melty. `tools\release.ps1` written; commit `59399fd`; build (172 tests) and archive `DriveTheCityII-0.1.0.zip` (SHA-256 `88014be9…46f4e8`). | [RUN-0006](RUN-0006/REPORT.md) §1 |
+| 11:40-11:59 | Archive installed by hand-extraction as a player would; test session: mod `0.1.0+59399fd` loaded; career persistence **11/11** (simulated input). Session stopped; Continue pointer and UserState restored; managed install restored. | session 20261020-114051; RUN-0006 §2 |
+| 12:00-12:07 | Tag `v0.1.0` pushed. GitHub release: the owner published the empty form; the agent completed it (title, notes, archive). API and anonymous download match the package. | RUN-0006 §3 |
+| 12:08-12:16 | Paradox Mods: the game's ModPublisher (automatic login, no password handled) published id **164157** Private, then `Update` to Public; public page checked logged out. Subscribed copy not loaded in game (needs the owner's login). | RUN-0006 §4 |
+
 ## Known gaps at this point (next work)
 
 - Freight (partial delivery) and a whole bus shift completed and paid in game once each (simulated input); no whole

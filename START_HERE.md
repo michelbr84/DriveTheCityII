@@ -12,7 +12,13 @@ marked otherwise. Back up your saves before you try it.
 
 ## 1. Install
 
-### 1a. From a release (no build needed)
+### 1a. From Paradox Mods (no build needed)
+
+In the game (or on <https://mods.paradoxplaza.com/mods/164157/Windows>), find **Drive the City II** in Paradox Mods
+and add it to your playset. Do not also keep a manual copy in `Mods\DriveTheCityII` (steps 1b/1c): use one or the
+other.
+
+### 1b. From a GitHub release (no build needed)
 
 1. Close the game.
 2. Download `DriveTheCityII-<version>.zip` from the
@@ -21,7 +27,7 @@ marked otherwise. Back up your saves before you try it.
    Explorer address bar; create `Mods` if it is missing). You should get `Mods\DriveTheCityII\DriveTheCityII.dll`.
 4. To uninstall, close the game and delete `Mods\DriveTheCityII`.
 
-### 1b. From source
+### 1c. From source
 
 Open **PowerShell** in the project folder.
 
