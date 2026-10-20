@@ -9,7 +9,7 @@
 | Responsible role | QA (maintainer: records observed defects); Implementer (fixes); Reviewer (verifies fixes from evidence); project owner (approves "Won't fix" for Critical or High issues) |
 | Related requirements | All `REQ-*` in the [PRD](../product/PRD.md); the PRD §9 release criterion "no known critical defects" |
 | Related documents | [TEST_STRATEGY](TEST_STRATEGY.md), [evidence](evidence/README.md), [RISKS_AND_OPEN_QUESTIONS](../planning/RISKS_AND_OPEN_QUESTIONS.md), [BASE_MOD_AUDIT](../research/BASE_MOD_AUDIT.md), [TROUBLESHOOTING](../user/TROUBLESHOOTING.md), [POST_RELEASE_MAINTENANCE](../release/POST_RELEASE_MAINTENANCE.md) |
-| Last updated | 2026-10-19 |
+| Last updated | 2026-10-20 |
 
 ## 1. Current state
 
@@ -280,7 +280,8 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-025 — The player's vehicle can lock traffic when it stops in a turning vehicle's path
 - Severity: Medium
-- Status: Open (workaround available)
+- Status: Fixed (same cause as ISSUE-033 case 2; verified in the junction test of
+  [RUN-0005 §3.3](evidence/RUN-0005/REPORT.md), not yet in the original situation)
 - Component: Player (traffic presence), host-game traffic behaviour
 - Detail: in session 20261019-122014 a truck turning across our lane stopped against our front; the queues behind both
   locked the road for 15 minutes, and traffic flowed again within minutes of our vehicle leaving. Native traffic does
@@ -355,27 +356,110 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
   only (transport-line purpose, not prisoner transport).
 
 ### ISSUE-033 — Standing queues in the lab city block routes for 20 minutes or more
-- Severity: Medium
-- Status: Open (host-game traffic; mitigated)
-- Component: City bridge (router), host game
-- Detail: on the bus route out of the depot a queue of 20+ native vehicles stood for over 20 minutes; following the game's
-  own "blocked by" links led to one native vehicle stopped with no blocker (session 20261019-200131, new `blockers` and
-  `blockchain` diagnostics). Whether the player's vehicle contributes is not settled: in one case the queue cleared
-  within 90 s of the player's bus being removed, in another the chain did not involve it. A third test (session
-  20261019-212310, Robin Street): a queue whose head was a car stopped with no blocker had stood for 20 minutes; it was
-  flowing 90 s after the player's vehicles were removed. So the player's vehicle very likely triggers these stalls,
-  through a mechanism not yet identified (candidates: its lane registration or the `TripSource` marker that keeps the
-  game's AI off it). Mitigation so far: the guidance route adds about 6 s per standing vehicle on lanes within 1.5 km,
-  so it goes round a standing queue when there is another way. Workaround for players: leave the vehicle (or return to
-  city building) briefly; the employer's vehicle can be brought back from the garage ("Bring here").
+- Severity: Medium (High in effect: the queues spread through downtown)
+- Status: Verified fixed (two causes, each verified with the fix switched off and on in the same session;
+  [RUN-0005 §3](evidence/RUN-0005/REPORT.md))
+- Component: Player (traffic presence), host-game traffic rules
+- Detail (2026-10-19): queues of 20+ native vehicles stood for 20 minutes and more, and flowed again about 90 s after
+  the player's vehicles were removed. The head of each recorded chain was a vehicle "with no blocker".
+- Diagnosis (2026-10-20): those heads were trailers, whose tractor holds the blocker; our diagnostics did not follow
+  that link, so "the chain does not involve the player's vehicle" was never established. Two causes were found in the
+  game's traffic rules (decompiled `CarNavigationSystem`, `CarLaneSpeedIterator`, `StuckMovingObjectSystem`):
+  1. **A parked vehicle of the player's** was registered in its lane as traffic standing still. Native cars wait behind
+     standing traffic without limit (they change lane or edge past only a stationary *obstacle*). A rental left in the
+     street held a queue that grew 12 → 45 → 61 → 81 cars in four minutes.
+  2. **Loops through the driven vehicle.** The game clears a deadlock only when the chain of "blocked by" links loops
+     back. Our vehicle never said what it waited behind, so a loop through it (a car stopped across its front waiting
+     for it, while it waits for that car) was invisible to the game and stood until the player moved.
+- Fix: (1) a parked vehicle drops the game's motion data and gets it back when driven; (2) after 5 s stopped behind a
+  vehicle, the driven vehicle writes that vehicle as its blocker (`WaitingBehind`, Core, unit-tested), so the game takes
+  one of its own cars out of the loop as it does for any deadlock. Also: borrowing a native car removes its lane-change
+  and overlap lane entries. The guidance route keeps avoiding standing queues (about 6 s per standing vehicle).
+- Verification: (1) same spot, fix off: 6 and 1 cars stopped behind the parked car; fix on: 0, and they changed lane;
+  the parked bus still renders normally and drives when re-boarded. (2) Bus stopped mid-junction, three rounds: with
+  the fix off a car stood across its front waiting for it and 18–23 chains ended at the bus (still 20 after a further
+  30 s in the control round); 20 s after switching the fix on that car was gone and 0–2 chains remained.
+- Not verified: a whole bus shift on the new build (ISSUE-040), and a human session.
 
 ### ISSUE-034 — Guidance can ask a bus to turn round in a narrow street
 - Severity: Medium
-- Status: Open (fix prepared, not in the package because it was not tested in game)
-- Component: Careers (guidance route)
-- Detail: the U-turn penalty for vehicles longer than 7 m is 120 s, so the route can start with a turn-round that a
-  12.7 m bus cannot make on a two-lane street; the test autopilot failed several turn-rounds in a row (session
-  20261019-212310). Proposed fix: 400 s for vehicles longer than 10.5 m, so buses go round the block.
+- Status: Verified fixed (route level and one drive; session 20261020-011700, [RUN-0005 §2](evidence/RUN-0005/REPORT.md))
+- Component: Careers (guidance route), City bridge (router)
+- Detail: the test autopilot failed several turn-rounds in a row with a 12.7 m bus (session 20261019-212310). The log
+  shows the route itself contained the turn: `turnAhead=3.14` (a 180° movement) at a junction 100 m from the depot.
+- Cause: only a route that *started* against the vehicle's heading was penalised (120 s for vehicles over 7 m). A
+  U-turn movement at a junction (lanes the game flags `UTurnLeft`/`UTurnRight`) cost nothing, so a route could send a
+  bus into one. The fix prepared on 2026-10-19 (start penalty 400 s) would not have helped: on the test pose the route
+  still had one U-turn with it.
+- Fix: `TurnPenalties` (Core, unit-tested): for vehicles over 10.5 m, 400 s for starting the wrong way **and** 400 s for
+  each U-turn lane at a junction; trucks keep 120 s at the start and no junction penalty, cars 30 s. The router counts
+  U-turns and wrong-way starts in each route (`routeinfo`, `routetest` diagnostics).
+- Verification: the bus placed on its route facing away from the stop. Same pose, four settings: old 120/0 → 426 m with
+  one junction U-turn; start 400 only → the same U-turn; with the U-turn penalty → 433 m round the block, no U-turn. The
+  autopilot then drove that route and served the stop with no turn-round (two kerb recoveries on tight right turns, a
+  test-autopilot steering limit with long vehicles).
+
+### ISSUE-035 — Parked cars cannot be entered in sandbox mode
+- Severity: High (the first thing a new player tries; 168 key presses failed in the first human session)
+- Status: Open
+- Component: Player (sandbox borrowing)
+- First observed: the owner's own session on 2026-10-20 (00:13–00:55, own city, mod `0.1.0-af308eb`), from the mod log
+- Observed: "No vehicle close enough. Walk up to a car door and press E." 168 times, often several times a second;
+  the four native cars that could be entered were in traffic.
+- Cause: only native cars that are moving traffic, momentarily stopped (at a light or in a queue) and within 4 m can be
+  borrowed (`IsBorrowable` requires the game's motion data). Parked cars at the kerb or in car parks never qualify, and
+  the message suggests the player is simply too far away.
+- Workaround: use the career's basic rental (Tab → Garage → basic rental, free) or step up to a car waiting at a light.
+- Next step: let parked cars be borrowed (they use the game's parked-car form, so this needs a conversion), or at least
+  say why a parked car cannot be used.
+
+### ISSUE-036 — Three recoveries on foot within a minute end character mode
+- Severity: Medium
+- Status: Open
+- Component: Player (recovery loop breaker)
+- First observed: the owner's session on 2026-10-20 (00:46:59–00:47:37)
+- Observed: Backspace three times in 38 s, each answered "Moved to the nearest sidewalk"; the third returned the
+  player to city building ("Repeated problems placing you safely").
+- Cause: the loop breaker counts every recovery in 60 s, including successful ones the player asked for.
+- Next step: count only failed or automatic recoveries.
+
+### ISSUE-037 — The garage option "Accept a starter taxi or courier job" does nothing
+- Severity: Medium
+- Status: Open
+- Component: Careers (UI)
+- First observed: the owner's session on 2026-10-20 (three clicks, 00:45–00:48)
+- Cause: the career always offers this recovery option, but the panel has no handler for it and answers "That option is
+  not available here."
+- Workaround: open the Jobs tab and accept a taxi or delivery job.
+
+### ISSUE-038 — Character mode does not start while the camera looks at a blocked spot
+- Severity: Low
+- Status: Open
+- Component: Player (TR-01)
+- First observed: the owner's session on 2026-10-20 (five attempts in 9 s at 00:23)
+- Observed: "The spawn point is blocked. Move the camera and try again." The player has to move the camera.
+- Next step: search the nearest free sidewalk around the camera target.
+
+### ISSUE-039 — No bus lines found in the owner's city
+- Severity: Medium (unconfirmed)
+- Status: Investigating (needs the owner's answer)
+- Component: City bridge (place index)
+- First observed: the owner's session on 2026-10-20: "0 bus lines indexed" all session, so the bus career has no
+  offers there. The lab city indexes its line.
+- Open question: does that city have bus lines with stops? If it does, the index misses them.
+
+### ISSUE-040 — A 12.7 m bus clips corner props in narrow junctions
+- Severity: Medium
+- Status: Open
+- Component: Core (vehicle motion)
+- First observed: 2026-10-20 (sessions 20261020-011700 to -023545, test autopilot)
+- Detail: our vehicles turn about the centre of the body (kinematic bicycle model with the reference point at the
+  centre), so both ends of a long vehicle swing outward in a turn: about 0.2 m for a car, 0.9 m for an 8.5 m truck and
+  1.8 m for a 12.7 m bus in a 10 m turn. In the lab city's narrow downtown junctions the bus hit poles and street
+  furniture on the corners; the test autopilot needed 20+ recoveries on one leg and two harness steps. A human driver
+  meets the same geometry. A real bus turns about its rear axle (the front swings wide, the rear cuts in), which is not
+  easier in these junctions either: the game's own buses follow lane curves without colliding with props.
+- Next step: decide between a rear-axle pivot for long vehicles and softer contacts with small props for buses.
 
 ## 7. Release use
 

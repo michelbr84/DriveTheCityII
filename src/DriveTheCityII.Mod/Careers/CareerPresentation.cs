@@ -11,6 +11,9 @@ namespace DriveTheCityII.Careers
 {
     public partial class CareerSystem
     {
+        /// <summary>The last guidance route computed for the driven vehicle (diagnostics: U-turns, wrong-way start).</summary>
+        public RouteResult LastRoute { get; private set; }
+
         /// <summary>
         /// Shows the active mission in the world: a marker at the current target, a guidance route (refreshed every few
         /// seconds), and mod-owned passengers waiting at taxi pickups or walking away after drop-off (SPEC-TAXI: career
@@ -53,18 +56,20 @@ namespace DriveTheCityII.Careers
                 {
                     float3 from = P.Vehicle.State.Position.ToF3();
                     float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                    // Long vehicles: prefer going round the block to turning in the road, but not at any price. With 600 s a
-                    // truck placed facing away from its drop was sent on an 11 km loop (observed in game on 2026-10-19).
-                    float wrongWay = P.Vehicle.Spec.Length > 7f ? 120f : 30f;
+                    // Long vehicles: prefer going round the block to turning in the road (TurnPenalties: buses 400 s,
+                    // trucks 120 s; ISSUE-026, ISSUE-034).
+                    float wrongWay = Core.World.TurnPenalties.WrongWayStart(P.Vehicle.Spec.Length);
+                    float uTurn = Core.World.TurnPenalties.UTurnLane(P.Vehicle.Spec.Length);
                     // End the route on a lane right at the target (docks and bus stops have 8 m arrival radii); widen only
                     // if no lane is that close.
                     var gk = P.Vehicle.State.GroundKind;
                     bool onRoad = gk == Core.World.SurfaceKind.Road || gk == Core.World.SurfaceKind.Elevated || gk == Core.World.SurfaceKind.Tunnel;
-                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay, onRoad, avoidJams: true);
+                    RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 6f, 80000, wrongWay, onRoad, avoidJams: true, uTurnPenalty: uTurn);
                     if (r.Status != RouteStatusCode.Reachable)
                     {
-                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay, onRoad, avoidJams: true);
+                        r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, wrongWay, onRoad, avoidJams: true, uTurnPenalty: uTurn);
                     }
+                    LastRoute = r;
                     if (r.Status == RouteStatusCode.Reachable)
                     {
                         MarkerBoard.Route.AddRange(r.Polyline);
@@ -165,7 +170,10 @@ namespace DriveTheCityII.Careers
             {
                 float3 from = P.Vehicle.State.Position.ToF3();
                 float2 heading = new float2(math.sin(P.Vehicle.State.Yaw), math.cos(P.Vehicle.State.Yaw));
-                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, P.Vehicle.Spec.Length > 7f ? 120f : 30f);
+                float len = P.Vehicle.Spec.Length;
+                RouteResult r = CityServices.Router.FindRoute(em, from, heading, target, 18f, 80000, Core.World.TurnPenalties.WrongWayStart(len),
+                    uTurnPenalty: Core.World.TurnPenalties.UTurnLane(len));
+                LastRoute = r;
                 if (r.Status == RouteStatusCode.Reachable)
                 {
                     MarkerBoard.Route.AddRange(r.Polyline);

@@ -7,7 +7,7 @@
 | Scope | Demonstrated state of the whole project |
 | Responsible role | Coordinator (maintainer); every completed task updates it |
 | Related documents | [ROADMAP](../ROADMAP.md), [BACKLOG](planning/BACKLOG.md), [TRACEABILITY](planning/TRACEABILITY.md), [RISKS_AND_OPEN_QUESTIONS](planning/RISKS_AND_OPEN_QUESTIONS.md), [HANDOFF_TO_PHASE_00](agents/HANDOFF_TO_PHASE_00.md) |
-| Last updated | 2026-10-19 |
+| Last updated | 2026-10-20 |
 
 > **Overall state: PRIVATE PLAYABLE BUILD, VALIDATION IN PROGRESS (owner brief of 2026-10-19).**
 >

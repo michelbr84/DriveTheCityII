@@ -5,13 +5,46 @@
 | ID | DOC-CHANGELOG |
 | Document status | Draft (living document) |
 | Responsible role | Coordinator (maintainer); every completed task adds its real changes |
-| Last updated | 2026-10-19 |
+| Last updated | 2026-10-20 |
 
 This file records changes that were **actually made**. It never lists planned features as done, and no version of the
 mod has been released. Version headings will appear only when real releases exist
 ([PACKAGING_AND_PUBLISHING](docs/release/PACKAGING_AND_PUBLISHING.md)).
 
 ## [Unreleased]
+
+### Fixed — 2026-10-20 — Standing queues and bus turn-rounds (ISSUE-033, ISSUE-034)
+
+Evidence: [RUN-0005](docs/quality/evidence/RUN-0005/REPORT.md). Driving in these tests is simulated input.
+
+- **A parked vehicle of the player's no longer holds traffic indefinitely (ISSUE-033).** It was registered in its lane
+  as traffic standing still, and native cars wait behind standing traffic without limit: a rental left in the street
+  held a queue that grew from 12 to 81 cars in four minutes. A parked vehicle now drops the game's motion data and is
+  handled like any stationary obstacle (traffic changes lane or edges past); the data returns when the player drives
+  it. Same spot with the fix switched off and on: 6 and 1 cars stopped behind it without the fix, 0 with it.
+- **The driven vehicle reports what it waits behind (ISSUE-033, ISSUE-025).** The game clears a traffic deadlock only
+  when a chain of "blocked by" links loops back; the player's vehicle never filled in its own link, so a loop through it
+  stood until the player moved. After 5 s stopped behind a vehicle (including one already touching it), that vehicle is
+  written as its blocker. Bus stopped mid-junction, three rounds: without the fix a car stood across its front waiting
+  for it and 18–23 queued cars' chains ended at the bus (still 20 after a further 30 s); 20 s after switching the fix on,
+  that car was gone and 0–2 remained. A first version skipped a vehicle overlapping the bus; the test exposed it and it
+  was corrected.
+- **Borrowing a native car removes its extra lane entries** (lane-change lane, lanes its body overlapped), which only the
+  game's navigation system removes and which would otherwise stay behind as obstacles.
+- **Buses go round the block instead of making U-turns at junctions (ISSUE-034).** Only a route starting against the
+  heading was penalised; U-turn movements at junctions cost nothing. For vehicles over 10.5 m both now cost 400 s
+  (`TurnPenalties` in Core; trucks and cars unchanged). On the test pose the route changed from 426 m with a junction
+  U-turn to 433 m round the block, and the bus served the stop with no turn-round.
+- **Diagnostics (test bridge):** `jams`, `ghosts`, `routeinfo`, `routetest`, `trafficfix`, `parkfix`, `career abtest`,
+  `trafficwatch … parked`; `blockchain` and `blockers` now follow trailer-to-tractor links as the game does (earlier
+  readings that "the chain does not involve the player's vehicle" had stopped at trailers).
+- **Unit tests:** 172 (new: turn penalties by length, choice of the vehicle waited behind).
+- **Recorded:** a 12.7 m bus clips corner props in narrow junctions because vehicles turn about the body centre
+  (ISSUE-040); the test autopilot could not finish a downtown bus shift on the new build without help.
+- **Recorded from the owner's first session** (not fixed): parked cars cannot be entered (ISSUE-035), three recoveries
+  in a minute end character mode (ISSUE-036), the garage's "starter job" option does nothing (ISSUE-037), character
+  mode refused while the camera looks at a blocked spot (ISSUE-038), no bus lines found in the owner's city
+  (ISSUE-039).
 
 ### Added — 2026-10-19 — Native mod implementation, in-game validation, private build (TASK-0003, TASK-0004 and later)
 

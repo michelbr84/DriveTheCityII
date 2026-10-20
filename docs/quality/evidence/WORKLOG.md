@@ -5,7 +5,7 @@
 | ID | DOC-WORKLOG |
 | Document status | Draft (living log) |
 | Responsible role | Coordinator / Implementer |
-| Last updated | 2026-10-19 |
+| Last updated | 2026-10-20 |
 
 Chronological, factual log of the implementation run authorized by the owner on 2026-10-19 (owner brief
 "Autonomous implementation, Melty MCP, and private playable delivery"). Evidence folders live outside the project
@@ -77,8 +77,19 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 21:23-23:38 | **Bus shift completed and paid in game**: city run at 3× for 10 min (night), Line 1, 14 of 14 stops served, +222.50 cr, +47 XP. Harness steps: 9 m forward to a junction once; one 90 s return to city building (queue test: the queue flowed again) and the bus brought back with "Bring here". [simulated input via test autopilot] | session 20261019-212310; [bus-shift-events](RUN-0003/bus-shift-events.md) |
 | 23:40-23:56 | Final package `0.1.0-af308eb` (code identical to the bus-shift build) installed. M1 with real keys: 16/17 (key-timing fault of the script: keys started 3.7 s late), rerun **17/17**. | `campaigns\m1-20261019-234049.md`, `m1-20261019-235132.md`; [RUN-0002](RUN-0002/REPORT.md) |
 
+| When (2026-10-20) | What happened | Evidence |
+|---|---|---|
+| 00:13-00:55 | The owner played `0.1.0-af308eb` in their own city (**human input**, not a test session). Read afterwards from the mod log: no errors; 168 × "No vehicle close enough" (parked cars cannot be borrowed), three recoveries in 38 s ended character mode, the garage's "starter job" option is unhandled, "spawn point blocked" × 5, 0 bus lines indexed; a delivery failed after impacts; saves fine. Recorded as ISSUE-035 to ISSUE-039. | [RUN-0005 §1](RUN-0005/REPORT.md) |
+| 01:00-01:16 | ISSUE-033 analysed in the game's traffic code: the recorded queue heads were trailers (our chain walk ignored the tractor link); the game clears only loops; our vehicle never reported a blocker; a parked player vehicle counts as standing traffic. Fixes and diagnostics (`jams`, `ghosts`, `routeinfo`, `routetest`); ISSUE-034: junction U-turns penalised for buses (`TurnPenalties`). 170 unit tests. | — |
+| 01:17-01:29 | ISSUE-034 verified: same pose, 426 m with a junction U-turn before (also with the 2026-10-19 patch), 433 m round the block after; the bus served the stop with no turn-round. ISSUE-033: the parked rental held a queue growing 12 → 81 cars in four minutes. | session 20261020-011700; RUN-0005 §2, §3.1 |
+| 01:30-02:03 | Parked-vehicle fix: same lane 0 queued; switched off/on at two spots (off: 6 and 1 stopped behind; on: 0, cars changed lane). | sessions -013027, -015441 |
+| 02:04-02:46 | A/B during a rush-hour bus shift: episode 1 (fix on) showed a car stopped across the bus's front waiting for it, not resolved — the fix skipped overlapping vehicles; corrected (172 tests). The autopilot failed most tight downtown turns with the bus (ISSUE-040); two labelled harness steps placed the bus past one junction. | sessions -020810, -023545; session notes |
+| 02:47-02:57 | Controlled junction test, three rounds: fix off 18–23 chains end at the bus with a car across its front (control +30 s: 20); fix on +20 s: that car gone, 0–2. Parked bus renders normally without motion data and drives when re-boarded. | session -023545 (`loop-exp1..3.txt`, captures); RUN-0005 §3.3, §3.4 |
+
 ## Known gaps at this point (next work)
 
-- Freight (partial delivery) and a whole bus shift completed and paid in game once each (simulated input).
-- Standing queues around the player's vehicle (ISSUE-033) and bus turn-rounds in narrow streets (ISSUE-034) are open.
+- Freight (partial delivery) and a whole bus shift completed and paid in game once each (simulated input); no whole
+  shift on the 2026-10-20 build (the autopilot cannot steer the bus through narrow downtown junctions, ISSUE-040).
+- ISSUE-033 and ISSUE-034 fixed and verified in controlled tests; not yet seen by a human player.
+- From the owner's first session: parked cars cannot be entered (ISSUE-035) and four smaller issues (ISSUE-036 to -039).
 - Gamepad untested (no device); enter/exit is a slide, not an animation; no footstep sound.

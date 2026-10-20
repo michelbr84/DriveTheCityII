@@ -448,9 +448,15 @@ namespace DriveTheCityII.CityBridge
             }
         }
 
-        /// <summary>Sandbox takeover of a native car: excluded from AI with TripSource (refcache note 04 §3a).</summary>
+        /// <summary>
+        /// Sandbox takeover of a native car: excluded from AI with TripSource (refcache note 04 §3a). The car's lane-change
+        /// lane and blocked lanes are unregistered first: the game keeps a car registered on each of them (CarNavigationHelpers
+        /// .CurrentLaneCache), only its navigation system removes those entries, and that system no longer runs for the
+        /// car. Left in place they are ghosts that native traffic queues behind (ISSUE-033).
+        /// </summary>
         public static void BorrowNative(EntityManager em, Entity car, int recordId)
         {
+            ClearExtraLaneRegistrations(em, car);
             if (!em.HasComponent<TripSource>(car))
             {
                 em.AddComponentData(car, new TripSource(Entity.Null) { m_Timer = int.MaxValue });
@@ -460,6 +466,87 @@ namespace DriveTheCityII.CityBridge
                 em.SetComponentData(car, new TripSource(Entity.Null) { m_Timer = int.MaxValue });
             }
             em.AddComponentData(car, new DtcActor { Kind = ActorKind.BorrowedNativeVehicle, RecordId = recordId });
+        }
+
+        /// <summary>Removes a car's lane-object entries on its lane-change lane and blocked lanes (not its current lane).</summary>
+        public static int ClearExtraLaneRegistrations(EntityManager em, Entity car)
+        {
+            if (!em.Exists(car) || !em.HasComponent<CarCurrentLane>(car))
+            {
+                return 0;
+            }
+            int removed = 0;
+            CarCurrentLane cl = em.GetComponentData<CarCurrentLane>(car);
+            if (cl.m_ChangeLane != Entity.Null && cl.m_ChangeLane != cl.m_Lane && em.Exists(cl.m_ChangeLane) && em.HasBuffer<Game.Net.LaneObject>(cl.m_ChangeLane))
+            {
+                Game.Net.NetUtils.RemoveLaneObject(em.GetBuffer<Game.Net.LaneObject>(cl.m_ChangeLane), car);
+                removed++;
+            }
+            if (cl.m_ChangeLane != Entity.Null)
+            {
+                cl.m_ChangeLane = Entity.Null;
+                em.SetComponentData(car, cl);
+            }
+            if (em.HasBuffer<BlockedLane>(car))
+            {
+                var lanes = new List<Entity>();
+                foreach (BlockedLane b in em.GetBuffer<BlockedLane>(car, true))
+                {
+                    lanes.Add(b.m_Lane);
+                }
+                foreach (Entity lane in lanes)
+                {
+                    if (lane != cl.m_Lane && em.Exists(lane) && em.HasBuffer<Game.Net.LaneObject>(lane))
+                    {
+                        Game.Net.NetUtils.RemoveLaneObject(em.GetBuffer<Game.Net.LaneObject>(lane), car);
+                        removed++;
+                    }
+                }
+                em.GetBuffer<BlockedLane>(car).Clear();
+            }
+            return removed;
+        }
+
+        /// <summary>
+        /// Adds or removes a mod car's motion data (structural change; run from the actor-ops system). Native traffic treats
+        /// a car without it as a stationary obstacle (changes lane or edges past), and one with it as traffic to queue
+        /// behind (CarNavigationSystem.CheckBlocker; ISSUE-033).
+        /// </summary>
+        public static void SetMovingPresence(EntityManager em, Entity car, bool moving)
+        {
+            if (!em.Exists(car) || em.HasComponent<Deleted>(car))
+            {
+                return;
+            }
+            bool has = em.HasComponent<Moving>(car);
+            if (moving && !has)
+            {
+                em.AddComponentData(car, new Moving());
+            }
+            else if (!moving && has)
+            {
+                em.RemoveComponent<Moving>(car);
+            }
+        }
+
+        /// <summary>
+        /// Writes the game's "blocked by" link of a mod-driven car (ISSUE-033): the vehicle it waits behind, or none.
+        /// Speed is stored like the game does (m/s x 2.295 in a byte; under 6 counts as blocked).
+        /// </summary>
+        public static void SetBlocker(EntityManager em, Entity car, Entity blocker, float speed)
+        {
+            if (!em.Exists(car) || !em.HasComponent<Blocker>(car))
+            {
+                return;
+            }
+            Blocker want = blocker == Entity.Null
+                ? new Blocker { m_Blocker = Entity.Null, m_Type = BlockerType.None, m_MaxSpeed = byte.MaxValue }
+                : new Blocker { m_Blocker = blocker, m_Type = BlockerType.Continuing, m_MaxSpeed = (byte)math.clamp((int)math.round(math.abs(speed) * 2.295f), 0, 255) };
+            Blocker have = em.GetComponentData<Blocker>(car);
+            if (have.m_Blocker != want.m_Blocker || have.m_Type != want.m_Type || have.m_MaxSpeed != want.m_MaxSpeed)
+            {
+                em.SetComponentData(car, want);
+            }
         }
 
         /// <summary>
@@ -499,6 +586,9 @@ namespace DriveTheCityII.CityBridge
             {
                 var po = em.GetComponentData<Game.Pathfind.PathOwner>(car);
                 po.m_State |= Game.Pathfind.PathFlags.Obsolete;
+                // The game's deadlock check may have marked the car stuck while the player drove it (it reports what it
+                // waits behind, ISSUE-033); the AI would then park it at once.
+                po.m_State &= ~Game.Pathfind.PathFlags.Stuck;
                 em.SetComponentData(car, po);
             }
             if (em.HasComponent<TripSource>(car))

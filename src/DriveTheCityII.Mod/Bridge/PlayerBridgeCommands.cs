@@ -66,26 +66,75 @@ namespace DriveTheCityII.Bridge
                 {
                     return new InstantOp(false, "no vehicle ahead");
                 }
-                var cur = new Unity.Entities.Entity { Index = (int)(start.SourceId & 0xffffffffL), Version = (int)(start.SourceId >> 32) };
-                var parts = new List<string>();
-                var seen = new HashSet<int>();
-                for (int hop = 0; hop < 60 && cur != Unity.Entities.Entity.Null && em.Exists(cur) && seen.Add(cur.Index); hop++)
+                var first = new Unity.Entities.Entity { Index = (int)(start.SourceId & 0xffffffffL), Version = (int)(start.SourceId >> 32) };
+                // Followed as the game's deadlock check does (a blocking trailer stands for its tractor).
+                return new InstantOp(true, TrafficDiagnostics.Chain(em, first, v.Entity) + " || me " + TrafficDiagnostics.Link(em, v.Entity, v.Entity));
+            };
+            TestBridge.Handlers["jams"] = a =>
+            {
+                // jams: every stopped native car in the city and what its "blocked by" chain ends at (ISSUE-033).
+                var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+                ControlledVehicle v = P.Vehicle ?? P.ParkedVehicles.FirstOrDefault();
+                return new InstantOp(true, TrafficDiagnostics.Jams(em, v?.Entity ?? Unity.Entities.Entity.Null) + $" reportWaitingBehind={PlayerSystem.ReportWaitingBehind}");
+            };
+            TestBridge.Handlers["ghosts"] = a =>
+            {
+                // ghosts: lane-object entries far from their vehicle, entries of deleted vehicles, and all of ours.
+                var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+                ControlledVehicle v = P.Vehicle ?? P.ParkedVehicles.FirstOrDefault();
+                return new InstantOp(true, TrafficDiagnostics.Ghosts(em, v?.Entity ?? Unity.Entities.Entity.Null));
+            };
+            TestBridge.Handlers["trafficfix"] = a =>
+            {
+                // trafficfix on|off: test switch for the ISSUE-033 fix (the player's vehicle reports what it waits behind).
+                if (a.Length > 1)
                 {
-                    float3 pos = em.HasComponent<Game.Objects.Transform>(cur) ? em.GetComponentData<Game.Objects.Transform>(cur).m_Position : float3.zero;
-                    float spd = em.HasComponent<Game.Objects.Moving>(cur) ? math.length(em.GetComponentData<Game.Objects.Moving>(cur).m_Velocity) : -1f;
-                    string type = "none";
-                    Unity.Entities.Entity next = Unity.Entities.Entity.Null;
-                    if (em.HasComponent<Game.Vehicles.Blocker>(cur))
-                    {
-                        Game.Vehicles.Blocker b = em.GetComponentData<Game.Vehicles.Blocker>(cur);
-                        type = b.m_Type.ToString();
-                        next = b.m_Blocker;
-                    }
-                    string who = cur == v.Entity ? "ME" : em.HasComponent<DtcActor>(cur) ? "MOD" : cur.Index.ToString(CultureInfo.InvariantCulture);
-                    parts.Add(string.Format(CultureInfo.InvariantCulture, "{0}@({1:0},{2:0}) v{3:0.0} {4}", who, pos.x, pos.z, spd, type));
-                    cur = next;
+                    PlayerSystem.ReportWaitingBehind = a[1] == "on";
                 }
-                return new InstantOp(true, $"{parts.Count} links: {string.Join(" > ", parts)}");
+                ControlledVehicle v = P.Vehicle;
+                string w = v == null ? "no vehicle" : $"stopped {v.StoppedSeconds:0.0}s waitingBehind={v.WaitingBehind.Index}";
+                return new InstantOp(true, $"reportWaitingBehind={PlayerSystem.ReportWaitingBehind} {w}");
+            };
+            TestBridge.Handlers["routetest"] = a =>
+            {
+                // routetest wrongWay uTurn: the route from the driven vehicle's pose to the active mission's target with
+                // these penalties (no traffic costs, so two calls on the same pose compare only the penalties; ISSUE-034).
+                ControlledVehicle v = P.Vehicle;
+                var mission = DriveTheCityII.Careers.CareerSystem.Instance?.Service?.GetActiveMission();
+                if (v == null || mission == null || string.IsNullOrEmpty(mission.MissionId))
+                {
+                    return new InstantOp(false, "needs a driven vehicle and an active mission");
+                }
+                var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+                float3 from = new float3(v.State.Position.X, v.State.Position.Y, v.State.Position.Z);
+                float3 to = DriveTheCityII.Careers.CareerWorldAdapter.ToF3(mission.TargetAccess);
+                float2 heading = new float2(math.sin(v.State.Yaw), math.cos(v.State.Yaw));
+                var gk = v.State.GroundKind;
+                bool onRoad = gk == SurfaceKind.Road || gk == SurfaceKind.Elevated || gk == SurfaceKind.Tunnel;
+                float ww = F(a[1]), ut = F(a[2]);
+                RouteResult r = CityServices.Router.FindRoute(em, from, heading, to, 6f, 80000, ww, onRoad, false, ut);
+                if (r.Status != RouteStatusCode.Reachable)
+                {
+                    r = CityServices.Router.FindRoute(em, from, heading, to, 18f, 80000, ww, onRoad, false, ut);
+                }
+                string first = r.Polyline.Count > 1 ? string.Format(CultureInfo.InvariantCulture, " first=({0:0},{1:0})->({2:0},{3:0})", r.Polyline[0].x, r.Polyline[0].z, r.Polyline[1].x, r.Polyline[1].z) : string.Empty;
+                return new InstantOp(r.Status == RouteStatusCode.Reachable, string.Format(CultureInfo.InvariantCulture,
+                    "wrongWay={0:0} uTurn={1:0}: status={2} dist={3:0}m time={4:0}s uTurns={5} startsWrongWay={6} straight={7:0}m{8}",
+                    ww, ut, r.Status, r.DistanceMeters, r.TimeSeconds, r.UTurns, r.StartsWrongWay, math.distance(from.xz, to.xz), first));
+            };
+            TestBridge.Handlers["routeinfo"] = a =>
+            {
+                // routeinfo: the last guidance route for the driven vehicle (ISSUE-034: U-turns, wrong-way start).
+                RouteResult r = DriveTheCityII.Careers.CareerSystem.Instance?.LastRoute;
+                if (r == null)
+                {
+                    return new InstantOp(false, "no route yet");
+                }
+                ControlledVehicle v = P.Vehicle;
+                string spec = v == null ? string.Empty : string.Format(CultureInfo.InvariantCulture, " vehicleLength={0:0.0} wrongWayPenalty={1:0} uTurnPenalty={2:0}",
+                    v.Spec.Length, Core.World.TurnPenalties.WrongWayStart(v.Spec.Length), Core.World.TurnPenalties.UTurnLane(v.Spec.Length));
+                return new InstantOp(true, string.Format(CultureInfo.InvariantCulture, "status={0} dist={1:0}m time={2:0}s uTurns={3} startsWrongWay={4} points={5}{6}",
+                    r.Status, r.DistanceMeters, r.TimeSeconds, r.UTurns, r.StartsWrongWay, r.Polyline.Count, spec));
             };
             TestBridge.Handlers["blockers"] = a =>
             {
@@ -120,17 +169,17 @@ namespace DriveTheCityII.Bridge
                     {
                         toMe++;
                     }
-                    // Follow the chain.
-                    Unity.Entities.Entity cur = b.m_Blocker;
+                    // Follow the chain (a blocking trailer stands for its tractor, as in the game's deadlock check).
+                    Unity.Entities.Entity cur = TrafficDiagnostics.Next(em, e, out _, out _);
                     bool reachesMe = false;
-                    for (int hop = 0; hop < 15 && cur != Unity.Entities.Entity.Null && em.Exists(cur); hop++)
+                    for (int hop = 0; hop < 60 && cur != Unity.Entities.Entity.Null && em.Exists(cur); hop++)
                     {
                         if (cur == v.Entity)
                         {
                             reachesMe = true;
                             break;
                         }
-                        cur = em.HasComponent<Game.Vehicles.Blocker>(cur) ? em.GetComponentData<Game.Vehicles.Blocker>(cur).m_Blocker : Unity.Entities.Entity.Null;
+                        cur = TrafficDiagnostics.Next(em, cur, out _, out _);
                     }
                     if (reachesMe)
                     {
@@ -371,7 +420,17 @@ namespace DriveTheCityII.Bridge
                 return new InstantOp(true, PerfMonitor.Report());
             };
             TestBridge.Handlers["traffic"] = Traffic;
-            TestBridge.Handlers["trafficwatch"] = a => new TrafficWatchOp(a.Length > 1 ? F(a[1]) : 20f);
+            // trafficwatch [seconds] [parked]: how native traffic on the vehicle's lane reacts to it.
+            TestBridge.Handlers["trafficwatch"] = a => new TrafficWatchOp(a.Length > 1 ? F(a[1]) : 20f, a.Length > 2 && a[2] == "parked");
+            TestBridge.Handlers["parkfix"] = a =>
+            {
+                // parkfix on|off: test switch for the ISSUE-033 parked-vehicle fix (a parked vehicle is a stationary obstacle).
+                if (a.Length > 1)
+                {
+                    PlayerSystem.ParkedAsObstacle = a[1] == "on";
+                }
+                return new InstantOp(true, $"parkedAsObstacle={PlayerSystem.ParkedAsObstacle}");
+            };
             TestBridge.Handlers["trafficsetup"] = a =>
             {
                 float r = a.Length > 1 ? F(a[1]) : 1500f;
@@ -640,10 +699,14 @@ namespace DriveTheCityII.Bridge
         private int m_Ghosts;
         private float m_MinGap = float.MaxValue;
         private int m_Samples;
+        private int m_StoppedBehindNow;
+        private readonly bool m_Parked;
 
-        public TrafficWatchOp(float seconds)
+        /// <param name="parked">Watch the player's most recently parked vehicle instead of the driven one (ISSUE-033).</param>
+        public TrafficWatchOp(float seconds, bool parked = false)
         {
             m_End = UnityEngine.Time.realtimeSinceStartup + seconds;
+            m_Parked = parked;
         }
 
         public bool Ok { get; private set; } = true;
@@ -653,30 +716,33 @@ namespace DriveTheCityII.Bridge
         {
             float now = UnityEngine.Time.realtimeSinceStartup;
             PlayerSystem p = PlayerSystem.Instance;
-            if (p?.Vehicle == null)
+            ControlledVehicle v = m_Parked ? p?.ParkedVehicles.LastOrDefault() : p?.Vehicle;
+            if (v == null)
             {
                 Ok = false;
-                Result = "no controlled vehicle";
+                Result = m_Parked ? "no parked vehicle" : "no controlled vehicle";
                 return true;
             }
             if (now >= m_Next)
             {
                 m_Next = now + 0.5f;
-                Sample(p);
+                Sample(v);
             }
             if (now < m_End)
             {
                 return false;
             }
-            Result = $"samples={m_Samples} sameLaneSeen={m_Seen.Count} stoppedBehind={m_StoppedBehind.Count} ghostPasses={m_Ghosts} minGapBehind={(m_MinGap == float.MaxValue ? -1 : m_MinGap):0.0}m";
-            Ok = m_Ghosts == 0;
+            var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
+            Result = $"samples={m_Samples} sameLaneSeen={m_Seen.Count} stoppedBehind={m_StoppedBehind.Count} stoppedBehindNow={m_StoppedBehindNow} ghostPasses={m_Ghosts} " +
+                     $"minGapBehind={(m_MinGap == float.MaxValue ? -1 : m_MinGap):0.0}m queueChainsNow={TrafficDiagnostics.ChainsThrough(em, v.Entity)} " +
+                     $"watched={(m_Parked ? "parked" : "driven")}:{v.Entity.Index} motionData={em.HasComponent<Game.Objects.Moving>(v.Entity)}";
+            Ok = m_Parked || m_Ghosts == 0;
             return true;
         }
 
-        private void Sample(PlayerSystem p)
+        private void Sample(ControlledVehicle v)
         {
             var em = Unity.Entities.World.DefaultGameObjectInjectionWorld.EntityManager;
-            ControlledVehicle v = p.Vehicle;
             if (!em.Exists(v.Entity) || !em.HasComponent<Game.Vehicles.CarCurrentLane>(v.Entity))
             {
                 return;
@@ -687,6 +753,7 @@ namespace DriveTheCityII.Bridge
                 return;
             }
             m_Samples++;
+            m_StoppedBehindNow = 0;
             Vec2 fwd = Vec2.FromYaw(v.State.Yaw);
             float half = v.Spec.Length * 0.5f;
             var objs = em.GetBuffer<Game.Net.LaneObject>(lane, true);
@@ -708,6 +775,10 @@ namespace DriveTheCityII.Bridge
                     if (speed < 0.5f && along > -25f)
                     {
                         m_StoppedBehind.Add(e);
+                    }
+                    if (speed < 0.5f && along > -60f)
+                    {
+                        m_StoppedBehindNow++;
                     }
                 }
                 if (m_LastAlong.TryGetValue(e, out float last) && last < -half && along > half)

@@ -74,6 +74,11 @@ namespace DriveTheCityII.Careers
                         a.Length > 3 ? int.Parse(a[3], CultureInfo.InvariantCulture) : -1);
                 case "grant":
                     return new InstantOp(true, s.DebugGrant(long.Parse(a[2], CultureInfo.InvariantCulture), C.Clock).Text);
+                case "abtest":
+                    // career abtest on|off: A/B test of the ISSUE-033 fix inside "career drive" (see MissionAutopilotOp.AbTest).
+                    MissionAutopilotOp.AbTest = a.Length > 2 && a[2] == "on";
+                    Player.PlayerSystem.ReportWaitingBehind = !MissionAutopilotOp.AbTest;
+                    return new InstantOp(true, $"abtest={MissionAutopilotOp.AbTest} reportWaitingBehind={Player.PlayerSystem.ReportWaitingBehind}");
                 case "chdrive":
                     return new MissionAutopilotOp(a.Length > 2 ? float.Parse(a[2], CultureInfo.InvariantCulture) : 300f, -1, true);
                 case "challenges":
@@ -223,6 +228,45 @@ namespace DriveTheCityII.Careers
         private float3 m_StillAnchor;
         private float m_StillSince = -1f;
         private float m_TouchedAt = -999f;
+        private bool m_JamLogged;
+        private bool m_JamLogged2;
+
+        /// <summary>
+        /// A/B test of the ISSUE-033 fix (bridge "abtest on|off"). With it on, the fix starts OFF; each time the vehicle
+        /// has stood still in traffic for <see cref="AbDecideAt"/> seconds an episode starts, alternately switching the
+        /// fix on or leaving it off (control), and the time until the queue moves is logged.
+        /// </summary>
+        public static bool AbTest;
+
+        /// <summary>
+        /// Seconds stood still before an episode starts: before the 60 s "touching" deadlock limit, so a vehicle stopped
+        /// against ours (the ISSUE-025 case) is part of the test.
+        /// </summary>
+        public const float AbDecideAt = 40f;
+        private static int m_AbEpisodes;
+        private int m_AbEpisodeOn;
+
+        private static void AbLog(string text) => DtcLog.Info("ABTEST " + text);
+
+        private void EndAbEpisode()
+        {
+            if (m_AbEpisodeOn != 0)
+            {
+                m_AbEpisodeOn = 0;
+                PlayerSystem.ReportWaitingBehind = !AbTest;
+            }
+        }
+
+        private static void LogJam(float still)
+        {
+            foreach (string cmd in new[] { "blockchain", "jams", "trafficfix" })
+            {
+                if (TestBridge.Handlers.TryGetValue(cmd, out Func<string[], IBridgeOp> h))
+                {
+                    DtcLog.Info($"autopilot: still {still:0} s; {cmd} :: {h(new[] { cmd }).Result}");
+                }
+            }
+        }
 
         private readonly int m_UntilLeg;
         private readonly bool m_Challenge;
@@ -372,22 +416,61 @@ namespace DriveTheCityII.Careers
             // road for 15 minutes, and traffic flowed again within minutes of our truck leaving.
             if (holding || m_StillSince < 0f || math.distance(pos.xz, m_StillAnchor.xz) > 8f)
             {
+                if (m_AbEpisodeOn != 0 && !holding && m_StillSince >= 0f)
+                {
+                    AbLog(string.Format(CultureInfo.InvariantCulture, "episode {0} ({1}): the queue moved after {2:0} s still, {3:0} s after the decision at {4}",
+                        m_AbEpisodes, m_AbEpisodeOn > 0 ? "fix ON" : "control, fix OFF", now - m_StillSince, now - m_StillSince - AbDecideAt, v.State.Position));
+                }
+                EndAbEpisode();
                 m_StillAnchor = pos;
                 m_StillSince = now;
+                m_JamLogged = false;
+                m_JamLogged2 = false;
             }
             else
             {
                 bool touching = now - m_TouchedAt < 5f;
                 float still = now - m_StillSince;
-                // Queued behind a stopped vehicle (a jam on a highway): wait longer before giving up on the lane.
-                float limit = m_LastGap < 6f ? 300f : 120f;
-                if (still > limit || (touching && still > 60f))
+                if (!m_JamLogged && still > AbDecideAt)
                 {
+                    // Diagnostics for ISSUE-033: what the queue we stand in waits for.
+                    m_JamLogged = true;
+                    LogJam(still);
+                    if (AbTest && waitingInTraffic && m_AbEpisodeOn == 0)
+                    {
+                        // A/B test of the ISSUE-033 fix: alternate episodes switch it on now; the others are the control.
+                        m_AbEpisodes++;
+                        m_AbEpisodeOn = m_AbEpisodes % 2 == 1 ? 1 : -1;
+                        PlayerSystem.ReportWaitingBehind = m_AbEpisodeOn > 0;
+                        AbLog(string.Format(CultureInfo.InvariantCulture, "episode {0} starts after {1:0} s still at {2}: {3}", m_AbEpisodes, still, v.State.Position,
+                            m_AbEpisodeOn > 0 ? "fix switched ON" : "control, fix stays OFF"));
+                    }
+                }
+                if (m_JamLogged && !m_JamLogged2 && still > AbDecideAt + 60f)
+                {
+                    m_JamLogged2 = true;
+                    LogJam(still);
+                }
+                // Queued behind a stopped vehicle (a jam on a highway): wait longer before giving up on the lane. During an
+                // A/B episode both arms get the same window.
+                float limit = m_AbEpisodeOn != 0 ? 360f : m_LastGap < 6f ? 300f : 120f;
+                if (still > limit || (touching && still > 60f && m_AbEpisodeOn == 0))
+                {
+                    if (m_AbEpisodeOn != 0)
+                    {
+                        AbLog(string.Format(CultureInfo.InvariantCulture, "episode {0} ({1}): NOT resolved, recovery after {2:0} s still (touching={3})",
+                            m_AbEpisodes, m_AbEpisodeOn > 0 ? "fix ON" : "control, fix OFF", still, touching));
+                        EndAbEpisode();
+                    }
                     m_StillSince = now;
                     DtcLog.Info(string.Format(CultureInfo.InvariantCulture, "autopilot: deadlock after {0:0} s without moving (touching={1}) at {2}", still, touching, v.State.Position));
                     Recover(p, now, touching ? "deadlock against a stopped vehicle" : $"no movement for {limit:0} s");
                     return false;
                 }
+            }
+            if (m_AbEpisodeOn != 0)
+            {
+                watchdogPaused = true;
             }
             if (m_MoveCheckAt <= 0f || watchdogPaused)
             {
@@ -778,6 +861,12 @@ namespace DriveTheCityII.Careers
             m_LastRecoverAt = now;
             m_Recoveries++;
             m_Log.Add($"recovery:{why}({now - m_Start:0}s)");
+            if (m_AbEpisodeOn != 0)
+            {
+                AbLog($"episode {m_AbEpisodes} ({(m_AbEpisodeOn > 0 ? "fix ON" : "control, fix OFF")}): ended by a recovery ({why})");
+                EndAbEpisode();
+            }
+            m_StillSince = -1f;
             DtcLog.Info("autopilot: recovery (" + why + ")");
             p.Input.Injected = null;
             p.EnterRecovery("test autopilot " + why);

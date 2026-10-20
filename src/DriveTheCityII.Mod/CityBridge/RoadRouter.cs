@@ -31,6 +31,10 @@ namespace DriveTheCityII.CityBridge
         public readonly List<float3> Polyline = new List<float3>();
         public int Expansions;
         public float3 GoalPoint;
+        /// <summary>U-turn movements at junctions along the route.</summary>
+        public int UTurns;
+        /// <summary>The route starts on a lane running against the vehicle's heading (a turn-round in the street).</summary>
+        public bool StartsWrongWay;
     }
 
     /// <summary>
@@ -53,6 +57,8 @@ namespace DriveTheCityII.CityBridge
             public float Speed;
             public Bezier4x3 Curve;
             public bool Forbidden;
+            /// <summary>A U-turn movement at a junction (the game's UTurnLeft/UTurnRight lane flags).</summary>
+            public bool UTurn;
             /// <summary>For a master lane: the curves of the lanes vehicles actually drive in (null otherwise).</summary>
             public Bezier4x3[] Slaves;
             /// <summary>The lane entities vehicles register on (the slaves of a master lane, or the lane itself).</summary>
@@ -128,6 +134,7 @@ namespace DriveTheCityII.CityBridge
                         Speed = math.max(5f, cl.m_SpeedLimit),
                         Curve = curves[i].m_Bezier,
                         Forbidden = (cl.m_Flags & CarLaneFlags.Forbidden) != 0,
+                        UTurn = (cl.m_Flags & (CarLaneFlags.UTurnLeft | CarLaneFlags.UTurnRight)) != 0,
                         Slaves = SlaveCurves(em, ents[i], out Entity[] trafficLanes),
                         TrafficLanes = trafficLanes,
                     };
@@ -304,7 +311,7 @@ namespace DriveTheCityII.CityBridge
             return math.min(120f, stopped * 6f);
         }
 
-        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f, bool onRoadSurface = false, bool avoidJams = false)
+        public RouteResult FindRoute(EntityManager em, float3 from, float2 heading, float3 to, float goalRadius, int maxExpansions = 120000, float wrongWayPenalty = 30f, bool onRoadSurface = false, bool avoidJams = false, float uTurnPenalty = 0f)
         {
             EnsureBuilt(em);
             var res = new RouteResult();
@@ -401,6 +408,10 @@ namespace DriveTheCityII.CityBridge
                     }
                     LaneNode nn = m_Lanes[nx];
                     float step = nn.Length / nn.Speed * (nn.Forbidden ? 5f : 1f);
+                    if (nn.UTurn)
+                    {
+                        step += uTurnPenalty; // a bus cannot turn round at an ordinary junction (ISSUE-034)
+                    }
                     if (avoidJams && math.distancesq(nn.Curve.a.xz, from.xz) < 1500f * 1500f)
                     {
                         step += JamSeconds(em, nn);
@@ -466,7 +477,15 @@ namespace DriveTheCityII.CityBridge
                 {
                     junctions++; // short connecting lanes are intersection movements
                 }
+                if (n.UTurn)
+                {
+                    res.UTurns++;
+                }
                 float t0 = i == 0 && startT.TryGetValue(chain[i], out float st) ? st : 0f;
+                if (i == 0 && useHeading)
+                {
+                    res.StartsWrongWay = math.dot(math.normalizesafe(MathUtils.Tangent(n.Curve, t0).xz), math.normalizesafe(heading)) < 0f;
+                }
                 float t1 = i == chain.Count - 1 ? goalT[chain[i]] : 1f;
                 if (t1 < t0)
                 {

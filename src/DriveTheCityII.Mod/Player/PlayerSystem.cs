@@ -42,6 +42,17 @@ namespace DriveTheCityII.Player
         public bool Lost;
         public string CareerVehicleId;
         public bool LightsOn = true;
+
+        /// <summary>How long the vehicle has been stopped (seconds, game not paused).</summary>
+        public float StoppedSeconds;
+
+        /// <summary>The native vehicle it waits behind, as reported to the game's traffic (ISSUE-033).</summary>
+        public Entity WaitingBehind;
+
+        public float NextWaitCheck;
+
+        /// <summary>A change of the vehicle's motion data (parked or driven) is queued for the actor-ops system.</summary>
+        public bool MovingChangePending;
     }
 
     /// <summary>
@@ -1390,19 +1401,41 @@ namespace DriveTheCityII.Player
             }
             if (m_Vehicle != null)
             {
-                WriteVehicle(em, m_Vehicle, active: m_Sm.State == PlayerState.Driving, frozen);
+                WriteVehicle(em, m_Vehicle, active: m_Sm.State == PlayerState.Driving, frozen, parked: false);
             }
             foreach (ControlledVehicle p in m_ParkedVehicles)
             {
-                WriteVehicle(em, p, active: false, frozen);
+                WriteVehicle(em, p, active: false, frozen, parked: true);
             }
         }
 
-        private void WriteVehicle(EntityManager em, ControlledVehicle v, bool active, bool frozen)
+        private void WriteVehicle(EntityManager em, ControlledVehicle v, bool active, bool frozen, bool parked)
         {
             if (v.Entity == Entity.Null || v.SpawnPending || !em.Exists(v.Entity))
             {
                 return;
+            }
+            // ISSUE-033: a parked vehicle of the player's is an obstacle, not traffic. Native cars wait indefinitely behind
+            // traffic standing still, and a rental left in the street held a queue that grew from 12 to 81 cars in four
+            // minutes (observed in game on 2026-10-20). Without its motion data the game handles it like any stationary
+            // obstacle in a lane: traffic changes lane or edges past it. The data comes back when the player drives it.
+            bool obstacle = parked && ParkedAsObstacle;
+            if (v.Kind == ActorKind.CareerVehicle && !v.MovingChangePending && em.HasComponent<Moving>(v.Entity) == obstacle)
+            {
+                v.MovingChangePending = true;
+                Entity e = v.Entity;
+                bool moving = !obstacle;
+                ActorOpsSystem.Enqueue(m =>
+                {
+                    try
+                    {
+                        ActorWriter.SetMovingPresence(m, e, moving);
+                    }
+                    finally
+                    {
+                        v.MovingChangePending = false;
+                    }
+                });
             }
             VehicleState s = v.State;
             TransformFlags flags = 0;
@@ -1438,6 +1471,62 @@ namespace DriveTheCityII.Player
             {
                 ActorWriter.RefreshTripSource(em, v.Entity);
             }
+            UpdateWaitingBehind(em, v, active, frozen);
+        }
+
+        /// <summary>
+        /// Test switch (bridge "trafficfix"): when false, the player's vehicle never reports what it waits behind, as
+        /// before the ISSUE-033 fix. Used to compare both behaviours in one session.
+        /// </summary>
+        public static bool ReportWaitingBehind = true;
+
+        /// <summary>
+        /// Test switch (bridge "parkfix"): when false, a parked vehicle of the player's keeps its motion data and native
+        /// traffic queues behind it, as before the ISSUE-033 fix.
+        /// </summary>
+        public static bool ParkedAsObstacle = true;
+
+        private readonly List<Obstacle> m_WaitObstacles = new List<Obstacle>();
+
+        /// <summary>
+        /// ISSUE-033: the native traffic system clears a deadlock only when the chain of "blocked by" links from a stopped
+        /// vehicle loops back to it. The player's vehicle is outside the game's driving systems, so its own link was
+        /// always empty and any loop through it (our vehicle behind car A, A waiting for a crossing car, the crossing car
+        /// waiting for our vehicle) stood until the player left. While the driven vehicle has been stopped for a few
+        /// seconds behind a vehicle, that vehicle is written as its blocker, so the game sees the loop and takes one of
+        /// its own vehicles out of it, as it does for any other deadlock.
+        /// </summary>
+        private void UpdateWaitingBehind(EntityManager em, ControlledVehicle v, bool active, bool frozen)
+        {
+            float now = UTime.realtimeSinceStartup;
+            if (!frozen)
+            {
+                bool stopped = Math.Abs(v.State.Speed) < WaitingBehind.StoppedSpeed;
+                v.StoppedSeconds = stopped ? v.StoppedSeconds + Mathf.Clamp(UTime.unscaledDeltaTime, 0f, 0.25f) : 0f;
+            }
+            if (!ReportWaitingBehind || !active || v.StoppedSeconds < WaitingBehind.WaitSeconds)
+            {
+                v.WaitingBehind = Entity.Null;
+            }
+            else if (now >= v.NextWaitCheck)
+            {
+                v.NextWaitCheck = now + 0.5f;
+                m_WaitObstacles.Clear();
+                m_Probe.QueryObstacles(v.State.Position.XZ, v.Spec.Length * 0.5f + WaitingBehind.MaxGap + 8f, m_WaitObstacles);
+                Obb2 self = Obb2.FromYaw(v.State.Position.XZ, v.State.Yaw, v.Spec.Width * 0.5f, v.Spec.Length * 0.5f);
+                int i = WaitingBehind.Pick(self, v.State.Speed, v.StoppedSeconds, m_WaitObstacles);
+                v.WaitingBehind = Entity.Null;
+                if (i >= 0)
+                {
+                    long id = m_WaitObstacles[i].SourceId;
+                    var e = new Entity { Index = (int)(id & 0xffffffffL), Version = (int)(id >> 32) };
+                    if (e != v.Entity && em.Exists(e))
+                    {
+                        v.WaitingBehind = e;
+                    }
+                }
+            }
+            ActorWriter.SetBlocker(em, v.Entity, v.WaitingBehind, v.State.Speed);
         }
 
         private Game.Rendering.LightingSystem m_Lighting;
