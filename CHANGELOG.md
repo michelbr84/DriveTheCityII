@@ -47,6 +47,31 @@ evidence; full records are in [WORKLOG](docs/quality/evidence/WORKLOG.md) and th
 - **Docs:** ADR-0005 Accepted; TASK-0003 In review; [START_HERE](START_HERE.md); PROJECT_STATUS §0; COMPATIBILITY_MATRIX
   tested rows; MELTY_EVALUATION §9a.
 
+### Fixed — 2026-10-19 (evening) — Freight and bus in game (part B)
+
+Found by the freight and bus campaigns ([RUN-0003 §4](docs/quality/evidence/RUN-0003/REPORT.md)); each fix was
+rerun in game. Details and evidence in [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md) ISSUE-020 to ISSUE-033.
+
+- Employer trucks and buses are placed where their whole footprint is clear (ISSUE-020).
+- Place access points sit on the curb-side lane; guidance ends within 6 m of a dock or stop when possible (ISSUE-021).
+- Harsh-driving acceleration is bounded and smoothed; contacts are scored separately (ISSUE-022).
+- Ground following: wheel outliers rejected, pitch and roll capped (ISSUE-023); overlapping decks keep each wheel on
+  its own surface or the followed lane's level (ISSUE-029); a stale tilt no longer blocks a vehicle (ISSUE-030).
+- Routes run on the lanes vehicles drive in, chosen from the destination backwards; lane changes are smoothed
+  (ISSUE-024). Contacts use body widths without mirrors (ISSUE-024).
+- Contacts with moving vehicles score only the player's own share of the closing speed; traffic overtaking through the
+  player's vehicle is no impact (ISSUE-027).
+- Guidance: long-vehicle U-turn penalty 120 s (ISSUE-026); start lanes on the vehicle's own level (ISSUE-028);
+  standing queues near the start cost extra so the route goes round them (ISSUE-033).
+- Recovery keeps the direction of travel, prefers its own level, faces along the guidance route and resets the tilt
+  (ISSUE-025, ISSUE-030, ISSUE-031).
+- The operator's bus is a line bus, never a prison van (ISSUE-032).
+- Test tooling: autopilot deadlock limits, bumper-zone creeping, curve speed, comfortable braking and relative
+  following; campaign resume after a return to city building, `-NoDrive`, `-WarpMinutes`; bridge diagnostics
+  `traffic [radius]`, `probegrid`, `netsat`, `lanesat`, `routepts`, `tpveh`, `tpav`, `blockers`, `blockchain`.
+- Validation: a freight job and a whole 14-stop bus shift completed and paid in game (simulated input); 161 unit
+  tests.
+
 ### Added — 2026-10-19 (later the same day) — Careers in game, M1 acceptance, audio, language option
 
 - **Careers (Core, 93 new unit tests; 143 in total):** taxi, delivery, freight, bus, garage (rent, buy, sell,

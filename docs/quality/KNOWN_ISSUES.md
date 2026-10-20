@@ -209,12 +209,17 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
   career now sees a stable base access point, and route length is not part of the signature.
 
 ### ISSUE-017 — Freight and bus runs not completed in game by the test autopilot
-- Severity: Medium (test coverage, not a player defect as far as known)
-- Status: Open
-- Component: Test tooling
-- Detail: the simulated-input autopilot drove the truck into traffic right after loading (load lost: the correct rule
-  outcome) and got the bus stuck before the first stop. Complete freight and bus runs are covered by unit tests only.
-  A human playthrough is needed.
+- Severity: Medium (test coverage)
+- Status: Verified in game for both (simulated input): a freight job and a whole 14-stop bus shift were completed and
+  paid
+- Component: Test tooling, plus the product defects ISSUE-020 to ISSUE-033 that these runs exposed
+- Detail: on 2026-10-19 (afternoon) the freight and bus campaigns were rerun after each fix
+  ([RUN-0003 §4](evidence/RUN-0003/REPORT.md)). Freight: a general freight job (4.0 t, 2 drops) was loaded, delivered
+  at the first drop and settled as **completed: +32.15 cr, +20 XP, reputation +1** (session 20261019-171130); the hard
+  deadline ended it before the second drop. Bus: a whole Line 1 shift, **14 of 14 stops served, settled as completed:
+  +222.50 cr, +47 XP** (session 20261019-212310, with two labelled harness steps). Earlier shifts were held up in
+  standing queues in the lab city's downtown (ISSUE-033). Driving is simulated input. A human playthrough is still
+  needed.
 
 ### ISSUE-018 — After a failed employer job you still sit in the released truck or bus
 - Severity: Low
@@ -234,7 +239,8 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-020 — The employer's bus could appear overlapping a pole or shelter and never move
 - Severity: High (bus shifts unplayable when it happens)
-- Status: Fixed; bus verification pending (the freight truck uses the same placement and was provided at clear spots)
+- Status: Verified fixed (the operator's bus was provided at the depot and driven away in sessions 20261019-175926,
+  -193855 and -200131)
 - Component: Player (vehicle placement)
 - Cause: the provided vehicle was put at the nearest lane point without checking its whole footprint. Placement,
   employer vehicles and recovery now search for a spot where the full footprint is clear (`VehiclePlacement.cs`).
@@ -263,7 +269,8 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-024 — Vehicles straddled the lane line on multi-lane roads and passing traffic clipped them
 - Severity: High (freight loads lost on multi-lane roads; the guidance line was also misleading)
-- Status: Fixed; verification in progress
+- Status: Verified fixed (session 20261019-171130: 30 minutes of multi-lane roads and highway at up to 15 m/s with one
+  light contact, from a car changing lanes)
 - Component: City bridge (router), world contact
 - Cause: the route followed the game's "master lane", whose curve runs between the lanes of a multi-lane road, and
   vehicle contacts used prefab widths that include the mirrors (a sedan reads 2.0 m, the delivery truck 3.2 m), so two
@@ -282,7 +289,7 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-026 — Guidance sent a truck facing away from its drop on an 11 km loop
 - Severity: Medium
-- Status: Fixed (U-turn penalty for long vehicles 600 s → 120 s); verification in progress
+- Status: Fixed (U-turn penalty for long vehicles 600 s → 120 s); no 11 km loop seen in later runs
 - Component: Careers (guidance route)
 - Detail: session 20261019-130106: after a recovery the truck faced away from the drop; the route avoided turning
   round at almost any cost, the job missed its hard deadline 1.6 km from the drop.
@@ -290,7 +297,7 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 ### ISSUE-027 — Traffic overtaking through the player's vehicle was scored as a severe impact
 - Severity: High (heavy freight lost on highways without any driver error)
 - Status: Fixed (unit tests `CarOvertakingThroughOursIsNoContact`, `RearContactWithSlowerCarScoresTheClosingSpeed`);
-  in-game verification in progress
+  verified in game (session 20261019-171130: no severe contact from passing traffic in 30 minutes of driving)
 - Component: Core (vehicle contacts)
 - Detail: on highways native cars at about 30 m/s drive straight through a slower player vehicle (host-game
   behaviour: they do not always yield to it at speed). When such a car overlapped the truck's front it was treated as
@@ -300,22 +307,75 @@ Copy this block for each new issue. Number issues sequentially (`ISSUE-001`, `IS
 
 ### ISSUE-028 — The guidance route could start on the overpass above the vehicle
 - Severity: Medium
-- Status: Fixed; verification in progress
+- Status: Verified fixed (see Verification)
 - Component: City bridge (router)
 - Detail: start lanes were matched within 12 m of height, so at the foot of a ramp the route started on the bridge 7 m
-  above and the truck steered at a point it could not reach (session 20261019-140429). Lanes on another level are now
-  heavily penalized as start lanes; recovery also prefers spots on the vehicle's own level.
+  above and the truck steered at a point it could not reach (session 20261019-140429). Then, on an elevated road
+  running directly above another road, the route kept switching to the road 7 m below whenever that saved a detour
+  (session 20261019-164338). When the vehicle is on a road surface, only lanes within 1.2 m of its height can now
+  start the route; recovery also prefers spots on the vehicle's own level.
+- Verification: session 20261019-171130 (the truck crossed the stacked section on the elevated road without falling).
 
-### ISSUE-029 — A vehicle on a road could climb onto a ramp built over that road and fall off its edge
+### ISSUE-029 — A vehicle could end up on the wrong level where roads are stacked and fall off a deck's edge
 - Severity: High
-- Status: Fixed (unit tests `CarOnTheRoadDoesNotClimbAnOverlappingRamp`, `CarOnTheRampKeepsClimbingIt`); in-game
-  verification in progress
+- Status: Fixed (unit tests `CarOnTheRoadDoesNotClimbAnOverlappingRamp`, `CarOnTheRampKeepsClimbingIt`); see Verification
 - Component: Core (ground following)
-- Detail: in the lab city an elevated one-lane ramp starts at road level on top of a road and rises over it. Each
-  wheel took the highest surface within its step allowance, so a truck following the road climbed the ramp; as the
-  two separated sideways it ran off the ramp's edge and fell 7 m (sessions 20261019-140429, -155015; mapped with the
+- Detail: in the lab city an elevated road runs for about 80 m directly above another road. Each wheel took the highest
+  surface within its step allowance, and the route could be on the lower road (ISSUE-028), so the truck stayed on the
+  deck while following the lower road's line, and fell 7 m off the deck's edge where the two roads separate (sessions
+  20261019-140429, -155015, -162650; mapped with the
   new `probegrid`, `netsat` and `lanesat` diagnostics). Where two road or deck surfaces overlap, each wheel now keeps
-  the one closest to its own height; stepping from terrain onto a road is unchanged.
+  the surface it was on, and otherwise takes the one at the height of the lane the vehicle is following (nearest
+  lane along the heading within 2 m of its height; unit test `LaneLevelHintTakesTheBranchDroppingUnderTheDeck`, which
+  fails without the change). Stepping from terrain onto a road is unchanged.
+- Verification: session 20261019-171130 (no fall at the spot where the truck fell in four earlier runs).
+
+### ISSUE-030 — A recovered vehicle could keep its tilt and never move again
+- Severity: High
+- Status: Fixed (unit test `CarLeftTiltedOnAFlatRoadCanDriveAway`, which fails without the change)
+- Component: Player (recovery), Core (ground following)
+- Detail: recovery set position, heading and speed but kept the pitch and roll the vehicle had on a deck. On a flat
+  road the wheel height prediction then put the front wheels 0.6 m below the road, which read as a wall (session
+  20261019-165726). Recovery and teleports now reset pitch and roll, and a wheel retries without the tilt prediction
+  when it reads blocked.
+
+### ISSUE-031 — Recovery could put the vehicle facing away from its route
+- Severity: Medium
+- Status: Fixed
+- Component: Player (recovery)
+- Detail: recovery preferred lanes running the vehicle's own heading; a van stuck crosswise facing a railing was put on
+  the lane facing away from its route each time (session 20261019-175926). With a guidance route nearby, recovery now
+  faces along the route.
+
+### ISSUE-032 — The operator's bus could be a prison van
+- Severity: Low
+- Status: Fixed
+- Component: City bridge (vehicle catalog)
+- Detail: the bus category took every "bus" public-transport prefab, including the prison van. It now takes line buses
+  only (transport-line purpose, not prisoner transport).
+
+### ISSUE-033 — Standing queues in the lab city block routes for 20 minutes or more
+- Severity: Medium
+- Status: Open (host-game traffic; mitigated)
+- Component: City bridge (router), host game
+- Detail: on the bus route out of the depot a queue of 20+ native vehicles stood for over 20 minutes; following the game's
+  own "blocked by" links led to one native vehicle stopped with no blocker (session 20261019-200131, new `blockers` and
+  `blockchain` diagnostics). Whether the player's vehicle contributes is not settled: in one case the queue cleared
+  within 90 s of the player's bus being removed, in another the chain did not involve it. A third test (session
+  20261019-212310, Robin Street): a queue whose head was a car stopped with no blocker had stood for 20 minutes; it was
+  flowing 90 s after the player's vehicles were removed. So the player's vehicle very likely triggers these stalls,
+  through a mechanism not yet identified (candidates: its lane registration or the `TripSource` marker that keeps the
+  game's AI off it). Mitigation so far: the guidance route adds about 6 s per standing vehicle on lanes within 1.5 km,
+  so it goes round a standing queue when there is another way. Workaround for players: leave the vehicle (or return to
+  city building) briefly; the employer's vehicle can be brought back from the garage ("Bring here").
+
+### ISSUE-034 — Guidance can ask a bus to turn round in a narrow street
+- Severity: Medium
+- Status: Open (fix prepared, not in the package because it was not tested in game)
+- Component: Careers (guidance route)
+- Detail: the U-turn penalty for vehicles longer than 7 m is 120 s, so the route can start with a turn-round that a
+  12.7 m bus cannot make on a two-lane street; the test autopilot failed several turn-rounds in a row (session
+  20261019-212310). Proposed fix: 400 s for vehicles longer than 10.5 m, so buses go round the block.
 
 ## 7. Release use
 

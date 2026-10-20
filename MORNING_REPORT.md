@@ -12,8 +12,9 @@
 car, drive it through real traffic, take jobs, earn and spend money, and go back to building. Your career is saved
 inside each city save. The core loop (M1) passed with real keyboard input, 17 of 17 steps. Taxi, delivery, garage,
 home, company, persistence and Portuguese were verified in game, and a 2-hour real-time soak ran without a crash.
-Freight, bus and challenge runs started in game but were not completed there. They are covered by unit tests and
-need your playtest. Nothing was published or uploaded.
+Later, a freight job (one of two drops delivered before the deadline) and a whole 14-stop bus shift were completed and
+paid in game with simulated input. A challenge to the finish was not completed in game and needs your playtest.
+Nothing was published or uploaded.
 
 How to read the columns:
 
@@ -54,8 +55,8 @@ How to read the columns:
 | Career persistence and exactly-once money | Yes | Yes | Persistence and ledger unit tests | **Yes**: mid-fare save and reload resumes the same stage; no double payout after reload; an older save restores its exact balance; a double-click refuel was refused | — |
 | Taxi career | Yes | Yes | 18 unit tests | **Yes (simulated driving)**: fares completed (49.01 cr and 29.13 cr), patience failures handled | Street hails (taxi duty) are stored but not generated |
 | Delivery career | Yes | Yes | 12 unit tests (with freight) | **Yes (simulated)**: load, drop-off, parcel destroyed by an impact, partial pay | — |
-| Freight career (rigid truck) | Yes | Yes | Unit tests | **Partly**: the shipper's truck is provided and boarded; cargo loads; the load is lost on a crash | A completed freight delivery was not seen in game (ISSUE-017) |
-| Bus career (real city line) | Yes | Yes | 8 unit tests | **Partly**: line job accepted; the operator's bus is provided and boarded | Served stops were not seen in game (ISSUE-017) |
+| Freight career (rigid truck) | Yes | Yes | Unit tests | **Yes (simulated)**: truck provided at a clear spot, cargo loaded, delivered at the first drop; job settled as completed, +32.15 cr, +20 XP | Delivered 1 of 2 drops before the hard deadline; a full-length heavy job not finished yet (ISSUE-017) |
+| Bus career (real city line) | Yes | Yes | 8 unit tests | **Yes (simulated)**: a whole Line 1 shift, 14 of 14 stops served, settled as completed, +222.50 cr, +47 XP | Two labelled harness steps in that run; standing queues near the depot (ISSUE-033); guidance may ask a bus to turn in a narrow street (ISSUE-034) |
 | Garage: basic rental, rent, buy, sell, refuel, repair, upgrades, roadside help, tow | Yes | Yes | 13 unit tests | **Rental, buy, sell, refuel, repair: yes.** Upgrades, roadside help and tow: not run in game | Try upgrades and roadside help |
 | Progression: XP per career, levels, reputation, unlocks | Yes | Yes | Unit tests | XP and reputation changes seen; unlocks exercised with test seeding | Balance needs playtesting |
 | Home and service points (CS2 has no fuel stations) | Yes | Yes | Unit tests | **Yes**: set home, go home, service point markers and actions | — |
@@ -88,7 +89,10 @@ How to read the columns:
 
 Full list: [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md). The ones you will notice:
 
-- Freight and bus jobs work up to driving the provided truck or bus. A full run was not completed in game (ISSUE-017).
+- Freight and a whole bus shift were completed in game once each, by the test autopilot (ISSUE-017). Long standing
+  queues can form around your vehicle (ISSUE-033); if traffic around you stops for minutes, leave the vehicle or return
+  to city building briefly, then bring the vehicle back from the garage.
+- Your vehicle can lock traffic if it stops in a turning vehicle's path; reverse or press Backspace (ISSUE-025).
 - Getting in and out of a car is a short slide, not an animation. No footstep sound.
 - When you stop in the middle of a wide road, you may step out onto the road (ISSUE-010). Park at the curb.
 - Rare 50–130 ms stutters when the road graph rebuilds (ISSUE-009).
@@ -107,8 +111,8 @@ Full list: [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md). The ones you will notic
 1. **Play it** (see START_HERE): take a taxi fare, then try a delivery. Freight unlocks at Delivery level 3 (or total
    level 6); bus shifts at Taxi level 3 (or reputation 60). Judge the fun, the driving feel and the sound; that is the
    M2 "fun checkpoint".
-2. **Try what the automation could not finish**: a full freight run, a bus line, a challenge to the finish, and key
-   remapping in Options. If you have a gamepad, try it.
+2. **Try what the automation could not finish**: a challenge to the finish, a full-length heavy freight run, and key
+   remapping in Options. Drive a bus line yourself to judge it. If you have a gamepad, try it.
 3. **Optional cleanup**: the test saves are named `DTC2-LAB-*` in the game's save list; delete them when you no longer
    need them. The real-time soak and test sessions never touched your own saves; the Continue pointer was restored
    after every session.

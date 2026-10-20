@@ -50,8 +50,8 @@ were fixed and the affected sections re-run on the next build).
 | Refuel, exactly once | **Passed** | Tank 30 % → 100 % (test-seeded level), one ledger entry (-42.00 cr). The second, simultaneous click was refused: "This refuel was already paid." |
 | Sell a vehicle | **Passed** | +351.00 cr |
 | Delivery | **Passed** | Load at 1215 Elm Street, drop-off at 156 Birdsong Street; the last parcel was destroyed in a collision, so the job completed with pay for the delivered parcel (22.22 cr, +25 XP). A first attempt failed its hard deadline after 3 minutes; this exposed the route-time defect (ISSUE-015), which is now fixed. |
-| Freight | **Partly verified** | Offer (test-seeded unlock), accept, **shipper's truck provided** (after the ISSUE-013/014 fixes), boarded, cargo loaded ("Payload affects braking and acceleration"). In two runs the test autopilot then hit a car at 9.7 m/s and the load was lost, so the job failed with 0 cr and reputation -5, the correct rule outcome. A completed delivery of freight was **not observed in game**. |
-| Bus | **Partly verified** | Bus shift on line 1 (14 stops) accepted, **operator's bus provided** and boarded. The test autopilot got stuck before the first stop. A served stop was **not observed in game**. |
+| Freight | **Partly verified** | Offer (test-seeded unlock), accept, **shipper's truck provided** (after the ISSUE-013/014 fixes), boarded, cargo loaded ("Payload affects braking and acceleration"). In two runs the test autopilot then hit a car at 9.7 m/s and the load was lost, so the job failed with 0 cr and reputation -5, the correct rule outcome. A completed delivery of freight was **not observed in game** in this campaign; see §4 for the later completed and paid job. |
+| Bus | **Partly verified** | Bus shift on line 1 (14 stops) accepted, **operator's bus provided** and boarded. The test autopilot got stuck before the first stop. A served stop was **not observed in game** in this campaign; see §4 (3 stops served later). |
 | Challenges | **Partly verified** | Challenges generated (time trial, checkpoint route, parking). Start arms the run; checkpoint markers, route and HUD card are drawn. A completed run was **not observed**: the runs were voided first by the route-change defect (ISSUE-016, fixed), then by an autopilot recovery (a recovery voids a run by design). |
 | Home | **Passed** | Home set at the nearest house; "Go home" worked |
 | Company | **Passed** (setup) | Company founded (test-seeded gates), driver hired, fleet rigid truck bought, freight contract accepted, driver assigned, state saved. Period settlements are observed in the soak (see RUN-0004). |
@@ -69,3 +69,20 @@ Test-seeded profile: yes for this city (XP, reputation, money and one fuel level
   challenges). Earlier challenge runs on the final package were armed and then voided by recoveries while reaching the
   start. In those runs the route no longer flipped to "changed" during the run (ISSUE-016 fix confirmed). A finished run
   with a time and medal is still **not observed in game**.
+
+## 4. Freight and bus completion campaign (afternoon of 2026-10-19, `tools\campaign-freight-bus.ps1`)
+
+Input: **simulated** (test autopilot). Builds `0.1.0-a3ca3b5` to `0.1.0-9fe8073` (each defect found was fixed and the
+campaign rerun). City `DTC2-LAB-CAREERS-H` (test-seeded profile). Reports: `%LOCALAPPDATA%\DriveTheCityII\test\campaigns\freight-bus-*`.
+
+| Area | Result | Evidence and detail |
+|---|---|---|
+| Freight | **Passed (completed and paid in game; partial delivery)** | Session 20261019-171130, build `1fa0d7e`: general freight, 4.0 t, 2 drops. Loaded at 61 Beechwood Street, delivered at 1237 Elm Street ("Stop done"), then the hard deadline passed before 254 Birdsong Street ("The cargo is returned to the shipper"). The job settled as **completed: +32.15 cr, +20 XP, reputation +1**; the wallet moved from 732,185.00 to 733,224.00 including an earlier -21.76 cancellation fee. Copies: [campaign report](campaign-freight-20261019-171130.md), [career events](freight-completed-events.md). A heavy-freight attempt in the same session reached 1.5 km from its drop with 81 % cargo integrity before a recovery found no safe spot and returned the player to city building (by design); the campaign now gets back into the employer's vehicle in that case. |
+| Bus | **Passed (whole shift completed and paid in game)** | Session 20261019-212310, build `94004de` (city first run at 3× for 10 minutes so the shift starts at night): Line 1, **14 of 14 stops served** ("Stop done" ×14), up to 38 passengers on board, settled as **completed: +222.50 cr, +47 XP**; the wallet moved from 732,185.00 to 754,435.00. Two harness steps, both labelled in the [career events](bus-shift-events.md): the bus was driven 9 m forward to a junction once when it was stuck facing away from its route, and the player returned to city building for 90 s once (to test ISSUE-033), then brought the bus back with the garage action and boarded it. Earlier shifts: session 20261019-175926 served 3 stops, sessions 20261019-185358 to -203611 were held in standing queues near the depot (ISSUE-033). |
+
+Product defects found and fixed during the campaign (details in [KNOWN_ISSUES](../../KNOWN_ISSUES.md)): ISSUE-020 to
+ISSUE-032, among them routes on real lanes instead of between them (ISSUE-024), contact scoring with moving traffic
+(ISSUE-027), level handling where roads are stacked (ISSUE-028/029) and a recovered vehicle that could not move
+(ISSUE-030). Test-autopilot changes (not player-facing): deadlock limits, creeping only for obstacles ahead of the
+bumper, curve speed from route curvature, braking within the cargo's comfort, relative following. Unit tests: 161
+passing.
