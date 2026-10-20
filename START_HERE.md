@@ -10,7 +10,18 @@ This is a **development build** of a Cities: Skylines II code mod. The source is
 published on any platform. The steps below were verified on the development machine (CS2 1.6.2f1, Steam) unless
 marked otherwise. Back up your saves before you try it.
 
-## 1. Build and install
+## 1. Install
+
+### 1a. From a release (no build needed)
+
+1. Close the game.
+2. Download `DriveTheCityII-<version>.zip` from the
+   [latest GitHub release](https://github.com/michelbr84/DriveTheCityII/releases/latest).
+3. Extract it into `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\` (paste that path into the
+   Explorer address bar; create `Mods` if it is missing). You should get `Mods\DriveTheCityII\DriveTheCityII.dll`.
+4. To uninstall, close the game and delete `Mods\DriveTheCityII`.
+
+### 1b. From source
 
 Open **PowerShell** in the project folder.
 

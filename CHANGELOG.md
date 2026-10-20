@@ -7,11 +7,16 @@
 | Responsible role | Coordinator (maintainer); every completed task adds its real changes |
 | Last updated | 2026-10-20 |
 
-This file records changes that were **actually made**. It never lists planned features as done, and no version of the
-mod has been released. Version headings will appear only when real releases exist
-([PACKAGING_AND_PUBLISHING](docs/release/PACKAGING_AND_PUBLISHING.md)).
+This file records changes that were **actually made**. It never lists planned features as done. Version headings
+mark real releases ([PACKAGING_AND_PUBLISHING](docs/release/PACKAGING_AND_PUBLISHING.md)).
 
 ## [Unreleased]
+
+## [0.1.0] — 2026-10-20
+
+First public release: a manual-install archive on
+[GitHub Releases](https://github.com/michelbr84/DriveTheCityII/releases/tag/v0.1.0). Everything below this heading
+is part of 0.1.0. Release tooling: `tools\release.ps1` (archive with install notes, checksum, manifest).
 
 ### Changed — 2026-10-20 — Repository prepared for public visibility
 

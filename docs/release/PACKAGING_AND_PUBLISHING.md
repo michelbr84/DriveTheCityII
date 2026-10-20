@@ -9,11 +9,40 @@
 | Responsible role | Coordinator (maintainer); QA verifies packages; project owner chooses channels and approves every publication |
 | Related requirements | REQ-REL-001, REQ-REL-003, REQ-REL-004, REQ-COMPAT-001, REQ-DIAG-001, REQ-ART-002 |
 | Related documents | [ADR-0001](../architecture/decisions/ADR-0001-host-game-and-runtime.md), [INSTALL_UPGRADE_UNINSTALL](INSTALL_UPGRADE_UNINSTALL.md), [COMPATIBILITY_POLICY](COMPATIBILITY_POLICY.md), [DEPENDENCIES](../engineering/DEPENDENCIES.md), [REUSE_AND_LICENSE_AUDIT](../legal/REUSE_AND_LICENSE_AUDIT.md), [THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md), [MELTY_EVALUATION](../research/MELTY_EVALUATION.md), [SOURCES](../research/SOURCES.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-20 |
 
-> **Pre-release draft.** Nothing has been built, no package exists, **no tested installer exists, and nothing is
-> published**. No distribution channel has been chosen. This document describes the intended packaging and the checks a
-> package must pass before any publication.
+> **Update 2026-10-20 (owner decisions):** the channels are **GitHub Releases** (manual-install archive) and then
+> **Paradox Mods**. Melty is **not** used. Section 0 is the current procedure; sections 1-9 are the earlier planning
+> text, kept for history. Where they differ, section 0 wins.
+
+## 0. Current procedure (2026-10-20)
+
+### 0.1 Package and archive
+
+1. Commit everything, then `tools\build.ps1` (unit tests, mod build, package under
+   `%LOCALAPPDATA%\DriveTheCityII\packages\`). The package is `DriveTheCityII.dll`, `.pdb`, and `.mjs` plus a manifest
+   with SHA-256 hashes. It never contains game files.
+2. `tools\release.ps1 -Version <version>` checks the package against its manifest, refuses a `+dirty` build, and writes
+   `%LOCALAPPDATA%\DriveTheCityII\releases\<version>\DriveTheCityII-<version>.zip` with one top-level folder
+   `DriveTheCityII\` (the mod files, `LICENSE.txt`, `README.txt` with install steps in English and Portuguese), plus
+   `SHA256SUMS.txt` and `release-manifest.json`.
+3. Release test: install the archive exactly as a player would (extract into `<CS2 user data>\Mods\`), run a test
+   session in a lab city, check the version line in the log, and run the career persistence campaign. Record the run.
+
+### 0.2 GitHub Releases
+
+Tag the release commit `v<version>`, push it, and create the GitHub release from that tag with the archive attached and
+its SHA-256 in the notes. Afterwards, download the asset again and compare its SHA-256.
+
+### 0.3 Paradox Mods
+
+- Publisher: `ModPublisher` ships with the game in
+  `Cities2_Data\Content\Game\.ModdingToolchain\ModPublisher\` (a .NET 6 program; it runs on the project's private .NET 10
+  with `DOTNET_ROLL_FORWARD=Major`). Commands: `Publish` (first time), `NewVersion`, `Update` (metadata only), each
+  `ModPublisher <command> <PublishConfiguration.xml> -c <content folder> -v` [Source-inspected, 2026-10-20].
+- Login: by default it logs in automatically with the Paradox account the game is signed in to. Its email and password
+  options are never used by agents ([SECURITY.md](../../SECURITY.md)).
+- The exact configuration and the first-publication record are added here when they exist.
 
 ## 1. Purpose
 

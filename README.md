@@ -8,7 +8,7 @@ experience, rent or buy vehicles, found a small transport company, and go back t
 |---|---|
 | Version | 0.1.0 (development build) |
 | Game | Cities: Skylines II **1.6.2f1** (Steam, Windows 11). Other game versions are untested. |
-| Distribution | **Source only.** The mod is not published on Paradox Mods or any other platform, and there are no prebuilt downloads. |
+| Download | A ready-to-install archive is attached to each [GitHub release](https://github.com/michelbr84/DriveTheCityII/releases/latest). The mod is not on any mod platform yet; Paradox Mods is planned. |
 | Status | Playable in disposable test cities. Validation is in progress: see [PROJECT_STATUS](docs/PROJECT_STATUS.md) and [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md). |
 | License | [MIT](LICENSE) |
 
@@ -31,7 +31,18 @@ loop was also run with real keyboard input. The per-feature table is in [MORNING
 Known limitations include: parked city cars cannot be entered yet, long buses clip corner props in narrow junctions,
 and gamepad bindings exist but are untested. See [KNOWN_ISSUES](docs/quality/KNOWN_ISSUES.md).
 
-## Build and install
+## Install a release
+
+1. Close the game and back up your saves.
+2. Download `DriveTheCityII-<version>.zip` from the [latest release](https://github.com/michelbr84/DriveTheCityII/releases/latest).
+3. Extract it into `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\`, so that you get
+   `Mods\DriveTheCityII\DriveTheCityII.dll`. Create the `Mods` folder if it does not exist.
+4. Start the game from Steam, load a city, and press **F8**.
+
+To uninstall, close the game and delete the `Mods\DriveTheCityII` folder. Cities keep loading without the mod. Controls
+and a first walkthrough are in [START_HERE](START_HERE.md).
+
+## Build from source
 
 Requirements: Windows, Cities: Skylines II installed through Steam, and the .NET SDK 10. The scripts use a private,
 user-scoped copy of the SDK and change nothing system-wide; the one-time setup is in
@@ -46,7 +57,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Install  #
 Build output goes to `%LOCALAPPDATA%\DriveTheCityII\`, and the mod is installed into
 `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\DriveTheCityII\`. `tools\deploy.ps1 -Status`,
 `-Rollback`, and `-Uninstall` check, undo, and remove it. The deploy script refuses to run while the game is open and
-never touches other mods or saves.
+never touches other mods or saves. `tools\release.ps1 -Version <version>` turns the built package into the release
+archive.
 
 Then start the game from Steam, load a city, and press **F8**. Controls and a first walkthrough are in
 [START_HERE](START_HERE.md). Back up your saves before trying any development build. Do not run the Beta Test Driving
