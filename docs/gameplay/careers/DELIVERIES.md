@@ -150,6 +150,6 @@ weighting), **RISK-204** (too few commercial pickups in some cities).
 ## 13. Provenance
 
 Multiple stops, pickup, deadlines, fragility, and a driving evaluation are **[Owner requirement]**. They also appear in
-[chat.md](../../../chat.md) **[Historical input]**. The contract types, integrity model, deadline curve, and unordered
+[chat.md](../../archive/chat.md) **[Historical input]**. The contract types, integrity model, deadline curve, and unordered
 leg group are original proposals. Motor Town's cargo jobs are a behavioral reference only
 ([MOTOR_TOWN_REFERENCE](../../research/MOTOR_TOWN_REFERENCE.md)).

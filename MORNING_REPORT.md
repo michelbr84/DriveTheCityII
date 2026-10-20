@@ -22,7 +22,8 @@ inside each city save. The core loop (M1) passed with real keyboard input, 17 of
 home, company, persistence and Portuguese were verified in game, and a 2-hour real-time soak ran without a crash.
 Later, a freight job (one of two drops delivered before the deadline) and a whole 14-stop bus shift were completed and
 paid in game with simulated input. A challenge to the finish was not completed in game and needs your playtest.
-Nothing was published or uploaded.
+No mod package was published on any platform. (On 2026-10-20 you pushed the source to your GitHub repository; it was
+then prepared for public visibility under the MIT License, see the [CHANGELOG](CHANGELOG.md).)
 
 How to read the columns:
 

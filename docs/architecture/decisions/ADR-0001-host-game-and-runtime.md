@@ -11,7 +11,7 @@
 ## Context
 
 Drive the City II puts a walking and driving career inside the player's own city. Several components were discussed
-during planning ([chat.md](../../../chat.md), **[Historical input]**): Cities: Skylines II (CS2) as the city, the Beta
+during planning ([chat.md](../../archive/chat.md), **[Historical input]**): Cities: Skylines II (CS2) as the city, the Beta
 Test Driving Mod as a possible vehicle-control foundation, Motor Town as a career reference, and Melty as a possible
 workflow or "mashup" launcher. Without a clear runtime decision, the project could drift toward exporting the city,
 running two simulations side by side, or depending on tools the player does not need.

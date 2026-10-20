@@ -89,7 +89,7 @@ did not open, say so. A reviewer may reject work whose required reading is not r
 
 - **[docs/archive/](../archive/README.md):** superseded material. Read it only when a task asks for the history of a
   decision; it is never current guidance.
-- **[chat.md](../../chat.md):** the Portuguese historical input (SRC-006). It is truncated and its citations were
+- **[chat.md](../archive/chat.md):** the Portuguese historical input (SRC-006). It is truncated and its citations were
   stripped. Read it only for provenance tasks, treat every statement as **[Historical input]**, and remember that the
   owner brief of 2026-10-18 supersedes it ([DOCUMENTATION_RULES](../DOCUMENTATION_RULES.md) §9).
 - **Machine-specific files** (the git-ignored `.local/` copy of

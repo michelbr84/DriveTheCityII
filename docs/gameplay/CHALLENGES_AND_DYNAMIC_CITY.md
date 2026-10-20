@@ -169,7 +169,7 @@ attributes for weighting), **RISK-204** (career or challenge starvation in small
 ## 11. Provenance
 
 Challenges, demand-informed jobs, revalidation after edits, and the gated native-economy experiment are **[Owner
-requirement]**. They also appear in [chat.md](../../chat.md) **[Historical input]**, which proposed editing in `Building`
+requirement]**. They also appear in [chat.md](../archive/chat.md) **[Historical input]**, which proposed editing in `Building`
 and revalidating on return. The weighting formula, route versioning, medal derivation, and non-colliding markers are
 original proposals. Motor Town's time-attack and autocross events are a behavioral reference only
 ([MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md)).

@@ -8,10 +8,10 @@
 | Responsible role | Coordinator (maintainer); Reviewer checks security-relevant changes; project owner decides reporting channels and authorizes sensitive operations |
 | Related requirements | REQ-DIAG-001, REQ-SAVE-004, REQ-CITY-004, REQ-REL-003 |
 | Related documents | [AGENTS.md](AGENTS.md), [TOOLS_AND_PERMISSIONS](docs/agents/TOOLS_AND_PERMISSIONS.md), [DEBUGGING](docs/engineering/DEBUGGING.md), [evidence](docs/quality/evidence/README.md), [DEPENDENCIES](docs/engineering/DEPENDENCIES.md), [UPSTREAM_STRATEGY](docs/engineering/UPSTREAM_STRATEGY.md), [LOCAL_ENVIRONMENT.example](docs/engineering/LOCAL_ENVIRONMENT.example.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-20 |
 
-> **Current state (2026-10-18):** pre-development. No software has been built or released. **No channel for reporting
-> security problems exists yet** ([OPEN-702](docs/planning/RISKS_AND_OPEN_QUESTIONS.md)).
+> **Current state (2026-10-20):** a development build (0.1.0) exists and is not released on any mod platform. The
+> source is hosted at <https://github.com/michelbr84/DriveTheCityII>. How to report a security problem: section 6.
 
 ## 1. What this policy protects
 
@@ -80,6 +80,11 @@ the project root, and accessing any save require the project owner's authorizati
 These rules shape the architecture ([MODULE_CONTRACTS](docs/architecture/MODULE_CONTRACTS.md)); exact locations are
 decided with OPEN-006 and the logging design.
 
+**Source check (2026-10-20) [Source-inspected]:** `src/` contains no network, socket, HTTP, or
+process-launch calls. The developer test bridge (`src/DriveTheCityII.Mod/Bridge/`) only reads command files, and only
+while the marker file `%LOCALAPPDATA%\DriveTheCityII\test\bridge.enabled` exists, which only `tools\test-session.ps1`
+creates. While it is enabled, the mod turns off autosave for that session and refuses to automate a non-lab city.
+
 - The mod reads and writes **only its own data locations**: its settings, its size-bounded logs (REQ-DIAG-001), its
   career data (in the save through the game's mechanism, or in a revision-bound sidecar, per
   [ADR-0003](docs/architecture/decisions/ADR-0003-career-save-isolation.md)), and a diagnostics export location chosen by
@@ -93,12 +98,16 @@ decided with OPEN-006 and the logging design.
 
 ## 6. Reporting a security problem
 
-There is no reporting channel yet. The owner will choose a **private** route for security reports
-([OPEN-702](docs/planning/RISKS_AND_OPEN_QUESTIONS.md)), and this section will name it. Until then:
-
-- Agents and contributors report a suspected security problem directly to the project owner in their session and
-  record it in the task's handoff, without reproducing secrets or personal data.
+- **Please do not open a public issue for a security problem.**
+- Report it privately through GitHub: on the repository page, open the **Security** tab and choose **Report a
+  vulnerability**.
+- If that button is not available, open a public issue that asks for a private contact and contains no details.
+- Agents in the owner's sessions report a suspected security problem directly to the owner and record it in the task's
+  handoff, without reproducing secrets or personal data.
 - Details of an exploitable problem are not written into public-facing documents before a fix or mitigation exists.
+
+Player support and game-update notices still have no channel beyond GitHub issues
+([OPEN-702](docs/planning/RISKS_AND_OPEN_QUESTIONS.md)).
 
 ## 7. If sensitive data is exposed
 

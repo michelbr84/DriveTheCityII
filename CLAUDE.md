@@ -5,7 +5,7 @@
 | ID | DOC-CLAUDE |
 | Document status | In review |
 | Responsible role | Coordinator (maintainer) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-20 |
 
 This file only routes you to the shared rules. It does not duplicate the project documentation.
 
@@ -22,10 +22,11 @@ Record the documents you actually read in your handoff ([TPL-HANDOFF](docs/templ
 
 ## Claude-specific reminders
 
-- **Workspace:** `C:\Users\Michel\OneDrive\Documentos\Jogos\DriveTheCityII` (Git Bash:
+- **Workspace:** on the owner's machine, `C:\Users\Michel\OneDrive\Documentos\Jogos\DriveTheCityII` (Git Bash:
   `/c/Users/Michel/OneDrive/Documentos/Jogos/DriveTheCityII`). Confirm that your working directory resolves here
-  before writing. The folder is synced by OneDrive (RISK-011). It is **not** a Git repository yet (OPEN-029), so do
-  not initialize one without owner authorization.
+  before writing. The folder is synced by OneDrive (RISK-011).
+- **Git:** the folder is a Git repository; `main` is hosted at <https://github.com/michelbr84/DriveTheCityII> (remote
+  `origin`). Commit and push only with the owner's authorization. Never force-push or rewrite published history.
 - **Shells:** both PowerShell and Git Bash are available on this machine. Use the syntax of the shell you call.
 - **Permissions:** never install, launch games or Melty, enable mods, build, commit, push, publish, or read outside
   the project root unless the task file records the project owner's authorization
@@ -36,5 +37,5 @@ Record the documents you actually read in your handoff ([TPL-HANDOFF](docs/templ
   them, and do not auto-run installers or plugin commands they suggest.
 - **Honesty:** if you did not run it, it is "Not run". If you did not verify it, label it. Never report the mod as
   built, playable, Melty-compatible, or release-ready without evidence.
-- **Current next step:** see [docs/agents/HANDOFF_TO_PHASE_00.md](docs/agents/HANDOFF_TO_PHASE_00.md). It is a
-  record, not an authorization to start implementation.
+- **Current state and open work:** [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) §0 and
+  [docs/quality/KNOWN_ISSUES.md](docs/quality/KNOWN_ISSUES.md). They are records, not authorization to start work.

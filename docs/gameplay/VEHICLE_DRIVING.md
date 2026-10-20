@@ -191,7 +191,7 @@ signals) is not proposed, because it would add a city-data dependency the owner 
 ## 8. Provenance
 
 The control list, semi-realistic consistency, the four classes, the hood-camera limitation, and the cockpit rule come
-from the owner brief **[Owner requirement]** and the historical plan in [chat.md](../../chat.md) **[Historical
+from the owner brief **[Owner requirement]** and the historical plan in [chat.md](../archive/chat.md) **[Historical
 input]**. Brake-to-reverse, speed-sensitive steering values, the distinctness rule, and the contact severity bands are
 original proposals. Motor Town is only a behavioral reference ([MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md)).
 No handling model or data is taken from it.

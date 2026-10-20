@@ -45,7 +45,7 @@ secondary journalism. **[Built locally]** and **[Tested in-game]** do not appear
 | SRC-003 | Motor Town: Behind The Wheel, Steam store page | Developer store page | OK | Extracted |
 | SRC-004 | Melty website, download page, Terms, Privacy | Official product site and legal terms | OK (one guessed URL 404) | Raw-verified (V-08, V-09) |
 | SRC-005 | CitiesSkylinesModding/agents-plugins (GitHub) | Community tooling and knowledge repository | OK (tree truncated) | Raw-verified (V-10) |
-| SRC-006 | `chat.md` in the project root | Historical input (Portuguese) | Read locally | Historical |
+| SRC-006 | `docs/archive/chat.md` (in the project root until 2026-10-20) | Historical input (Portuguese) | Read locally | Historical |
 | SRC-007 | Owner brief of 2026-10-18 | Owner instruction | Received in the documentation session | Owner |
 | SRC-008 | Paradox CS2 Wiki: "Modding Toolchain" | Official wiki page | OK | Extracted |
 | SRC-009 | Paradox CS2 Wiki: "UI Modding" | Official wiki page | OK | Extracted |
@@ -247,7 +247,7 @@ of the truncated tree.
 
 | Field | Value |
 |---|---|
-| URL(s) | Local file [chat.md](../../chat.md) in the project root |
+| URL(s) | Local file [chat.md](../archive/chat.md) in `docs/archive/` (in the project root until 2026-10-20; content unchanged) |
 | Publisher / project | The project owner's earlier planning conversation with an AI assistant, exported to Markdown |
 | Kind | Historical input (Portuguese). Kept unchanged; never edited or translated. |
 | Access status | Read locally |

@@ -36,7 +36,7 @@ depends on:
   coordinator that day: Git `2.55.0.windows.5` is installed; Python and Node.js exist; the project root is **not** a Git
   repository and has no parent repository; it lies inside a OneDrive-synced folder (RISK-011). No game, launcher,
   Melty, SDK, Unity, or .NET discovery has been done.
-- The historical plan ([chat.md](../../../chat.md), **[Historical input]**) asked one session to install games, Melty,
+- The historical plan ([chat.md](../../archive/chat.md), **[Historical input]**) asked one session to install games, Melty,
   and tools, and then to build and run a baseline. The owner brief replaced that with three tasks: this read-only
   discovery, the read-only source audit (TASK-0002), and an authorized baseline (TASK-0003). See CONF-006, CONF-009,
   CONF-010.

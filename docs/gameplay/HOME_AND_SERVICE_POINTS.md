@@ -152,5 +152,5 @@ passengers), **OPEN-206** (stable identity of zoned buildings across level-up, a
 ## 8. Provenance
 
 A home base and garage linked to city buildings, exterior service interactions, optional mission characters, and
-fallbacks are **[Owner requirement]**. They are also in [chat.md](../../chat.md) **[Historical input]**. Automatic
+fallbacks are **[Owner requirement]**. They are also in [chat.md](../archive/chat.md) **[Historical input]**. Automatic
 designation, virtual services, the temporary base, and garage capacity are original proposals.

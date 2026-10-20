@@ -14,15 +14,16 @@
 > - A native CS2 mod builds against 1.6.2f1 and runs in disposable lab cities.
 > - **M1 is reached** with real keyboard input ([RUN-0002](quality/evidence/RUN-0002/REPORT.md)): walk, enter, drive,
 >   brake, steer, exit, return to city building, save, quit, relaunch, reload, continue.
-> - All four careers, garage, progression, home, company, and challenges are implemented and unit-tested (143+
+> - All four careers, garage, progression, home, company, and challenges are implemented and unit-tested (172
 >   tests). In-game coverage per feature is in section 0 and in [MORNING_REPORT](../MORNING_REPORT.md).
-> - Nothing is published or uploaded; the deliverable is a private local package.
+> - The source is hosted at <https://github.com/michelbr84/DriveTheCityII> under the MIT License (owner decisions,
+>   2026-10-20). No mod package is published on any platform; the deliverable is a local package built from source.
 
 ## 0. Current execution state (keep this section current)
 
 | Item | State |
 |---|---|
-| Working build | Git `main` (local only). Last committed: see `git log -1`. Packages: `%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt` |
+| Working build | Git `main`, pushed to `origin` (<https://github.com/michelbr84/DriveTheCityII>). Last committed: see `git log -1`. Packages: `%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt` |
 | Install / rollback | `tools\deploy.ps1 -Install` / `-Rollback` / `-Uninstall` / `-Status` (ownership manifest in `%LOCALAPPDATA%\DriveTheCityII\deploy`) |
 | Test sessions | `tools\test-session.ps1 -Start` / `-Stop`; bridge `tools\bridge.ps1`; real keys `tools\realinput.ps1`; work log [WORKLOG](quality/evidence/WORKLOG.md) |
 | Lab cities | `DTC2-LAB-Bench-S1` (lab copy of the game's built-in benchmark city); campaign saves `DTC2-LAB-M1`, `DTC2-LAB-CAREER-A/B/C`, `DTC2-LAB-CAREERS`, `DTC2-LAB-SOAK`, `DTC2-LAB-NOMOD` |
@@ -67,7 +68,7 @@ human review.
 | Item | State | Evidence |
 |---|---|---|
 | Project root | `C:\Users\Michel\OneDrive\Documentos\Jogos\DriveTheCityII`; OneDrive-managed (RISK-011, OPEN-028). The superseded project paths do not exist, and nothing references them. | Verified commands |
-| Version control | Git 2.55.0 installed; the project root is **not** a repository (OPEN-029) | Verified commands |
+| Version control | Git 2.55.0 installed; the project root is **not** a repository (OPEN-029). Later: repository created 2026-10-19 (first commit `09e80ac`) and hosted on GitHub from 2026-10-20 (§0) | Verified commands |
 | CS2 | **Steam, version 1.6.2f1**, Unity 2022.3.71f1 (Mono), standard Steam library; fully installed | [WINDOWS_SETUP](engineering/WINDOWS_SETUP.md) §3 |
 | Installed mods and loaders | **None.** Both mod caches are empty, and there is no BepInEx, Doorstop, or MelonLoader in the game folder. The base mod is not installed. | WINDOWS_SETUP §3 |
 | Official modding toolchain | **Not installed:** no `CSII_*` variables, no Unity Editor, no .NET SDK | [TOOLCHAIN_MATRIX](engineering/TOOLCHAIN_MATRIX.md) |
@@ -112,7 +113,7 @@ the sense that its first two work packages have been executed.
 | Approval of the isolated test setup | Protects the owner's saves and normal mod set | OPEN-035, WINDOWS_SETUP §8 |
 | Acceptance of ADR-0005 (native route; no BepInEx; Melty not a channel) | Fixes how the mod loads and ships | [ADR-0005](architecture/decisions/ADR-0005-mod-loading-and-distribution-route.md), CONF-014 |
 | Base-mod reuse questions Q-01 to Q-07 (license history, collision provenance, attribution) | Decides between selective re-implementation and reference-only use | REUSE_AND_LICENSE_AUDIT; OPEN-404, OPEN-405, OPEN-411 |
-| Project license, Git, and output location | Required before code (TASK-0004) | OPEN-027, OPEN-029, OPEN-028 |
+| Project license, Git, and output location | **Decided.** License MIT and GitHub hosting (owner, 2026-10-20); Git since 2026-10-19; build output outside OneDrive under `%LOCALAPPDATA%\DriveTheCityII` | OPEN-027, OPEN-029, OPEN-028 |
 | Owner-only facts: CS2 edition, DLCs, Unity license | Toolchain and compatibility records | OPEN-001, OPEN-406 |
 | Melty: optionally ask Melty for a native CS2 route; Melty exclusivity | Optional; does not block the project | MELTY_EVALUATION §9, CONF-012 |
 
@@ -137,3 +138,4 @@ the sense that its first two work packages have been executed.
 | 2026-10-18 | Workspace verified (only `chat.md` present; not a Git repository). Documentation baseline written, with read-only source review and raw-text checks of key facts. Documentation validated. TASK-0000 moved to In review. | [TASK-0000](planning/tasks/TASK-0000-documentation-bootstrap.md), [DOCUMENTATION_VALIDATION_REPORT](quality/DOCUMENTATION_VALIDATION_REPORT.md) |
 | 2026-10-18 | TASK-0001 (Windows environment discovery) and TASK-0002 (base-mod source audit at the pinned commit) executed read-only and moved to In review. Melty inspected read-only through its connection. ADR-0005 proposed. M1 refined. TASK-0004 planned. | [TASK-0001](planning/tasks/TASK-0001-windows-environment-audit.md), [TASK-0002](planning/tasks/TASK-0002-base-mod-source-audit.md), [MELTY_EVALUATION](research/MELTY_EVALUATION.md) §9 |
 | 2026-10-20 | First human session (the owner, own city) read from the mod log: no errors; ISSUE-035 to ISSUE-039 recorded. ISSUE-033 (standing queues: parked player vehicle; deadlocks through the driven vehicle) and ISSUE-034 (bus junction U-turns) fixed and verified with the fixes switched off and on in game; final package `0.1.0-36ec810`. | [RUN-0005](quality/evidence/RUN-0005/REPORT.md), [WORKLOG](quality/evidence/WORKLOG.md) |
+| 2026-10-20 | Public-repository preparation (owner request): every file version in the history (252 paths, 486 blobs, 60 commits) scanned for secrets, tokens, email addresses, account and machine identifiers: none found; commit identities use the GitHub `noreply` address. No game files, decompiled code, saves, or third-party code in the repository. MIT `LICENSE` added; README rewritten (it described pre-development and had UTF-16 text appended by the "first commit" `d91bd26`); `chat.md` moved unchanged to `docs/archive/`; entry documents brought up to date. Switching the repository to public is left to the owner. | [CHANGELOG](../CHANGELOG.md) 2026-10-20 |

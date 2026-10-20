@@ -259,6 +259,6 @@ Central ([register](../planning/RISKS_AND_OPEN_QUESTIONS.md)): RISK-006, RISK-01
 ## 15. Provenance
 
 Wallet separation, the ledger, XP, reputation, unlocks, the economic tutorial, and "no permanent block" come from the
-owner brief **[Owner requirement]** and the historical plan in [chat.md](../../chat.md) **[Historical input]**. The
+owner brief **[Owner requirement]** and the historical plan in [chat.md](../archive/chat.md) **[Historical input]**. The
 revenue-share basic rental, deferred charges, the zero-cost-path invariant, and all values are original proposals.
 Motor Town's buy/rent progression is a behavioral reference only ([MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md)).

@@ -262,7 +262,7 @@ few valid contracts in small or unusual cities).
 ## 15. Provenance
 
 The shared lifecycle, validation before acceptance, single payment, route-based design, and invalidation by city edits
-are **[Owner requirement]**. They also appear in the historical plan in [chat.md](../../chat.md) **[Historical
+are **[Owner requirement]**. They also appear in the historical plan in [chat.md](../archive/chat.md) **[Historical
 input]**. Leg groups, the career clock, the TransactionId shape, fault attribution, and the cancellation table are
 original proposals. Motor Town's observable job loop (accept → collect → transport → deliver → get paid) is a
 behavioral reference only ([MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md)).

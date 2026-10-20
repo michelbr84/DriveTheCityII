@@ -20,7 +20,7 @@ This file is the single source of truth for **phase order, phase dependencies, a
 deliver is detailed in its phase document. Requirements are defined in the [PRD](docs/product/PRD.md). The demonstrated
 state of the project is tracked only in [PROJECT_STATUS](docs/PROJECT_STATUS.md).
 
-It consolidates the earlier Portuguese planning conversation ([chat.md](chat.md), historical input SRC-006). Where the
+It consolidates the earlier Portuguese planning conversation ([chat.md](docs/archive/chat.md), historical input SRC-006). Where the
 two differ, the owner brief of 2026-10-18 wins, and the difference is recorded as a `CONF-*` entry in the
 [register](docs/planning/RISKS_AND_OPEN_QUESTIONS.md). No other roadmap is active.
 

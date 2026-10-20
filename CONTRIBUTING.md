@@ -7,18 +7,21 @@
 | Scope | Every change to this project, by the owner, AI agents, or future contributors |
 | Responsible role | Coordinator (maintainer); project owner approves changes to review and license rules |
 | Related documents | [AGENTS.md](AGENTS.md), [DOCUMENTATION_RULES](docs/DOCUMENTATION_RULES.md), [ROLES_AND_OWNERSHIP](docs/agents/ROLES_AND_OWNERSHIP.md), [WORKFLOW_AND_HANDOFF](docs/agents/WORKFLOW_AND_HANDOFF.md), [DEFINITION_OF_DONE](docs/agents/DEFINITION_OF_DONE.md), [SECURITY.md](SECURITY.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-20 |
 
-> **Current state (2026-10-18):** pre-development. There is no code and no Git repository (OPEN-029), and **no project
-> license has been chosen** (OPEN-027). Contributions are currently limited to work done in the owner's own sessions.
-> Code or assets from anyone else cannot be incorporated until the owner decides the license and contribution terms.
+> **Current state (2026-10-20):** a development build (0.1.0) exists; see [PROJECT_STATUS](docs/PROJECT_STATUS.md).
+> The source is hosted at <https://github.com/michelbr84/DriveTheCityII> under the [MIT License](LICENSE). Most work
+> happens in the owner's own sessions. Issues and pull requests can be opened on GitHub; the owner reviews every change
+> and may decline any of them.
 
 ## 1. Before you contribute
 
 Read, explicitly and in this order: [README.md](README.md), [AGENTS.md](AGENTS.md),
 [DOCUMENTATION_RULES](docs/DOCUMENTATION_RULES.md), [PROJECT_STATUS](docs/PROJECT_STATUS.md), and the
-[READING_GUIDE](docs/agents/READING_GUIDE.md) for your task type. Every change belongs to a task file
-([tasks](docs/planning/tasks/README.md)) that is Ready ([DEFINITION_OF_READY](docs/agents/DEFINITION_OF_READY.md)).
+[READING_GUIDE](docs/agents/READING_GUIDE.md) for your task type. Every change in the owner's sessions belongs to a task
+file ([tasks](docs/planning/tasks/README.md)) that is Ready ([DEFINITION_OF_READY](docs/agents/DEFINITION_OF_READY.md)).
+For an outside contribution, a GitHub issue that describes the change is enough to start; the owner decides whether it
+becomes a task.
 
 ## 2. Documentation rules in brief
 
@@ -37,16 +40,18 @@ The full rules are in [DOCUMENTATION_RULES](docs/DOCUMENTATION_RULES.md). The es
 - Never invent versions, commits, issue numbers, authors, approvals, URLs, UI text, install paths, benchmark values, or
   test runs.
 
-## 3. Version control conventions (proposed; apply once a repository exists)
+## 3. Version control conventions
 
-No repository exists, and initializing one requires the owner's decision (OPEN-029). Until then, follow
-[WORKFLOW_AND_HANDOFF](docs/agents/WORKFLOW_AND_HANDOFF.md) §3. Once a repository exists, these **[Proposal]**
-conventions apply unless the owner changes them:
+The repository is Git, with `main` as the default branch on GitHub. So far, the owner's own sessions have committed
+directly to `main`. For any other contribution, these conventions apply unless the owner changes them:
 
-- **Branches:** one per task, named `task/TASK-NNNN-short-slug`; hotfixes `hotfix/MAJOR.MINOR.PATCH-short-slug`. The default
-  branch receives changes only through reviewed merges.
-- **Commits:** subject `TASK-NNNN: imperative summary` (at most 72 characters). The body lists the specifications or
-  documents changed and the `RUN-*` IDs of any evidence. A commit message never claims a test that was not run.
+- **Branches and pull requests:** one branch per change (for example `task/TASK-NNNN-short-slug` or
+  `fix/ISSUE-NNN-short-slug`), merged into `main` only through a pull request that the owner has reviewed.
+- **Commits:** a short imperative subject (at most 72 characters), naming the task or issue ID when there is one. The
+  body lists the specifications or documents changed and the `RUN-*` IDs of any evidence. A commit message never claims
+  a test that was not run.
+- **Checks before a pull request:** `tools\build.ps1` passes (unit tests and mod build). Say in the pull request
+  whether you tested in game, and how.
 - **Scope:** one objective per branch. No generated build output, saves, game files, local environment files, or
   evidence artifacts in commits; the prepared `.gitignore` covers the known cases.
 - **History:** no force-pushes or rewriting of shared branches. Mistakes are fixed by new commits.
@@ -92,9 +97,10 @@ AI agents follow the same rules as everyone else, plus these:
 
 ## 8. License of contributions
 
-The project license is **pending** an owner decision (OPEN-027), and the project is not assumed to be under any
-particular license. This file grants and implies no license. Do not add license headers or license files until the
-owner decides.
+The project is licensed under the [MIT License](LICENSE) (owner decision, 2026-10-20; OPEN-027). By submitting a
+contribution, you agree that it is licensed under the same terms. Submit only work you have the right to license this
+way: never game code (decompiled or otherwise), extracted game assets, or third-party code that has not gone through
+section 7.
 
 ## 9. Security
 

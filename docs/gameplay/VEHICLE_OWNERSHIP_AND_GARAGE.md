@@ -182,6 +182,6 @@ recovery services).
 ## 13. Provenance
 
 Rental, purchase, sale, per-city ownership, fuel, simplified maintenance at exterior points, measurable upgrades, and
-the no-permanent-block rule are **[Owner requirement]** and appear in [chat.md](../../chat.md) **[Historical input]**.
+the no-permanent-block rule are **[Owner requirement]** and appear in [chat.md](../archive/chat.md) **[Historical input]**.
 The rental tiers, condition thresholds, upgrade list, mobile service, and default storage are original proposals.
 Motor Town's ownership loop is a behavioral reference only ([MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md)).

@@ -223,7 +223,7 @@ Register: [RISKS_AND_OPEN_QUESTIONS](../planning/RISKS_AND_OPEN_QUESTIONS.md).
 ## 14. Provenance notes
 
 - The state list, overlays, single authority, and camera separation are **[Owner requirement]** and also appear in the
-  earlier plan **[Historical input]** ([chat.md](../../chat.md)).
+  earlier plan **[Historical input]** ([chat.md](../archive/chat.md)).
 - The candidate base mod is reported to suspend native navigation for the possessed vehicle and apply its own movement
   afterwards **[Source-inspected, pending re-check in TASK-0002]** ([BASE_MOD_AUDIT](../research/BASE_MOD_AUDIT.md)).
   This informs, but does not prove, the takeover design.

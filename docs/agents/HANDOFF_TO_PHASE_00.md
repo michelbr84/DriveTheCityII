@@ -39,7 +39,7 @@
 | Document | Last updated (as seen) | Depth |
 |---|---|---|
 | Owner brief of 2026-10-18 (SRC-007) | 2026-10-18 | Full |
-| [chat.md](../../chat.md) (SRC-006) | Pre-existing (56,022 bytes) | Full |
+| [chat.md](../archive/chat.md) (SRC-006) | Pre-existing (56,022 bytes) | Full |
 | [SOURCES](../research/SOURCES.md) and the research findings behind it | 2026-10-18 | Full (findings); spot-checked raw text for 10 facts |
 | Writer reports for every document group | 2026-10-18 | Full |
 

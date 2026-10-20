@@ -210,5 +210,5 @@ camera values above are tuning proposals that PHASE-04 playtests will settle, no
 
 The capability list (walk, run, turn, free look, small elevation changes, first/third person, camera anti-clipping,
 recovery, and the exclusion of parkour, swimming, and interiors) comes from the owner brief **[Owner requirement]**. It
-matches the historical plan in [chat.md](../../chat.md) **[Historical input]**. The spawn order, ledge guard,
+matches the historical plan in [chat.md](../archive/chat.md) **[Historical input]**. The spawn order, ledge guard,
 temporary first-person fallback, and detection thresholds are original proposals of this document.

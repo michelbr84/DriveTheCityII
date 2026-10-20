@@ -156,7 +156,7 @@ Central ([register](../../planning/RISKS_AND_OPEN_QUESTIONS.md)): OPEN-020 (read
 
 Following city lines and stops in order with career passengers, capacity, boarding and alighting, trip evaluation,
 replanning or no-fault cancellation, and the exclusion of native passengers in v1.0 are **[Owner requirement]**. The
-historical plan in [chat.md](../../../chat.md) **[Historical input]** described a second level with native passengers,
+historical plan in [chat.md](../../archive/chat.md) **[Historical input]** described a second level with native passengers,
 which is now a separate experiment (CONF-011). The door interlock, passenger groups, timetable window, and replanning
 procedure are original proposals. Motor Town's bus job is a behavioral reference only
 ([MOTOR_TOWN_REFERENCE](../../research/MOTOR_TOWN_REFERENCE.md)).

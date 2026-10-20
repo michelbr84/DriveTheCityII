@@ -254,7 +254,7 @@ Full entries: [RISKS_AND_OPEN_QUESTIONS](../planning/RISKS_AND_OPEN_QUESTIONS.md
 ## 12. Provenance
 
 - The loop "accept work → collect or board → transport → deliver → get paid → invest" is adapted from observable
-  Motor Town gameplay, as described in [chat.md](../../chat.md) **[Historical input]** and mapped in
+  Motor Town gameplay, as described in [chat.md](../archive/chat.md) **[Historical input]** and mapped in
   [MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md). Our systems are original. No rules, numbers, assets,
   or code are taken from Motor Town.
 - Player-chosen exterior service points and a managerial company first come from the historical plan

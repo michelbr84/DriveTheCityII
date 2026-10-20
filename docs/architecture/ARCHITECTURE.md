@@ -265,7 +265,7 @@ All are recorded in [RISKS_AND_OPEN_QUESTIONS](../planning/RISKS_AND_OPEN_QUESTI
 
 - System roles of CS2, Motor Town, Melty, and the base mod: **[Owner requirement]** (owner brief of 2026-10-18).
 - The module split (city integration, character, vehicles, missions, economy, persistence, interface) first appeared
-  in the earlier planning conversation **[Historical input]** ([chat.md](../../chat.md)); the owner brief named the eight
+  in the earlier planning conversation **[Historical input]** ([chat.md](../archive/chat.md)); the owner brief named the eight
   modules used here.
 - External facts about the base mod and the official toolchain are recorded with their provenance in
   [SOURCES](../research/SOURCES.md); this document relies on none of them as proof.

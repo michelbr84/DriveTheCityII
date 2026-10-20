@@ -35,7 +35,7 @@ can and cannot be reused:
 
 - The owner brief defines the base mod as a **candidate** source-code foundation. Its reported capabilities are not
   proof, and reuse depends on both this license audit and the TASK-0003 baseline.
-- The historical input ([chat.md](../../../chat.md)) states that the repository declares an MIT license, controls
+- The historical input ([chat.md](../../archive/chat.md)) states that the repository declares an MIT license, controls
   existing vehicles with a chase camera, does not implement building collisions, and targets `net48`. All of these are
   **[Historical input]** until this task confirms them at the pinned revision (RISK-027).
 - A preliminary read-only source check may have been recorded during the documentation bootstrap in

@@ -66,7 +66,7 @@ For all three:
 
 Other protected items: requirement IDs ([PRD](../product/PRD.md)) and phase order ([ROADMAP.md](../../ROADMAP.md))
 change only with owner approval. The owner's primary saves, the game installation, credentials, and
-[chat.md](../../chat.md) are never modified ([AGENTS.md](../../AGENTS.md) §4).
+[chat.md](../archive/chat.md) are never modified ([AGENTS.md](../../AGENTS.md) §4).
 
 ## 6. File ownership and parallel work
 

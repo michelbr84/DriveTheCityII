@@ -30,7 +30,7 @@ and locally verified results. Every unknown becomes a question with a validation
 ## 3. Required reading (actually read)
 
 - The owner brief of 2026-10-18 (in full).
-- [chat.md](../../../chat.md) (in full, as a historical input).
+- [chat.md](../../archive/chat.md) (in full, as a historical input).
 - Public sources inspected read-only, listed in [SOURCES](../../research/SOURCES.md).
 
 ## 4. Allowed scope (files/areas/operations)

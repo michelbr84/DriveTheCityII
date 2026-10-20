@@ -46,7 +46,7 @@ is not evidence that a tool is missing, and an unavailable tool is not a project
 
 ### Tier 1 — allowed without asking (within the task's allowed scope)
 
-- Read files inside the project root. ([chat.md](../../chat.md) is readable but excluded from default reading.)
+- Read files inside the project root. ([chat.md](../archive/chat.md) is readable but excluded from default reading.)
 - Create or edit the Markdown documents the task names.
 - Run read-only version checks of already installed tools (for example, `--version`) when the task needs them.
 - Read public web sources read-only for research tasks, without downloading and running anything, and record them in

@@ -163,6 +163,6 @@ representation).
 ## 12. Provenance
 
 The loop, mod-owned passengers, accessible pickup points, validation before offering, and single payment are **[Owner
-requirement]**. They also appear in [chat.md](../../../chat.md) **[Historical input]**. Dispatch, street hails,
+requirement]**. They also appear in [chat.md](../../archive/chat.md) **[Historical input]**. Dispatch, street hails,
 preferences, the ride-quality model, and the passenger's proposed new destination are original proposals. Motor Town's
 taxi job is a behavioral reference only ([MOTOR_TOWN_REFERENCE](../../research/MOTOR_TOWN_REFERENCE.md)).

@@ -1,7 +1,7 @@
-# Drive the City II: prospective version-control ignore rules.
-# No Git repository exists yet (see OPEN-029 in docs/planning/RISKS_AND_OPEN_QUESTIONS.md).
-# These rules keep private machine data and generated artifacts out of version control once one exists.
-# They intentionally do NOT ignore docs/, *.md, or future source folders.
+# Drive the City II: version-control ignore rules.
+# These rules keep private machine data and generated artifacts out of the repository.
+# Build output normally goes to %LOCALAPPDATA%\DriveTheCityII\ (Directory.Build.props), outside the working copy.
+# They intentionally do NOT ignore docs/, *.md, or source folders.
 
 # Machine-specific and private files (real copy of docs/engineering/LOCAL_ENVIRONMENT.example.md lives here).
 .local/

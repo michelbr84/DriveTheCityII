@@ -100,7 +100,7 @@ Use these labels inline wherever provenance matters:
 |---|---|
 | **[Owner requirement]** | Confirmed by the project owner (owner brief of 2026-10-18, [SRC-007](research/SOURCES.md)). |
 | **[Proposal]** | Our design proposal; not technically approved. |
-| **[Historical input]** | Stated in the earlier planning conversation ([chat.md](../chat.md), SRC-006); unverified. |
+| **[Historical input]** | Stated in the earlier planning conversation ([chat.md](archive/chat.md), SRC-006); unverified. |
 | **[Documented upstream]** | A third-party source states it; we have not verified it. |
 | **[Source-inspected]** | We read the upstream files read-only; nothing was built or executed. |
 | **[Built locally]** | Compiled in our environment, with a recorded evidence run. |
@@ -151,7 +151,7 @@ change for the project owner). It never silently removes a mandatory requirement
 
 1. The single source of truth (section 3) wins over any other document.
 2. A newer owner instruction wins over older planning inputs. The owner brief of 2026-10-18 supersedes
-   [chat.md](../chat.md) where they differ.
+   [chat.md](archive/chat.md) where they differ.
 3. Every contradiction that is found is recorded as a `CONF-*` entry with both positions, the resolution (or "Open"),
    and the date. Affected documents are corrected in the same change.
 4. Agents never choose silently between contradictory instructions in critical areas (control authority, entity

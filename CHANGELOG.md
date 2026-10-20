@@ -13,6 +13,28 @@ mod has been released. Version headings will appear only when real releases exis
 
 ## [Unreleased]
 
+### Changed — 2026-10-20 — Repository prepared for public visibility
+
+At the owner's request, before the GitHub repository `michelbr84/DriveTheCityII` is switched from private to public.
+
+- **Audit (every commit, not just the current files):** 486 file versions of 252 paths in 60 commits were scanned for
+  passwords, tokens and keys, email addresses, user-profile paths, machine names, account and store IDs, and IP
+  addresses. None were found; the only personal detail is the documented project root path on the owner's machine.
+  Commit identities use the GitHub `noreply` address. The repository holds no game files, decompiled code, saves,
+  build output, or third-party code; its only image is a test screenshot of the game. The mod's source makes no
+  network or process-launch calls, and the test bridge works only while a local marker file exists.
+- **License:** MIT, copyright holder "michelbr84" (owner decision; OPEN-027 resolved). [LICENSE](LICENSE) added;
+  [CONTRIBUTING](CONTRIBUTING.md) §8 and [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md) updated (test-only NuGet
+  packages and their licenses listed; game screenshots excluded from the license).
+- **README rewritten.** It still described pre-development ("no code, no build"), and the GitHub "first commit"
+  `d91bd26` had appended a UTF-16 line to it, so Git and GitHub treated it as a binary file.
+- **`chat.md` moved** from the root to [docs/archive/chat.md](docs/archive/chat.md), unchanged (owner decision; SHA-256
+  still `e5b154df…284ca`). 37 links updated.
+- **Entry documents brought up to date:** AGENTS.md §1 and §4, CLAUDE.md (Git and next-step lines), CONTRIBUTING
+  (state, pull-request conventions), SECURITY (state, source check, how to report a vulnerability through GitHub),
+  START_HERE (build before install on a fresh copy), `.gitignore` header, INDEX, PROJECT_STATUS, register entries
+  OPEN-027, OPEN-029, OPEN-702, RISK-701.
+
 ### Fixed — 2026-10-20 — Standing queues and bus turn-rounds (ISSUE-033, ISSUE-034)
 
 Evidence: [RUN-0005](docs/quality/evidence/RUN-0005/REPORT.md). Driving in these tests is simulated input.

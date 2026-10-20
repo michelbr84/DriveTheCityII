@@ -71,7 +71,7 @@ Illustrative numbers are [Proposal] values, not measurements.>
 |---|---|
 | **[Owner requirement]** | The owner brief of 2026-10-18 (SRC-007) states it. |
 | **[Proposal]** | It is our design proposal, not technically approved. |
-| **[Historical input]** | It comes from [chat.md](../../chat.md) (SRC-006) and is unverified. |
+| **[Historical input]** | It comes from [chat.md](../archive/chat.md) (SRC-006) and is unverified. |
 | **[Documented upstream]** | A third-party source states it; we have not verified it. |
 | **[Source-inspected]** | We read upstream files read-only; nothing was built. |
 | **[Built locally]** / **[Tested in-game]** | Only with a recorded `RUN-NNNN`. Not usable as of 2026-10-18. |

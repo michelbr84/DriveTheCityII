@@ -1,31 +1,41 @@
-# START HERE — Play Drive the City II (private build)
+# START HERE — Play Drive the City II (development build)
 
 | Field | Value |
 |---|---|
 | ID | DOC-START-HERE |
 | Document status | Draft (kept current with the latest local package) |
-| Last updated | 2026-10-19 |
+| Last updated | 2026-10-20 |
 
-This is a **private, local** build of a Cities: Skylines II code mod. Nothing here is published. The steps below were
-verified on this machine (CS2 1.6.2f1, Steam) unless marked otherwise.
+This is a **development build** of a Cities: Skylines II code mod. The source is public, but no mod package is
+published on any platform. The steps below were verified on the development machine (CS2 1.6.2f1, Steam) unless
+marked otherwise. Back up your saves before you try it.
 
-## 1. Install (one command)
+## 1. Build and install
 
-Open **PowerShell** in the project folder and run:
+Open **PowerShell** in the project folder.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Install
-```
+1. **Build** (needed once on a fresh copy of the repository, and after every change). This needs Cities: Skylines II
+   installed through Steam and the private .NET SDK described in [BUILD_AND_RUN](docs/engineering/BUILD_AND_RUN.md)
+   §0.1:
 
-This copies the last good package (`%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt`) into the game's local mods folder
-`%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\DriveTheCityII\`. It refuses to run while the game
-is open and never touches other mods or saves.
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File tools\build.ps1
+   ```
+
+   It runs the unit tests, builds the mod, and stages a package under `%LOCALAPPDATA%\DriveTheCityII\packages\`.
+2. **Install:**
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File tools\deploy.ps1 -Install
+   ```
+
+   This copies the last good package (`%LOCALAPPDATA%\DriveTheCityII\packages\LATEST.txt`) into the game's local mods
+   folder `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\DriveTheCityII\`. It refuses to run
+   while the game is open and never touches other mods or saves.
 
 - Check: `tools\deploy.ps1 -Status`
 - Undo the last update: `tools\deploy.ps1 -Rollback`
 - Remove completely: `tools\deploy.ps1 -Uninstall`
-- Rebuild from source first (optional): `tools\build.ps1` (needs the private .NET SDK described in
-  [BUILD_AND_RUN](docs/engineering/BUILD_AND_RUN.md))
 
 ## 2. Start the game
 

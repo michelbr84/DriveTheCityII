@@ -7,7 +7,7 @@
 | Scope | Every active document in the project |
 | Responsible role | Coordinator (maintainer) |
 | Related documents | [DOCUMENTATION_RULES](DOCUMENTATION_RULES.md), [READING_GUIDE](agents/READING_GUIDE.md), [PROJECT_STATUS](PROJECT_STATUS.md) |
-| Last updated | 2026-10-18 (ADR-0005, TASK-0004 added) |
+| Last updated | 2026-10-20 (LICENSE, START_HERE, MORNING_REPORT added; chat.md moved to archive/) |
 
 This index is the entry point to the documentation. It lists every active document, what it is for, and when to read
 it. Statuses shown here are document statuses at the time of the baseline. The file's own metadata block is
@@ -22,22 +22,25 @@ authoritative. Runtime truth lives only in [PROJECT_STATUS](PROJECT_STATUS.md).
 
 Excluded from the default reading path:
 
-- [archive/](archive/README.md): superseded material. Nothing is archived yet.
-- The historical input [chat.md](../chat.md): the original Portuguese planning conversation, kept unchanged
+- [archive/](archive/README.md): superseded material. No superseded document is archived yet.
+- The historical input [chat.md](archive/chat.md) (moved from the root on 2026-10-20): the original Portuguese planning conversation, kept unchanged
   ([SRC-006](research/SOURCES.md)).
 
 ## Root documents
 
 | Document | ID | Purpose | Priority |
 |---|---|---|---|
-| [README.md](../README.md) | DOC-README | Project entry point and pre-development status. | P1 |
+| [README.md](../README.md) | DOC-README | Project entry point: what the mod does, current status, build and install. | P1 |
+| [LICENSE](../LICENSE) | — | MIT License (owner decision, 2026-10-20). | P3 |
+| [START_HERE.md](../START_HERE.md) | DOC-START-HERE | Build, install, controls, and a first walkthrough. | P2 |
+| [MORNING_REPORT.md](../MORNING_REPORT.md) | DOC-MORNING-REPORT | Latest status report: what is verified in game and what is not. | P2 |
 | [AGENTS.md](../AGENTS.md) | DOC-AGENTS | Common rules for every agent and contributor: protected areas, permissions, evidence. | P1 |
 | [CLAUDE.md](../CLAUDE.md) | DOC-CLAUDE | Claude Code entry point; routes to AGENTS.md. | P1 (Claude) |
 | [ROADMAP.md](../ROADMAP.md) | DOC-ROADMAP | Official phase order, dependencies, milestones, gate policy. | P1 |
 | [CHANGELOG.md](../CHANGELOG.md) | DOC-CHANGELOG | Changes that were actually made. | P3 |
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | DOC-CONTRIBUTING | How to contribute, review requirements, conventions for when Git exists. | P2 |
-| [SECURITY.md](../SECURITY.md) | DOC-SECURITY | Data protection, sensitive operations, supply-chain caution. | P2 |
-| [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) | DOC-NOTICES | Notices for incorporated third-party material (none yet). | P3 |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | DOC-CONTRIBUTING | How to contribute, review requirements, Git and pull-request conventions. | P2 |
+| [SECURITY.md](../SECURITY.md) | DOC-SECURITY | Data protection, sensitive operations, supply-chain caution, how to report a vulnerability. | P2 |
+| [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) | DOC-NOTICES | Third-party notices: none in the mod; test-only tools; reference-only material. | P3 |
 
 ## Navigation and status (`docs/`)
 

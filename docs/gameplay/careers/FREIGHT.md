@@ -145,7 +145,7 @@ OPEN-034 (truck models), CONF-003. New: **OPEN-203** (truck-aware access point a
 ## 13. Provenance
 
 Rigid trucks, mass and capacity affecting handling and eligibility, industrial and commercial access points, and the
-exclusion of articulated trucks are **[Owner requirement]**. They also appear in [chat.md](../../../chat.md)
+exclusion of articulated trucks are **[Owner requirement]**. They also appear in [chat.md](../../archive/chat.md)
 **[Historical input]**, which had articulated trucks as a separate prototype (CONF-003, resolved). The cargo types,
 docking rules, and load integrity are original proposals. Motor Town's truck jobs are a behavioral reference only
 ([MOTOR_TOWN_REFERENCE](../../research/MOTOR_TOWN_REFERENCE.md)).

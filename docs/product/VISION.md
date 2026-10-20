@@ -111,7 +111,7 @@ No player counts, ratings, or dates are promised.
 ## 8. Provenance
 
 - The vision statement and component roles come from the owner brief of 2026-10-18 **[Owner requirement]**. The
-  owner brief confirms the earlier product definition in [chat.md](../../chat.md) **[Historical input]**: "you build
+  owner brief confirms the earlier product definition in [chat.md](../archive/chat.md) **[Historical input]**: "you build
   your city normally, then take on a character, walk to a vehicle, start working, earn money, buy cars, develop a
   company, and keep exploring the city you created" (translated summary).
 - The pillars are our synthesis of those requirements **[Proposal]**.

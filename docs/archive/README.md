@@ -7,9 +7,10 @@
 | Scope | Superseded documents and decisions whose rationale must be preserved |
 | Responsible role | Coordinator (maintainer); project owner approves archiving of Accepted documents and ADRs |
 | Related documents | [DOCUMENTATION_RULES](../DOCUMENTATION_RULES.md), [INDEX](../INDEX.md), [ADR index](../architecture/decisions/README.md), [READING_GUIDE](../agents/READING_GUIDE.md) |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-20 |
 
-> **Nothing has been archived** as of 2026-10-18. This folder holds only this policy.
+> As of 2026-10-20, this folder holds this policy and the historical input [chat.md](chat.md) (section 5). No
+> superseded document has been archived.
 
 ## 1. Purpose
 
@@ -61,9 +62,11 @@ and link repairs.
 
 ## 5. Historical inputs are not archived here
 
-[chat.md](../../chat.md), the Portuguese export of the earlier planning conversation (SRC-006), stays **unchanged at
-the project root**. It is not moved into this folder because the owner required original source documents to be
-preserved as they are. Like the archive, it is excluded from the default agent reading path
+[chat.md](chat.md), the Portuguese export of the earlier planning conversation (SRC-006), is kept **unchanged**. It
+was at the project root until 2026-10-20, when the owner decided to move it into this folder (before the repository
+was made public) to keep the root clean. Its content is byte-for-byte the same (SHA-256
+`e5b154df783bb6f7acbef356f6558bae82edd081e372cd247b6318a640b284ca`). It is not a superseded document, so it has no
+row in section 4. Like the archive, it is excluded from the default agent reading path
 ([READING_GUIDE](../agents/READING_GUIDE.md) §7) and is read only for provenance, with every statement treated as
 **[Historical input]**.
 

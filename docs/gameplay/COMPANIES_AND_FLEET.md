@@ -155,6 +155,6 @@ physical fleets), RISK-022 (time inconsistencies). New: **OPEN-201** (clock basi
 ## 9. Provenance
 
 Name, contracts, fleet, hiring, salaries, costs, and the explicitly labeled managerial simulation are **[Owner
-requirement]**. They are also in [chat.md](../../chat.md) **[Historical input]**. Motor Town's company feature (hiring
+requirement]**. They are also in [chat.md](../archive/chat.md) **[Historical input]**. Motor Town's company feature (hiring
 AI drivers for routes) is a behavioral reference only ([MOTOR_TOWN_REFERENCE](../research/MOTOR_TOWN_REFERENCE.md)). The
 period model, deterministic seeding, arrears rules, and wording rules are original proposals.

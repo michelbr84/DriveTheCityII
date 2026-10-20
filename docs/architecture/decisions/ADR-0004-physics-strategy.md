@@ -14,7 +14,7 @@ The owner wants consistent, semi-realistic driving with useful collisions and di
 simulator-grade or structural physics **[Owner requirement]**. A rendered road is not proof of a usable collision
 surface, and it is unknown what surface and collision information the host provides at runtime (OPEN-007, OPEN-008).
 The earlier plan proposed comparing an enhanced kinematic controller with a local physical controller on a single car
-and keeping only one movement authority **[Historical input]** ([chat.md](../../../chat.md)).
+and keeping only one movement authority **[Historical input]** ([chat.md](../../archive/chat.md)).
 
 The candidate base mod is reported to use a kinematic model with clamped time steps and vehicle-only collision, and to
 document that building collision is not implemented **[Source-inspected, pending re-check in TASK-0002]**,

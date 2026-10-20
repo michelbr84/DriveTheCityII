@@ -14,7 +14,7 @@ The career adds money, vehicles, missions, and a company. Two questions follow. 
 city's economy? Second, where and how is career data stored so that it belongs to the right save? The earlier plan
 already preferred data tied to the save itself and, failing that, a file tied to the exact identity and revision of
 the save, and warned that loading an old save must never bring back money from a future session
-**[Historical input]** ([chat.md](../../../chat.md)).
+**[Historical input]** ([chat.md](../../archive/chat.md)).
 
 The owner brief requires: a personal wallet separate from the municipal budget; no native economic writes in v1.0
 except a gated, off-by-default experiment; city/profile/save-revision identity; schema versions; stable references;

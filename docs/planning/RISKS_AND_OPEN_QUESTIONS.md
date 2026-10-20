@@ -132,7 +132,7 @@
 - Mitigation: Strong logging and diagnostics ([DEBUGGING](../engineering/DEBUGGING.md)); verify tool requirements (OPEN-031). · Indicator: debugger cannot attach in TASK-0003. · Owner role: Implementer · Phase: PHASE-00, PHASE-01 · Status: Open
 
 ### RISK-027 — Historical planning inputs contain inaccurate claims
-- Description: [chat.md](../../chat.md) is truncated at its start and its citations were stripped. Claims such as the base mod's license, its missing building collisions, and its target framework may be outdated or wrong. · Likelihood: M · Impact: M
+- Description: [chat.md](../archive/chat.md) is truncated at its start and its citations were stripped. Claims such as the base mod's license, its missing building collisions, and its target framework may be outdated or wrong. · Likelihood: M · Impact: M
 - Mitigation: Treat all of it as **[Historical input]**; re-verify through [SOURCES](../research/SOURCES.md) and the audits. · Indicator: a contradiction found during audit. · Owner role: Coordinator · Phase: PHASE-00 · Status: Open
 
 ### RISK-028 — Damage to primary saves or the game installation during testing
@@ -344,7 +344,8 @@
 - Question: Under which license will Drive the City II be published, given any incorporated components?
 - Impact: REQ-REL-003; contribution and reuse terms. The project is **not** assumed to be MIT.
 - Verification method: The project owner decides after [REUSE_AND_LICENSE_AUDIT](../legal/REUSE_AND_LICENSE_AUDIT.md) and before incorporating third-party code or distributing anything.
-- Resolving phase/task: Project owner decision; before the first incorporation (PHASE-01) and confirmed in PHASE-13 · Status: Open
+- Answer (2026-10-20, owner decision): **MIT License**, copyright holder "michelbr84" ([LICENSE](../../LICENSE)), chosen when the owner decided to make the GitHub repository public. No third-party code is incorporated ([THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md)); contributions are accepted under the same license ([CONTRIBUTING](../../CONTRIBUTING.md) §8).
+- Resolving phase/task: Project owner decision; before the first incorporation (PHASE-01) and confirmed in PHASE-13 · Status: Resolved (2026-10-20)
 
 ### OPEN-028 — Project location inside OneDrive
 - Question: Should build outputs, caches, and local files stay inside the OneDrive-synced project root, or be redirected outside it? How does sync interact with Git?
@@ -357,7 +358,8 @@
 - Question: When should the Git repository be initialized, and will a remote host be used?
 - Impact: Commit-based evidence, upstream pinning, collaboration. Git `2.55.0.windows.5` is installed, but the project root is not a repository (observed 2026-10-18).
 - Verification method: Project owner decision. Initializing the repository is a separate, authorized task; the `.gitignore` file prepared in the baseline is already in place.
-- Resolving phase/task: Project owner decision before PHASE-01 code work · Status: Open
+- Answer: the repository was initialized under the owner brief of 2026-10-19 (first commit `09e80ac`, 2026-10-19). On 2026-10-20 the owner created <https://github.com/michelbr84/DriveTheCityII> (private at first), added it as `origin`, and pushed `main`; the owner then decided to make it public. Commits use the GitHub `noreply` address.
+- Resolving phase/task: Project owner decision before PHASE-01 code work · Status: Resolved (2026-10-20)
 
 ### OPEN-030 — Need for a Motor Town installation
 - Question: Is installing or running Motor Town needed at all, given that it is only a design reference and is never required at runtime?
@@ -414,7 +416,7 @@
 
 ### CONF-002 — Documentation language
 - Positions: The historical input allowed Portuguese document content. The owner brief requires English for all active documentation.
-- Resolution: English (2026-10-18). [chat.md](../../chat.md) remains unchanged as a Portuguese historical input. The game interface remains bilingual (REQ-L10N-001). · Status: Resolved
+- Resolution: English (2026-10-18). [chat.md](../archive/chat.md) remains unchanged as a Portuguese historical input. The game interface remains bilingual (REQ-L10N-001). · Status: Resolved
 
 ### CONF-003 — Articulated trucks
 - Positions: The historical roadmap gave articulated trucks "their own prototype" in phase 8 and also listed them under post-1.0 advanced logistics. The owner brief excludes articulated-truck physics from v1.0.
@@ -1078,11 +1080,13 @@ otherwise, every entry has status **Open**. Duplicates are kept, marked as merge
 - Verification method: Project-owner decision informed by OPEN-029 (repository hosting) and OPEN-701 (channel); read-only check of the facilities the chosen channel documents; record the decision in SECURITY.md §6, TROUBLESHOOTING §5, and POST_RELEASE_MAINTENANCE §7.
 - Resolving phase/task: PHASE-13 (before the first publication, including any test publication involving external players)
 - Raised in: docs/release/POST_RELEASE_MAINTENANCE.md (also SECURITY.md, docs/user/TROUBLESHOOTING.md)
-- Status: Open
+- Partial answer (2026-10-20): with the repository on GitHub, [SECURITY.md](../../SECURITY.md) §6 routes security reports to GitHub's private vulnerability reporting (the owner enables it in the repository settings) and bug reports to GitHub issues. Player support and game-update notices for a published mod remain open until a release channel exists (OPEN-701).
+- Status: Partly answered (2026-10-20)
 
 ### RISK-701 — Work lost or overwritten without version control
 - Description: Until a Git repository exists (OPEN-029), documentation changes (and later code) have no history. Concurrent or later sessions, or OneDrive synchronization conflicts (RISK-011), can overwrite or lose changes with no reliable way to see or restore what changed. Any sync-provider version history is unverified as a recovery mechanism. · Likelihood: M · Impact: M
 - Mitigation: One writer per file; re-read each file immediately before editing; dated CHANGELOG and task status-history entries; report sync-conflict copies instead of resolving them silently; owner decides OPEN-029 before PHASE-01 code work (implementation tasks are not Ready without a repository, DEFINITION_OF_READY §5). · Indicator/trigger: unexplained file changes, sync-conflict copies, a document losing recently recorded content. · Owner role: Project owner · Phase: PHASE-00 (until OPEN-029 is resolved)
 - Raised in: docs/agents/WORKFLOW_AND_HANDOFF.md
-- Status: Open
+- Closed (2026-10-20): Git has been in use since 2026-10-19 and `main` is pushed to GitHub (OPEN-029).
+- Status: Closed
 

@@ -196,5 +196,5 @@ vehicles stay physical in the world while the player is in `Building` or are sto
 
 Stationary-first transitions, proximity selection, alternate exit points, blocked-exit feedback, the
 never-inside-a-wall rule, the three outcomes, and the 50-cycle target come from the owner brief **[Owner requirement]**.
-They are also in the historical plan in [chat.md](../../chat.md) **[Historical input]**. Candidate ordering, the check
+They are also in the historical plan in [chat.md](../archive/chat.md) **[Historical input]**. Candidate ordering, the check
 thresholds, auto-park, and the scenario matrix are original proposals.

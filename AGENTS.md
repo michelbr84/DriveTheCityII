@@ -6,18 +6,19 @@
 | Document status | In review |
 | Applies to | Every AI agent and human contributor working in this repository folder |
 | Responsible role | Coordinator (maintainer); project owner approves rule changes |
-| Last updated | 2026-10-18 |
+| Last updated | 2026-10-20 |
 
 Do not assume any tool loads this file, or the documents it links, automatically. Read them explicitly, in the order
 given below, and list what you read in your handoff ([TPL-HANDOFF](docs/templates/HANDOFF_TEMPLATE.md)).
 
 ## 1. Project state you must not misrepresent
 
-- **Drive the City II** is a planned Cities: Skylines II (CS2) code mod for Windows. It is **pre-development**.
-- No build exists, nothing has run in the game, and **PHASE-00 is not completed**. Current truth lives only in
-  [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
-- The authoritative project root is `C:\Users\Michel\OneDrive\Documentos\Jogos\DriveTheCityII`. Never create a second
-  copy of the project elsewhere.
+- **Drive the City II** is a Cities: Skylines II (CS2) code mod for Windows. A development build (0.1.0) builds and
+  runs in disposable lab cities. It is **not released**: no package is published on any mod platform.
+- Current truth lives only in [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md). Never claim more than it records.
+- The source is hosted at <https://github.com/michelbr84/DriveTheCityII> under the [MIT License](LICENSE) (owner
+  decision, 2026-10-20). On the owner's machine, the authoritative working copy is
+  `C:\Users\Michel\OneDrive\Documentos\Jogos\DriveTheCityII`; never create a second working copy there.
 
 ## 2. Read before you write
 
@@ -58,7 +59,8 @@ concurrent uncoordinated edits:
   project owner.
 
 These must never be touched: the owner's primary CS2 saves, the game installation, credentials and accounts, and
-[chat.md](chat.md) (a historical input that is kept unchanged).
+[chat.md](docs/archive/chat.md) (a historical input that is kept unchanged; moved from the root to `docs/archive/` on
+2026-10-20 by owner decision).
 
 ## 5. Permissions
 
