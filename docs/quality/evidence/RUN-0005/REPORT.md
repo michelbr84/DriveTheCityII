@@ -6,9 +6,9 @@
 | Phases | PHASE-06 to PHASE-08 (careers, traffic presence), PHASE-12 (validation) |
 | Date | 2026-10-20 |
 | Executed by | Claude Code agent (owner request of 2026-10-20: "continue com a ISSUE-033 e a ISSUE-034"); no human reviewer yet |
-| Input | §1: **human input** (the owner's own session), read from the mod log only. §2–§3: **simulated** — test-bridge commands and the TEST AUTOPILOT (`career drive`); career rules run unchanged. Test setup steps (`tpveh`, `trafficsetup`, `parkfix`, `trafficfix`, `career abtest`) are labelled. |
+| Input | §1: **human input** (the owner's own session), read from the mod log only. §2–§4: **simulated** — test-bridge commands and the TEST AUTOPILOT (`career drive`); career rules run unchanged. Test setup steps (`tpveh`, `trafficsetup`, `parkfix`, `trafficfix`, `career abtest`) are labelled. |
 | Builds | `0.1.0-bd5ca0f+dirty-20261020T051630Z` (§2, §3.1 before), `…T053006Z` (§3.1 after), `…T055431Z` (§3.1 switched), `…T060800Z` (§3.3 episode 1), `…T063508Z` (§3.3 junction test, §3.4; 172 unit tests). |
-| Sessions | `%LOCALAPPDATA%\DriveTheCityII\test\sessions\20261020-011700`, `-013027`, `-015441`, `-020810`, `-023545` |
+| Sessions | `%LOCALAPPDATA%\DriveTheCityII\test\sessions\20261020-011700`, `-013027`, `-015441`, `-020810`, `-023545`; final package `-030033` (M1, not run), `-030303` (persistence) |
 
 ## 1. The owner's own session (human input, 2026-10-20 00:13–00:55)
 
@@ -48,9 +48,9 @@ The live guidance (`routeinfo`, with traffic costs) gave the same 433 m route wi
 had no U-turn under any setting (1354 m).
 
 **Drive:** `career drive 400 1` — the bus went round the block and served the stop: "reached leg 1 after 154 s;
-threePointTurns=0 … recoveries=2". Both recoveries were kerb strikes on tight right turns at junctions (the rear of a
-12.7 m bus cutting the corner under the test autopilot's centre-point steering); the recovery put the bus on the next
-road each time. [simulated input via test autopilot]
+threePointTurns=0 … recoveries=2". Both recoveries were kerb strikes on tight right turns at junctions (vehicles turn
+about the body centre, so the ends of a 12.7 m bus swing outward onto the corner, ISSUE-040); the recovery put the bus
+on the next road each time. [simulated input via test autopilot]
 
 ## 3. ISSUE-033 — standing queues
 
@@ -149,9 +149,21 @@ Same session. The bus left parked mid-junction: `trafficwatch 2 parked` → `mot
 its wheels, in the same place 5 s apart. Re-boarded: `motionData=True`; on a clear straight it accelerated to 3 m/s in
 5 s (7.7 m). [simulated input]
 
-## 4. Not done in this run
+## 4. Final package checks
+
+Package `DriveTheCityII-0.1.0-36ec810-20261020T065957Z` (commit `36ec810`, 172 unit tests passed), installed;
+`deploy -Status` OK.
+
+| Check | Result | Evidence |
+|---|---|---|
+| M1 loop with real keys (`tools\campaign-m1.ps1`) | **Not run.** The city loaded, then the real-input helper could not bring the game window to the front: a Steam window (`steamwebhelper`) held the foreground and Windows refused the switch. The focus protection was not bypassed. | session `20261020-030033`, `campaigns\m1-20261020-030033.md` |
+| Career persistence (`tools\campaign-career-persist.ps1`): save A, taxi fare to the passenger, save B while driving, reload B (same stage, no mod entity in the save), finish the fare (one settlement +29.08 cr, rental share −7.27 cr), save and reload C (no second payout), reload A (exact older balance) | **Passed 11/11** [simulated input via test autopilot] | session `20261020-030303`, `campaigns\career-persist-20261020-030923.md` |
+| Save with a parked vehicle without motion data, reload | **Passed**: rental parked (`motionData=False`), saved as `DTC2-LAB-CAREER-P`, reloaded: `excluded-signature cars=0 actors=0`; the rental called back and boarded (`motionData=True`) and drove at 4.2 m/s | session `20261020-030303` |
+
+## 5. Not done in this run
 
 - A full bus shift was not completed on the new build (the autopilot's turning in narrow junctions, ISSUE-040).
+- M1 with real keys was not run on the final package (see §4).
 - The 2-hour soak was not repeated on the new build.
 - No human has played with these fixes yet.
 - The playtest issues ISSUE-035 to ISSUE-039 are recorded, not fixed.

@@ -85,6 +85,7 @@ controller; "real input" means Windows SendInput keyboard events delivered to th
 | 01:30-02:03 | Parked-vehicle fix: same lane 0 queued; switched off/on at two spots (off: 6 and 1 stopped behind; on: 0, cars changed lane). | sessions -013027, -015441 |
 | 02:04-02:46 | A/B during a rush-hour bus shift: episode 1 (fix on) showed a car stopped across the bus's front waiting for it, not resolved — the fix skipped overlapping vehicles; corrected (172 tests). The autopilot failed most tight downtown turns with the bus (ISSUE-040); two labelled harness steps placed the bus past one junction. | sessions -020810, -023545; session notes |
 | 02:47-02:57 | Controlled junction test, three rounds: fix off 18–23 chains end at the bus with a car across its front (control +30 s: 20); fix on +20 s: that car gone, 0–2. Parked bus renders normally without motion data and drives when re-boarded. | session -023545 (`loop-exp1..3.txt`, captures); RUN-0005 §3.3, §3.4 |
+| 02:59-03:11 | Commit `36ec810`; final package `0.1.0-36ec810-20261020T065957Z` (172 tests) installed. M1 with real keys **not run**: a Steam window held the foreground and the focus was not forced. Career persistence **11/11**; save with a parked vehicle (no motion data) and reload: leak check 0/0, vehicle drives after re-boarding. | sessions -030033, -030303; `campaigns\career-persist-20261020-030923.md`; RUN-0005 §4 |
 
 ## Known gaps at this point (next work)
 

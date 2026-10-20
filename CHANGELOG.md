@@ -41,6 +41,8 @@ Evidence: [RUN-0005](docs/quality/evidence/RUN-0005/REPORT.md). Driving in these
 - **Unit tests:** 172 (new: turn penalties by length, choice of the vehicle waited behind).
 - **Recorded:** a 12.7 m bus clips corner props in narrow junctions because vehicles turn about the body centre
   (ISSUE-040); the test autopilot could not finish a downtown bus shift on the new build without help.
+- **Package:** `DriveTheCityII-0.1.0-36ec810-20261020T065957Z`, installed. On it: career persistence 11/11 and a
+  save/reload with a parked vehicle passed; M1 with real keys was not run (a Steam window held the foreground).
 - **Recorded from the owner's first session** (not fixed): parked cars cannot be entered (ISSUE-035), three recoveries
   in a minute end character mode (ISSUE-036), the garage's "starter job" option does nothing (ISSUE-037), character
   mode refused while the camera looks at a blocked spot (ISSUE-038), no bus lines found in the owner's city
